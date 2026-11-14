@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giro Fácil | Compra e Venda de Veículos</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6fa;color:#172033}
+header{background:#101d36;color:white;padding:20px 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.logo{font-size:27px;font-weight:bold;color:#38d887}
+.logo span{color:white}
+header a{color:white;text-decoration:none}
+.hero{background:linear-gradient(120deg,#102448,#176c60);color:white;padding:65px 7%;text-align:center}
+.hero h1{font-size:36px;margin:0 0 15px}
+.hero p{font-size:18px;line-height:1.5}
+.btn{display:inline-block;background:#20c879;color:#092b20;padding:14px 24px;border-radius:9px;text-decoration:none;font-weight:bold;margin-top:15px;border:0;cursor:pointer}
+.container{max-width:950px;margin:30px auto;padding:20px}
+.card{background:white;padding:25px;border-radius:14px;box-shadow:0 3px 15px #00000012;margin-bottom:22px}
+h2{color:#122b4b}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px}
+.category{background:#eaf5ef;padding:20px;border-radius:10px;text-align:center;font-weight:bold}
+input,select,textarea{width:100%;padding:13px;margin:7px 0 15px;border:1px solid #ccd3df;border-radius:8px;font-size:16px}
+label{font-weight:bold}
+footer{background:#101d36;color:white;text-align:center;padding:25px}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">GIRO <span>FÁCIL</span></div>
+<a href="#anunciar">Anunciar veículo</a>
+</header>
+
+<section class="hero">
+<h1>Seu próximo veículo está aqui!</h1>
+<p>Compre e anuncie carros, motos e caminhões.<br>O Giro Fácil conecta compradores e vendedores em todo o Brasil.</p>
+<a class="btn" href="#anunciar">ANUNCIE GRÁTIS</a>
+</section>
+
+<main class="container">
+
+<section class="card">
+<h2>Encontre seu veículo</h2>
+<p>Explore as principais categorias do Giro Fácil.</p>
+<div class="grid">
+<div class="category">🚗 Carros</div>
+<div class="category">🏍️ Motos</div>
+<div class="category">🚚 Caminhões</div>
+<div class="category">🚜 Máquinas</div>
+</div>
+</section>
+
+<section class="card" id="anunciar">
+<h2>Anuncie seu veículo</h2>
+<p>Preencha os dados para solicitar seu anúncio gratuitamente.</p>
+
+<form id="formulario">
+<label>Seu nome</label>
+<input id="nome" required placeholder="Digite seu nome">
+
+<label>WhatsApp</label>
+<input id="telefone" required placeholder="Seu telefone">
+
+<label>Tipo de veículo</label>
+<select id="tipo">
+<option>Carro</option>
+<option>Moto</option>
+<option>Caminhão</option>
+<option>Máquina agrícola</option>
+<option>Outro</option>
+</select>
+
+<label>Marca e modelo</label>
+<input id="modelo" required placeholder="Ex: Toyota Hilux">
+
+<label>Ano</label>
+<input id="ano" required placeholder="Ex: 2022">
+
+<label>Preço desejado (R$)</label>
+<input id="preco" required placeholder="Ex: 150000">
+
+<label>Cidade e Estado</label>
+<input id="cidade" required placeholder="Ex: Rondonópolis - MT">
+
+<label>Descrição do veículo</label>
+<textarea id="descricao" rows="4" placeholder="Descreva seu veículo"></textarea>
+
+<button class="btn" type="submit">ENVIAR ANÚNCIO PELO WHATSAPP</button>
+</form>
+</section>
+
+<section class="card">
+<h2>Por que anunciar no Giro Fácil?</h2>
+<p>✓ Atendimento para todo o Brasil.</p>
+<p>✓ Anúncios de carros, motos e caminhões.</p>
+<p>✓ Contato direto pelo WhatsApp.</p>
+<p>✓ Plataforma simples e fácil de usar.</p>
+</section>
+
+</main>
+
+<footer>
+<strong>GIRO FÁCIL</strong>
+<p>Compra e venda de veículos em todo o Brasil.</p>
+<p>Atendimento: WhatsApp (65) 99669-2130</p>
+</footer>
+
+<script>
+document.getElementById("formulario").addEventListener("submit",function(e){
+e.preventDefault();
+const mensagem =
+"Olá! Quero anunciar no Giro Fácil.%0A"+
+"Nome: "+encodeURIComponent(document.getElementById("nome").value)+"%0A"+
+"Telefone: "+encodeURIComponent(document.getElementById("telefone").value)+"%0A"+
+"Tipo: "+encodeURIComponent(document.getElementById("tipo").value)+"%0A"+
+"Modelo: "+encodeURIComponent(document.getElementById("modelo").value)+"%0A"+
+"Ano: "+encodeURIComponent(document.getElementById("ano").value)+"%0A"+
+"Preço: "+encodeURIComponent(document.getElementById("preco").value)+"%0A"+
+"Cidade: "+encodeURIComponent(document.getElementById("cidade").value)+"%0A"+
+"Descrição: "+encodeURIComponent(document.getElementById("descricao").value);
+window.open("https://wa.me/5565996692130?text="+mensagem,"_blank");
+});
+</script>
+
+</body>
+</html>

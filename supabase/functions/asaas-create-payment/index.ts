@@ -41,13 +41,13 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const kind = body.kind;
     const billingType = body.billingType;
-    const listingId = body.listingId ? Number(body.listingId) : null;
+    const listingId = body.listingId ? String(body.listingId) : null;
 
     if (!["single", "monthly"].includes(kind)) return json({ error: "Tipo de cobrança inválido." }, 400);
     if (!["PIX", "BOLETO"].includes(billingType)) return json({ error: "Escolha PIX ou boleto." }, 400);
     const amount = kind === "single" ? singlePrice : monthlyPrice;
     if (!Number.isFinite(amount) || amount <= 0) return json({ error: "O preço desta modalidade ainda não foi configurado. Informe os valores para ativar a cobrança." }, 409);
-    if (kind === "single" && (!listingId || !Number.isInteger(listingId))) return json({ error: "Selecione um anúncio para pagar." }, 400);
+    if (kind === "single" && (!listingId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(listingId))) return json({ error: "Selecione um anúncio válido para pagar." }, 400);
 
     if (kind === "single") {
       const { data: listing, error } = await admin.from("anuncios").select("id,usuario_id,status").eq("id", listingId).eq("usuario_id", user.id).maybeSingle();

@@ -14,11 +14,11 @@ No terminal com Supabase CLI instalado e o projeto vinculado:
 supabase secrets set ASAAS_API_KEY="SUA_CHAVE_API_ASAAS"
 supabase secrets set ASAAS_API_URL="https://api-sandbox.asaas.com/v3"
 supabase secrets set ASAAS_WEBHOOK_TOKEN="GERE_UM_TOKEN_ALEATORIO_COM_32_OU_MAIS_CARACTERES"
-supabase secrets set ASAAS_SINGLE_AD_PRICE="VALOR_POR_ANUNCIO"
-supabase secrets set ASAAS_MONTHLY_PLAN_PRICE="VALOR_MENSAL"
+supabase secrets set ASAAS_SINGLE_AD_PRICE="10.00"
+supabase secrets set ASAAS_MONTHLY_PLAN_PRICE="59.00"
 ```
 
-Use valores numéricos em reais, por exemplo `12.90`, sem símbolo de moeda. Os dois preços precisam ser definidos antes de gerar cobranças. Para produção, troque `ASAAS_API_URL` por `https://api.asaas.com/v3` e use a chave de API de produção.
+Use valores numéricos em reais, por exemplo `12.90`, sem símbolo de moeda. Os preços confirmados são R$ 10,00 por anúncio avulso e R$ 59,00 por mês. Os valores também estão definidos como padrão no código, mas configure os segredos abaixo para fixá-los no ambiente. Para produção, troque `ASAAS_API_URL` por `https://api.asaas.com/v3` e use a chave de API de produção.
 
 ## 3. Publicar as funções
 

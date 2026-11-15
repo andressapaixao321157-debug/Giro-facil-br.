@@ -54,8 +54,10 @@ Deno.serve(async (req) => {
             await admin.from("perfis").update({
               plano_status: "ativo", plano_asaas_subscription_id: payment.subscription || order.asaas_subscription_id,
             }).eq("id", order.user_id);
+            await admin.from("anuncios").update({ pagamento_status: "plano" }).eq("usuario_id", order.user_id).eq("status", "pendente");
           } else if (refunded || payload.event === "PAYMENT_OVERDUE") {
             await admin.from("perfis").update({ plano_status: "pendente" }).eq("id", order.user_id);
+            await admin.from("anuncios").update({ pagamento_status: "nao_pago" }).eq("usuario_id", order.user_id).eq("status", "pendente");
           }
         }
       }

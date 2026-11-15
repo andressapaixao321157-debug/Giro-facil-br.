@@ -12,7 +12,7 @@ alter table public.anuncios
 create table if not exists public.payment_orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  listing_id bigint references public.anuncios(id) on delete set null,
+  listing_id uuid references public.anuncios(id) on delete set null,
   kind text not null check (kind in ('single','monthly')),
   billing_type text not null check (billing_type in ('PIX','BOLETO')),
   amount numeric(12,2) not null check (amount > 0),

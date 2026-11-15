@@ -201,9 +201,9 @@
         if(file.size>5*1024*1024)throw new Error("Cada foto deve ter no máximo 5 MB.");
         const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
         const path=`${currentUser.id}/${Date.now()}-${safe}`;
-        const {error:upErr}=await db.storage.from("veículos").upload(path,file,{upsert:false,contentType:file.type});
+        const {error:upErr}=await db.storage.from("anuncios-fotos").upload(path,file,{upsert:false,contentType:file.type});
         if(upErr)throw upErr;
-        const {data}=db.storage.from("veículos").getPublicUrl(path);urls.push(data.publicUrl);
+        const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
       }
       const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||null,modelo:model||null,ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value.trim(),estado:$("state").value.trim().toUpperCase(),fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
       const {error}=await db.from("anuncios").insert(payload);if(error)throw error;

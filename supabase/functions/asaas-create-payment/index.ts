@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin.from("perfis").select("nome,asaas_customer_id").eq("id", user.id).maybeSingle();
     let customerId = profile?.asaas_customer_id as string | null;
-    const headers = { access_token: apiKey, "Content-Type": "application/json", Accept: "application/json" };
+    const headers = { access_token: apiKey, "Content-Type": "application/json", Accept: "application/json", "User-Agent": "GiroFacilBR/1.0" };
 
     if (!customerId) {
       const customerResponse = await fetch(`${apiUrl}/customers`, {

@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const apiKey = Deno.env.get("ASAAS_API_KEY");
     const apiUrl = (Deno.env.get("ASAAS_API_URL") || "https://api-sandbox.asaas.com/v3").replace(/\/$/, "");
-    const singlePrice = Number(Deno.env.get("ASAAS_SINGLE_AD_PRICE") || 0);
-    const monthlyPrice = Number(Deno.env.get("ASAAS_MONTHLY_PLAN_PRICE") || 0);
+    const singlePrice = Number(Deno.env.get("ASAAS_SINGLE_AD_PRICE") || 10);
+    const monthlyPrice = Number(Deno.env.get("ASAAS_MONTHLY_PLAN_PRICE") || 59);
 
     if (!apiKey) return json({ error: "Integração Asaas ainda não configurada no servidor." }, 503);
     const auth = req.headers.get("Authorization");

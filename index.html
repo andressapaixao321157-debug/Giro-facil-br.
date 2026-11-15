@@ -94,6 +94,17 @@
     </div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
   </section>
+  <section id="paymentPanel" class="panel hidden">
+    <h2>Pagamento do Giro Fácil</h2>
+    <p class="hint">Escolha pagar por anúncio ou contratar o plano mensal. O pagamento é processado com segurança pelo Asaas.</p>
+    <div id="paymentStatus" class="status hidden"></div>
+    <div class="form-grid">
+      <div class="field"><label for="paymentKind">Modalidade</label><select id="paymentKind"><option value="single">Anúncio avulso</option><option value="monthly">Plano mensal</option></select></div>
+      <div class="field"><label for="billingType">Forma de pagamento</label><select id="billingType"><option value="PIX">PIX</option><option value="BOLETO">Boleto bancário</option></select></div>
+    </div>
+    <div id="paymentResult" class="hint" style="margin-top:12px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="payBtn">Gerar pagamento</button><button class="secondary" id="closePayment">Fechar</button></div>
+  </section>
   <section id="accountBar" class="panel hidden">
     <span id="accountEmail"></span>
     <button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
@@ -108,7 +119,7 @@
   const SUPABASE_ANON_KEY = "sb_publishable_AkT6XsEKmR45zurwhVTRrQ_H4F7pNgq";
   const WHATSAPP_ATENDIMENTO = "5566996263651";
 
-  let db = null, currentUser = null, signupMode = false;
+  let db = null, currentUser = null, signupMode = false, pendingListingId = null;
   const $ = id => document.getElementById(id);
   $("yearNow").textContent = new Date().getFullYear();
 
@@ -138,6 +149,7 @@
   $("loginOpen").onclick=openAuth;$("announceTop").onclick=openPublish;$("announceHero").onclick=openPublish;
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
   $("cancelPublish").onclick=()=>$("publishPanel").classList.add("hidden");
+  $("closePayment").onclick=()=>$("paymentPanel").classList.add("hidden");
   $("toggleSignup").onclick=()=>{
     signupMode=!signupMode;$("authTitle").textContent=signupMode?"Criar sua conta":"Entrar no Giro Fácil";
     $("nameField").classList.toggle("hidden",!signupMode);$("authSubmit").textContent=signupMode?"Cadastrar":"Entrar";
@@ -164,6 +176,27 @@
     finally{$("authSubmit").disabled=false;}
   };
   $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
+  $("payBtn").onclick=async()=>{
+    if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
+    const kind=$("paymentKind").value, billingType=$("billingType").value;
+    if(kind==="single"&&!pendingListingId){status("paymentStatus","Publique primeiro o anúncio que deseja pagar.","err");return;}
+    $("payBtn").disabled=true;$("paymentResult").innerHTML="";
+    try{
+      const {data:{session}}=await db.auth.getSession();
+      if(!session)throw new Error("Sua sessão expirou. Entre novamente.");
+      const {data,error}=await db.functions.invoke("asaas-create-payment",{body:{kind,billingType,listingId:kind==="single"?pendingListingId:null}});
+      if(error)throw error;
+      if(data.error)throw new Error(data.error);
+      status("paymentStatus","Cobrança criada: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Status: "+(data.status||"aguardando pagamento")+".","ok");
+      const result=$("paymentResult");
+      if(data.pixEncodedImage){const img=document.createElement("img");img.alt="QR Code PIX";img.src="data:image/png;base64,"+data.pixEncodedImage;img.style="display:block;max-width:220px;margin:12px 0";result.appendChild(img);}
+      if(data.pixCopyPaste){const label=document.createElement("p");label.textContent="PIX copia e cola:";result.appendChild(label);const code=document.createElement("textarea");code.readOnly=true;code.value=data.pixCopyPaste;code.rows=3;result.appendChild(code);const copy=document.createElement("button");copy.textContent="Copiar código PIX";copy.style.marginTop="8px";copy.onclick=async()=>{await navigator.clipboard.writeText(data.pixCopyPaste);copy.textContent="Código copiado";};result.appendChild(copy);}
+      const url=data.boletoUrl||data.paymentUrl;
+      if(url){const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener";link.textContent=data.boletoUrl?"Abrir boleto bancário":"Abrir fatura Asaas";link.style="display:inline-block;margin:12px 0;font-weight:700";result.appendChild(link);}
+      if(data.subscriptionId){const note=document.createElement("p");note.textContent="Sua assinatura mensal foi criada. A ativação ocorrerá após a confirmação da primeira cobrança.";result.appendChild(note);}
+    }catch(e){status("paymentStatus",e.message||"Não foi possível gerar a cobrança.","err");}
+    finally{$("payBtn").disabled=false;}
+  };
   async function loadListings(){
     if(!db)return;
     const term=$("searchText").value.trim(),cat=$("searchCategory").value;
@@ -206,9 +239,11 @@
         const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
       }
       const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||null,modelo:model||null,ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value.trim(),estado:$("state").value.trim().toUpperCase(),fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
-      const {error}=await db.from("anuncios").insert(payload);if(error)throw error;
-      status("publishStatus","Anúncio enviado! Ele ficará pendente até a aprovação do administrador.","ok");
+      const {data:createdListing,error}=await db.from("anuncios").insert(payload).select("id").single();if(error)throw error;
+      pendingListingId=createdListing.id;
+      status("publishStatus","Anúncio enviado! Agora escolha o pagamento avulso ou o plano mensal. A aprovação do administrador continua necessária.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{if(el.type==="file")el.value="";else el.value="";});
+      $("paymentKind").value="single";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});
     }catch(e){status("publishStatus",e.message||"Não foi possível publicar o anúncio.","err");}
     finally{$("publishBtn").disabled=false;}
   };

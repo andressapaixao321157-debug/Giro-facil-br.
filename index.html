@@ -34,7 +34,7 @@
   <div><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Veículos e imóveis em todo o Brasil</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="ghost" id="loginOpen">Entrar</button>
-    <button id="announceTop">Anunciar grátis</button>
+    <button id="announceTop">Anunciar</button>
   </div>
 </header>
 <main>
@@ -42,7 +42,7 @@
     <div>
       <h1>Encontre veículos e imóveis.</h1>
       <p>Compre, venda ou alugue carros, motos, caminhões e imóveis em todo o Brasil.</p>
-      <button id="announceHero">Quero anunciar grátis</button>
+      <button id="announceHero">Quero anunciar</button>
       <div class="search">
         <input id="searchText" placeholder="Buscar marca ou modelo">
         <select id="searchCategory"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option></select>
@@ -107,7 +107,7 @@
   </section>
   <section id="accountBar" class="panel hidden">
     <span id="accountEmail"></span>
-    <button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
+    <button class="secondary" id="plansOpen" style="margin-left:10px">Planos e pagamentos</button><button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
   </section>
 </main>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil<br>Atendimento pelo WhatsApp: (66) 99626-3651</footer>
@@ -175,6 +175,7 @@
     }catch(e){status("authStatus",e.message||"Não foi possível concluir.","err");}
     finally{$("authSubmit").disabled=false;}
   };
+  $("plansOpen").onclick=()=>{$("paymentKind").value="monthly";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});};
   $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}

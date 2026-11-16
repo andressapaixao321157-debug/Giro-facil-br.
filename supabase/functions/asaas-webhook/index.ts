@@ -14,7 +14,16 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      (() => {
+      const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.default) return parsed.default as string;
+      }
+      const fallback = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (fallback) return fallback;
+      throw new Error("Chave Supabase SUPABASE_SECRET_KEYS não disponível no ambiente.");
+    })(),
     );
 
     const { error: eventError } = await admin.from("asaas_webhook_events")

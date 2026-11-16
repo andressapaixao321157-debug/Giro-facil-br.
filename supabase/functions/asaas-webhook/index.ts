@@ -60,6 +60,33 @@ Deno.serve(async (req) => {
             await admin.from("anuncios").update({ pagamento_status: "nao_pago" }).eq("usuario_id", order.user_id).eq("status", "pendente");
           }
         }
+
+        if (order.kind === "boost") {
+          if (paid) {
+            const { data: boost } = await admin.from("ad_boosts").select("id,duration_days").eq("order_id", order.id).maybeSingle();
+            if (boost) {
+              const starts = new Date();
+              const ends = new Date(starts.getTime() + Number(boost.duration_days) * 86400000);
+              await admin.from("ad_boosts").update({
+                status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+              }).eq("id", boost.id);
+            }
+          } else if (refunded) {
+            await admin.from("ad_boosts").update({ status: "refunded" }).eq("order_id", order.id);
+          }
+        }
+
+        if (order.kind === "store") {
+          if (paid) {
+            const starts = new Date();
+            const ends = new Date(starts); ends.setUTCMonth(ends.getUTCMonth() + 1);
+            await admin.from("store_plans").update({
+              status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+            }).eq("order_id", order.id);
+          } else if (refunded) {
+            await admin.from("store_plans").update({ status: "refunded" }).eq("order_id", order.id);
+          }
+        }
       }
     }
 

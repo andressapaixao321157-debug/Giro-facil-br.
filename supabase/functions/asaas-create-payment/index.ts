@@ -102,6 +102,41 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (orderError) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
+    if (kind === "monthly") {
+      const subscriptionResponse = await fetch(`${apiUrl}/subscriptions`, {
+        method: "POST", headers,
+        body: JSON.stringify({
+          customer: customerId, billingType, value: amount, nextDueDate: datePlusDays(3),
+          cycle: "MONTHLY", description: "Giro Fácil - plano mensal", externalReference: order.id,
+        }),
+      });
+      const subscription = await subscriptionResponse.json();
+      if (!subscriptionResponse.ok) throw new Error(subscription.errors?.[0]?.description || "O Asaas não conseguiu criar a assinatura.");
+      await admin.from("payment_orders").update({
+        asaas_subscription_id: subscription.id, status: "AWAITING_FIRST_PAYMENT",
+      }).eq("id", order.id);
+      const listResponse = await fetch(`${apiUrl}/subscriptions/${subscription.id}/payments`, { headers });
+      let firstPayment: any = null;
+      if (listResponse.ok) { const list = await listResponse.json(); firstPayment = list.data?.[0] || null; }
+      if (!firstPayment) return json({ orderId: order.id, kind, billingType, amount, subscriptionId: subscription.id, status: "AWAITING_FIRST_PAYMENT", message: "Assinatura criada. A primeira cobrança será disponibilizada pelo Asaas." });
+      let firstPix: any = null;
+      if (billingType === "PIX") {
+        const pixResponse = await fetch(`${apiUrl}/payments/${firstPayment.id}/pixQrCode`, { headers });
+        if (pixResponse.ok) firstPix = await pixResponse.json();
+      }
+      await admin.from("payment_orders").update({
+        asaas_payment_id: firstPayment.id, payment_url: firstPayment.invoiceUrl || null,
+        boleto_url: firstPayment.bankSlipUrl || null, pix_copy_paste: firstPix?.payload || null,
+        pix_encoded_image: firstPix?.encodedImage || null,
+      }).eq("id", order.id);
+      return json({
+        orderId: order.id, kind, billingType, amount, subscriptionId: subscription.id,
+        status: firstPayment.status, paymentUrl: firstPayment.invoiceUrl || null,
+        boletoUrl: firstPayment.bankSlipUrl || null, pixCopyPaste: firstPix?.payload || null,
+        pixEncodedImage: firstPix?.encodedImage || null,
+      });
+    }
+
     const response = await fetch(`${apiUrl}/payments`, {
       method: "POST", headers,
       body: JSON.stringify({

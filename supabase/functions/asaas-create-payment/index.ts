@@ -26,8 +26,26 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = (() => {
+      const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.default) return parsed.default as string;
+      }
+      const fallback = Deno.env.get("SUPABASE_ANON_KEY");
+      if (fallback) return fallback;
+      throw new Error("Chave Supabase SUPABASE_PUBLISHABLE_KEYS não disponível no ambiente.");
+    })();
+    const serviceKey = (() => {
+      const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.default) return parsed.default as string;
+      }
+      const fallback = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (fallback) return fallback;
+      throw new Error("Chave Supabase SUPABASE_SECRET_KEYS não disponível no ambiente.");
+    })();
     const apiKey = Deno.env.get("ASAAS_API_KEY");
     const apiUrl = (Deno.env.get("ASAAS_API_URL") || "https://api.asaas.com/v3").replace(/\/$/, "");
     const singlePrice = Number(Deno.env.get("ASAAS_SINGLE_AD_PRICE") || 10);

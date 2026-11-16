@@ -121,7 +121,17 @@
   </section>
   <section id="accountBar" class="panel hidden">
     <span id="accountEmail"></span>
-    <button class="secondary" id="plansOpen" style="margin-left:10px">Planos e pagamentos</button><button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
+    <button class="secondary" id="plansOpen" style="margin-left:10px">Planos e pagamentos</button>
+    <button class="secondary hidden" id="adminOpen" style="margin-left:10px">Painel administrativo</button>
+    <button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
+  </section>
+  <section id="adminPanel" class="panel hidden">
+    <h2>Painel administrativo — Giro Fácil</h2>
+    <div id="adminStatus" class="status hidden"></div>
+    <div id="adminTotals" class="form-grid"></div>
+    <h3>Pagamentos recentes</h3><div id="adminOrders" style="overflow:auto"></div>
+    <h3>Anúncios recentes</h3><div id="adminListings" style="overflow:auto"></div>
+    <button id="adminRefresh" style="margin-top:12px">Atualizar painel</button>
   </section>
 </main>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil<br>Atendimento pelo WhatsApp: (66) 99626-3651</footer>
@@ -150,9 +160,15 @@
   } else {
     status("listingStatus","Falta conectar o Supabase: substitua a URL e a chave anon/public no final do arquivo.");
   }
-  function updateAccount(){
+  async function updateAccount(){
     $("accountBar").classList.toggle("hidden",!currentUser);
     $("accountEmail").textContent=currentUser?`Conectado: ${currentUser.email}`:"";
+    $("adminOpen").classList.add("hidden");
+    $("adminPanel").classList.add("hidden");
+    if(currentUser&&db){
+      const {data}=await db.from("perfis").select("papel").eq("id",currentUser.id).maybeSingle();
+      if(data?.papel==="admin")$("adminOpen").classList.remove("hidden");
+    }
   }
   function openAuth(){ $("authPanel").classList.remove("hidden"); $("publishPanel").classList.add("hidden"); $("authPanel").scrollIntoView({behavior:"smooth"}); }
   function openPublish(){
@@ -200,6 +216,23 @@
   }
   $("paymentKind").onchange=updatePaymentFields;$("boostPlan").onchange=updatePaymentFields;updatePaymentFields();
   $("plansOpen").onclick=()=>{$("paymentKind").value="monthly";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});};
+  async function loadAdminDashboard(){
+    if(!db||!currentUser)return;
+    $("adminRefresh").disabled=true;
+    try{
+      const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
+      if(error)throw error;if(data.error)throw new Error(data.error);
+      const t=data.totals;
+      const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores]];
+      $("adminTotals").innerHTML=cards.map(([k,v])=>'<div class="panel"><strong>'+k+'</strong><div style="font-size:22px;margin-top:8px">'+v+'</div></div>').join("");
+      $("adminOrders").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>ID</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Data</th></tr>'+data.orders.map(o=>'<tr><td>'+escapeHtml(o.id.slice(0,8))+'</td><td>'+escapeHtml(o.kind)+'</td><td>'+Number(o.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(o.status)+'</td><td>'+new Date(o.created_at).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
+      $("adminListings").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>Anúncio</th><th>Preço</th><th>Status</th><th>Data</th></tr>'+data.listings.map(a=>'<tr><td>'+escapeHtml(a.titulo)+'</td><td>'+Number(a.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(a.status)+'</td><td>'+new Date(a.criado_em).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
+      status("adminStatus","Painel atualizado com dados do servidor.","ok");
+    }catch(e){status("adminStatus",e.message||"Não foi possível carregar o painel.","err");}
+    finally{$("adminRefresh").disabled=false;}
+  }
+  $("adminOpen").onclick=()=>{$("adminPanel").classList.remove("hidden");$("adminPanel").scrollIntoView({behavior:"smooth"});loadAdminDashboard();};
+  $("adminRefresh").onclick=loadAdminDashboard;
   $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}

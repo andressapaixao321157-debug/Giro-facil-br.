@@ -13,8 +13,26 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Método não permitido." }, 405);
   try {
     const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anon = (() => {
+      const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.default) return parsed.default as string;
+      }
+      const fallback = Deno.env.get("SUPABASE_ANON_KEY");
+      if (fallback) return fallback;
+      throw new Error("Chave Supabase SUPABASE_PUBLISHABLE_KEYS não disponível no ambiente.");
+    })();
+    const service = (() => {
+      const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.default) return parsed.default as string;
+      }
+      const fallback = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (fallback) return fallback;
+      throw new Error("Chave Supabase SUPABASE_SECRET_KEYS não disponível no ambiente.");
+    })();
     const authorization = req.headers.get("Authorization");
     if (!authorization) return reply({ error: "Faça login." }, 401);
     const userClient = createClient(url, anon, { global: { headers: { Authorization: authorization } } });

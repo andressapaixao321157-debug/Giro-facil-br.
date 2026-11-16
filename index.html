@@ -134,14 +134,13 @@
     <button id="adminRefresh" style="margin-top:12px">Atualizar painel</button>
   </section>
 </main>
-<footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil<br>Atendimento pelo WhatsApp: (66) 99626-3651</footer>
+<footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil</footer>
 
 <script>
   // COLE AQUI a URL do projeto e a chave anon/public do Supabase.
   // Nunca coloque a chave service_role neste arquivo.
   const SUPABASE_URL = "https://seimeqvtifxlkagudqus.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_AkT6XsEKmR45zurwhVTRrQ_H4F7pNgq";
-  const WHATSAPP_ATENDIMENTO = "5566996263651";
 
   let db = null, currentUser = null, signupMode = false, pendingListingId = null;
   const $ = id => document.getElementById(id);
@@ -285,10 +284,10 @@
     data.forEach(item=>{
       const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-      const wa=(item.whatsapp||WHATSAPP_ATENDIMENTO).replace(/\D/g,"");
+      const wa=(item.whatsapp||"").replace(/\D/g,"");
       const msg=encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.titulo}`);
       const card=document.createElement("article");card.className="card";
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">Tenho interesse</a></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}" ${wa ? "" : "hidden"}>Tenho interesse</a></div>`;
       $("listings").appendChild(card);
     });
   }

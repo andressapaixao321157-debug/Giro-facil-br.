@@ -102,12 +102,12 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (orderError) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
-    if (kind === "monthly") {
+    if (kind === "monthly" || kind === "store") {
       const subscriptionResponse = await fetch(`${apiUrl}/subscriptions`, {
         method: "POST", headers,
         body: JSON.stringify({
           customer: customerId, billingType, value: amount, nextDueDate: datePlusDays(3),
-          cycle: "MONTHLY", description: "Giro Fácil - plano mensal", externalReference: order.id,
+          cycle: "MONTHLY", description: kind === "monthly" ? "Giro Fácil - plano mensal" : `Giro Fácil - assinatura mensal da loja ${storeName} (${planCode})`, externalReference: order.id,
         }),
       });
       const subscription = await subscriptionResponse.json();

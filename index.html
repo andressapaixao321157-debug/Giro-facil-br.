@@ -96,11 +96,25 @@
   </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
-    <p class="hint">Anúncio avulso: R$ 10,00. Plano mensal: R$ 59,00. Pague com PIX ou boleto pelo Asaas.</p>
+    <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal R$ 59,00 · Turbinamento e lojas com pagamento confirmado pelo Asaas.</p>
     <div id="paymentStatus" class="status hidden"></div>
     <div class="form-grid">
-      <div class="field"><label for="paymentKind">Modalidade</label><select id="paymentKind"><option value="single">Anúncio avulso — R$ 10,00</option><option value="monthly">Plano mensal — R$ 59,00</option></select></div>
+      <div class="field"><label for="paymentKind">O que deseja contratar?</label><select id="paymentKind">
+        <option value="single">Anúncio avulso — R$ 10,00</option><option value="monthly">Plano mensal — R$ 59,00</option>
+        <option value="boost">Turbinar anúncio</option><option value="store">Plano para loja</option>
+      </select></div>
       <div class="field"><label for="billingType">Forma de pagamento</label><select id="billingType"><option value="PIX">PIX</option><option value="BOLETO">Boleto bancário</option></select></div>
+      <div class="field full hidden" id="boostFields"><label for="boostPlan">Destaque do anúncio</label><select id="boostPlan">
+        <option value="boost_3d">3 dias — R$ 19,90</option><option value="boost_7d">7 dias — R$ 34,90</option>
+        <option value="boost_15d">15 dias — R$ 59,90</option><option value="boost_30d">30 dias — R$ 89,90</option>
+        <option value="boost_60d">60 dias — R$ 149,90</option><option value="boost_custom">Orçamento personalizado</option>
+      </select></div>
+      <div class="field hidden" id="customAmountField"><label for="customBoostAmount">Seu orçamento (R$ 20 a R$ 5.000)</label><input id="customBoostAmount" type="number" min="20" max="5000" step="0.01" placeholder="Ex.: 120"></div>
+      <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" placeholder="Ex.: 10"></div>
+      <div class="field full hidden" id="storeFields"><label for="storeName">Nome da loja</label><input id="storeName" placeholder="Nome comercial da sua loja"><label for="storePlan">Plano mensal da loja</label><select id="storePlan">
+        <option value="loja_basica">Básico — R$ 99/mês</option><option value="loja_pro">Pro — R$ 199/mês</option><option value="loja_premium">Premium — R$ 399/mês</option>
+      </select></div>
+      <div class="field full hidden" id="paymentListingWrap"><label for="paymentListingId">ID do anúncio</label><input id="paymentListingId" placeholder="Preenchido automaticamente ao publicar"></div>
     </div>
     <div id="paymentResult" class="hint" style="margin-top:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="payBtn">Gerar pagamento</button><button class="secondary" id="closePayment">Fechar</button></div>
@@ -175,17 +189,32 @@
     }catch(e){status("authStatus",e.message||"Não foi possível concluir.","err");}
     finally{$("authSubmit").disabled=false;}
   };
+  function updatePaymentFields(){
+    const kind=$("paymentKind").value, boost=kind==="boost", store=kind==="store";
+    $("boostFields").classList.toggle("hidden",!boost);
+    $("storeFields").classList.toggle("hidden",!store);
+    $("paymentListingWrap").classList.toggle("hidden",!(kind==="single"||boost));
+    const custom=boost && $("boostPlan").value==="boost_custom";
+    $("customAmountField").classList.toggle("hidden",!custom);
+    $("customDaysField").classList.toggle("hidden",!custom);
+  }
+  $("paymentKind").onchange=updatePaymentFields;$("boostPlan").onchange=updatePaymentFields;updatePaymentFields();
   $("plansOpen").onclick=()=>{$("paymentKind").value="monthly";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});};
   $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
     const kind=$("paymentKind").value, billingType=$("billingType").value;
-    if(kind==="single"&&!pendingListingId){status("paymentStatus","Publique primeiro o anúncio que deseja pagar.","err");return;}
+    const listingId=$("paymentListingId").value.trim()||pendingListingId;
+    if((kind==="single"||kind==="boost")&&!listingId){status("paymentStatus","Informe o ID do anúncio que deseja pagar ou turbinar.","err");return;}
+    if(kind==="store"&&$("storeName").value.trim().length<2){status("paymentStatus","Informe o nome da loja.","err");return;}
     $("payBtn").disabled=true;$("paymentResult").innerHTML="";
     try{
       const {data:{session}}=await db.auth.getSession();
       if(!session)throw new Error("Sua sessão expirou. Entre novamente.");
-      const {data,error}=await db.functions.invoke("asaas-create-payment",{body:{kind,billingType,listingId:kind==="single"?pendingListingId:null}});
+      const payload={kind,billingType,listingId:(kind==="single"||kind==="boost")?listingId:null};
+      if(kind==="boost"){payload.planCode=$("boostPlan").value;if(payload.planCode==="boost_custom"){payload.customAmount=Number($("customBoostAmount").value);payload.customDays=Number($("customBoostDays").value);}}
+      if(kind==="store"){payload.planCode=$("storePlan").value;payload.storeName=$("storeName").value.trim();}
+      const {data,error}=await db.functions.invoke("asaas-create-payment",{body:payload});
       if(error)throw error;
       if(data.error)throw new Error(data.error);
       status("paymentStatus","Cobrança criada: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Status: "+(data.status||"aguardando pagamento")+".","ok");
@@ -244,7 +273,7 @@
       pendingListingId=createdListing.id;
       status("publishStatus","Anúncio enviado! Agora escolha o pagamento avulso ou o plano mensal. A aprovação do administrador continua necessária.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{if(el.type==="file")el.value="";else el.value="";});
-      $("paymentKind").value="single";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});
+      $("paymentKind").value="single";$("paymentListingId").value=pendingListingId;updatePaymentFields();$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});
     }catch(e){status("publishStatus",e.message||"Não foi possível publicar o anúncio.","err");}
     finally{$("publishBtn").disabled=false;}
   };

@@ -399,7 +399,6 @@
   async function loadListings(){
     if(!db)return;
     const term=favoritesOnly?"":$("searchText").value.trim(),cat=favoritesOnly?"":$("searchCategory").value;
-    if(!favoritesOnly){$("section-head");}
     let q=db.from("anuncios").select("*").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
     if(cat)q=q.eq("categoria",cat);

@@ -116,7 +116,7 @@
 <body>
 <header class="app-header">
   <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Compra, venda e aluguel em todo o Brasil</div></div>
-  <div class="header-actions"><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
+  <div class="header-actions"><button class="icon-action" id="navMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
 <main class="market-main">
   <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha sua região"><option value="">Brasil - Escolha sua região</option><option>Rondonópolis - MT</option><option>Lucas do Rio Verde - MT</option><option>São Paulo - SP</option><option>Juazeiro do Norte - CE</option></select><span>⌄</span></div>
@@ -229,7 +229,6 @@
   <button type="button" id="navAnnounce" class="nav-publish"><span class="nav-icon">＋</span>Anunciar</button>
   <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>
   <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
-  <button type="button" id="navMessages" class="hidden">Mensagens</button>
 </nav>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil</footer>
 
@@ -437,7 +436,9 @@
     const term=favoritesOnly?"":$("searchText").value.trim(),cat=favoritesOnly?"":$("searchCategory").value;
     let q=db.from("anuncios").select("*").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
-    if(cat)q=q.eq("categoria",cat);
+    if(cat && cat!=="Filtros")q=q.eq("categoria",cat);
+    const region=$("locationFilter")?.value||"";
+    if(region){const parts=region.split(" - ");if(parts.length===2){q=q.ilike("cidade",`%${parts[0]}%`).ilike("estado",parts[1]);}}
     if(term)q=q.or(`titulo.ilike.%${term}%,marca.ilike.%${term}%,modelo.ilike.%${term}%`);
     const {data,error}=await q;
     if(error){status("listingStatus","Não foi possível carregar os anúncios. Confira as permissões do banco.","err");return;}
@@ -460,6 +461,7 @@
   }
   function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
+  $("locationFilter").onchange=()=>{favoritesOnly=false;loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
   $("publishBtn").onclick=async()=>{
     if(!db||!currentUser)return;

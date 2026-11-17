@@ -111,6 +111,99 @@
     @media(max-width:430px){.app-header{padding:16px 18px}.market-main{padding:12px 12px 24px}.location-row{margin-bottom:10px}.search-panel{gap:6px;padding:7px 9px 7px 12px}.search-panel input{font-size:14px}.search-panel select{max-width:72px;font-size:11px}.search-panel button{padding:11px 10px;font-size:12px}.categories{gap:6px;margin:14px 0 16px}.cat{font-size:11px;min-height:88px;padding:8px 2px}.cat .emoji{font-size:25px}.promo-banner{min-height:166px;padding:16px}.promo-copy{max-width:73%}.promo-copy h2{font-size:20px}.promo-art{font-size:54px;margin-right:-5px}#listings .vehicle-img{height:125px}#listings .card-body{padding:9px}#listings .card h3{font-size:13px}#listings .price{font-size:16px}.partners-grid{gap:6px}.partners-grid>div{min-height:72px}.partners-grid strong{font-size:9px}.bottom-nav button{font-size:9px}}
     @media(min-width:760px){.market-main{padding-top:22px}.promo-banner{min-height:220px}.promo-art{font-size:110px}#listings.grid{grid-template-columns:repeat(3,minmax(0,1fr))}#listings .vehicle-img{height:190px}}
 
+  
+    /* Ajuste final de organização, respiro e alinhamento entre todos os elementos */
+    :root{--space-1:6px;--space-2:10px;--space-3:14px;--space-4:18px;--space-5:24px;--space-6:30px}
+    html{scroll-behavior:smooth}
+    body{line-height:1.5}
+    button,input,select,textarea{font:inherit}
+    button{line-height:1.25;white-space:normal}
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ffb36d;outline-offset:2px}
+    .app-header{gap:18px;padding:18px clamp(16px,4vw,34px);min-height:96px}
+    .header-brand{min-width:0}
+    .header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .market-main{width:min(100%,1180px);margin:0 auto;padding:22px clamp(12px,2.5vw,24px) 36px}
+    .location-row{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:center;margin:0 0 16px;padding:11px 16px;min-height:58px}
+    .location-row select{min-width:0;width:100%;padding:9px 10px;line-height:1.35}
+    .search-panel{width:100%;min-height:68px;gap:12px;padding:10px 14px;margin-bottom:20px}
+    .search-panel input{min-height:44px}
+    .search-panel select{min-width:0;max-width:220px}
+    .categories{margin:20px 0 28px;gap:12px}
+    .cat{min-width:0;min-height:112px;padding:14px 10px;line-height:1.3;overflow-wrap:anywhere}
+    .promo-banner{margin:28px 0 30px;gap:22px}
+    .promo-copy{padding:4px 0}
+    .promo-copy p{line-height:1.55}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:30px 0 16px;min-height:34px}
+    .section-head h2{margin:0;line-height:1.25}
+    #listings.grid{gap:18px}
+    #listings .card{min-width:0;display:flex;flex-direction:column}
+    #listings .vehicle-img{width:100%;overflow:hidden}
+    #listings .card-body{display:flex;flex-direction:column;gap:8px;padding:16px}
+    #listings .card h3{margin:0;min-height:2.5em;overflow-wrap:anywhere}
+    #listings .price,#listings .meta{margin:0}
+    #listings .listing-chat{width:100%;margin-top:8px;min-height:42px}
+    .partners-section{margin:34px 0 16px}
+    .partners-grid{gap:12px}
+    .partners-grid>div{padding:14px 8px;gap:6px;line-height:1.35}
+    .panel{margin:26px 0;padding:24px;line-height:1.5}
+    .panel h2,.panel h3{margin:0 0 16px;line-height:1.25}
+    .form-grid{gap:18px 20px}
+    .field{gap:8px;min-width:0}
+    .field label{line-height:1.35}
+    .field input,.field select,.field textarea{min-height:48px}
+    .field textarea{resize:vertical}
+    .hint{line-height:1.6}
+    .status{margin:16px 0;padding:13px 15px;line-height:1.5}
+    .chat-shell{gap:18px}
+    .chat-list,.chat-thread{padding:16px}
+    .chat-compose{gap:12px}
+    footer{line-height:1.6;padding:28px 18px 34px}
+    .bottom-nav{gap:8px;padding-left:clamp(8px,2vw,18px);padding-right:clamp(8px,2vw,18px)}
+    .bottom-nav button{min-width:0;line-height:1.2}
+    @media(max-width:760px){
+      .app-header{align-items:center;gap:12px;padding:15px 14px;min-height:82px}
+      .header-actions{gap:7px}
+      .icon-action{width:40px;height:40px}
+      .market-main{padding:16px 14px 30px}
+      .location-row{grid-template-columns:auto minmax(0,1fr);gap:8px 10px;padding:10px 12px}
+      .location-row select{grid-column:2;min-height:42px}
+      .location-row select+select{border-top:1px solid #e6ebf3;padding-top:8px}
+      .search-panel{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;padding:12px;margin-bottom:18px}
+      .search-panel .search-symbol{grid-row:1}
+      .search-panel input{grid-column:2;min-height:44px}
+      .search-panel .search-divider{display:none}
+      .search-panel select{grid-column:1/-1;width:100%;max-width:none;min-height:46px;border:1px solid #e1e7f0;border-radius:10px;padding:10px 12px}
+      .search-panel button{grid-column:1/-1;width:100%;min-height:46px}
+      .categories{gap:10px;margin:18px 0 24px}
+      .cat{min-height:104px;padding:12px 7px;font-size:12px}
+      .promo-banner{margin:24px 0;gap:12px}
+      .section-head{margin:26px 0 14px}
+      #listings.grid{gap:12px}
+      #listings .card-body{gap:7px;padding:12px}
+      .panel{padding:18px;margin:20px 0}
+      .form-grid{gap:15px}
+      .partners-grid{gap:9px}
+      .bottom-nav{gap:4px;padding-top:7px}
+    }
+    @media(max-width:420px){
+      .app-header{padding:13px 12px}
+      .brand{font-size:23px}
+      .tag{font-size:11px}
+      .header-actions{gap:5px}
+      .icon-action{width:36px;height:36px;font-size:21px}
+      .market-main{padding-left:11px;padding-right:11px}
+      .cat{min-height:98px}
+      #listings.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      #listings .vehicle-img{height:118px}
+      #listings .card-body{padding:10px}
+      #listings .card h3{font-size:13px}
+      #listings .listing-chat{font-size:11px;padding:8px}
+      .partners-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .promo-copy{max-width:76%}
+      .promo-art{font-size:48px}
+      .bottom-nav button{font-size:9px;padding-left:1px;padding-right:1px}
+    }
+
   </style>
 </head>
 <body>

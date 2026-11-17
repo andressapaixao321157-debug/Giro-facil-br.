@@ -66,45 +66,80 @@
     .chat-bubble.mine{background:#fff0df;align-self:flex-end}
     .chat-compose{display:flex;gap:8px;align-items:flex-end;margin-top:10px}.chat-compose textarea{flex:1;min-width:0}
     @media(max-width:620px){.chat-shell{grid-template-columns:1fr}.chat-list{max-height:170px;overflow:auto}.chat-messages{height:230px}}
+  
+    /* Novo visual inspirado no layout de referência do Giro Fácil BR */
+    :root{--navy:#071b43;--navy2:#102b5d;--orange:#ff7900;--bg:#eef3fb;--ink:#101b33}
+    body{background:#edf2fa;padding-bottom:88px}
+    .app-header{background:linear-gradient(120deg,#06183c,#102c61);color:#fff;padding:18px 22px 20px;display:flex;align-items:center;justify-content:space-between;min-height:105px}
+    .brand{font-size:clamp(25px,5vw,34px);font-weight:950;letter-spacing:-.7px}.brand span{color:#ff7900}.tag{font-size:13px;color:#d7e3fa;margin-top:4px}
+    .header-actions{display:flex;gap:10px}.icon-action{width:44px;height:44px;border-radius:50%;padding:0;background:transparent;color:#fff;border:1px solid #8295b8;font-size:25px}
+    .market-main{max-width:1180px;padding:15px 18px 28px}
+    .location-row{display:flex;align-items:center;gap:9px;margin:0 2px 13px;padding:9px 14px;border:1px solid #a9bad8;border-radius:24px;color:#ff7900;background:#fff}
+    .location-row select{border:0;background:transparent;padding:3px;color:#152746;font-weight:700;flex:1;outline:0}
+    .search-panel{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 16px;background:#fff;border:3px solid #ff7900;border-radius:19px;box-shadow:0 5px 16px #102b5d18}
+    .search-panel .search-symbol{font-size:29px;color:#14264a;line-height:1}
+    .search-panel input{border:0;min-width:0;flex:1;padding:10px 2px;background:transparent;font-size:16px;outline:0}
+    .search-divider{height:34px;width:1px;background:#cbd5e1}
+    .search-panel select{width:auto;max-width:100px;border:0;padding:8px 2px;background:transparent;font-weight:700;font-size:13px}
+    .search-panel button{border-radius:12px;padding:12px 15px}
+    .categories{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:17px 0 20px}
+    .cat{border:1px solid #d5deed;background:linear-gradient(145deg,#fff,#f4f7fc);border-radius:15px;min-height:102px;padding:11px 4px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;color:#152746;font-size:13px;box-shadow:0 5px 14px #12264a12}
+    .cat .emoji{font-size:30px;margin:0}.cat:active{transform:scale(.97)}
+    .promo-banner{display:flex;align-items:center;justify-content:space-between;overflow:hidden;min-height:180px;padding:20px 22px;border-radius:20px;background:linear-gradient(115deg,#071b43 0%,#142e5b 65%,#ef7b14 65%,#ffad43 100%);color:#fff;box-shadow:0 8px 22px #071b4326}
+    .promo-copy{max-width:68%;position:relative;z-index:1}.promo-label{display:inline-block;background:#ff7900;color:#fff;font-weight:900;font-size:11px;padding:6px 10px;border-radius:20px}
+    .promo-copy h2{font-size:clamp(20px,4vw,28px);line-height:1.08;margin:9px 0}.promo-copy p{font-size:13px;color:#e0e8f7;margin:6px 0 12px}.promo-copy button{padding:10px 14px;border-radius:22px;background:#ff7900;color:white}
+    .promo-art{font-size:74px;filter:drop-shadow(0 7px 8px #0005);margin-right:4px}
+    .section-head{margin:22px 0 12px}.section-head h2{font-size:21px;color:#101b33}
+    #listings.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    #listings .card{border:1px solid #d8e0ec;border-radius:16px;background:#fff;box-shadow:0 5px 15px #0b214018}
+    #listings .vehicle-img{height:150px;background:#dfe8f5}
+    #listings .card-body{padding:11px}
+    #listings .card h3{font-size:15px;margin:0 0 6px;color:#152746}
+    #listings .price{font-size:18px;color:#ef790e}
+    #listings .meta{font-size:12px;color:#52627d}
+    #listings .listing-chat{font-size:12px;padding:9px}
+    .partners-section{margin:24px 0 8px}
+    .partners-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .partners-grid>div{min-height:78px;padding:10px 5px;border-radius:14px;background:linear-gradient(145deg,#fff,#f1f5fc);border:1px solid #d9e2ef;box-shadow:0 4px 12px #0b214012;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-size:22px;color:#ef790e}
+    .partners-grid strong{font-size:11px;color:#172746}.partners-grid small{font-size:10px;color:#64748b}
+    .bottom-nav{grid-template-columns:repeat(5,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));}
+    .bottom-nav button{font-size:10px;min-height:55px}
+    .bottom-nav button .nav-icon{font-size:22px}
+    .bottom-nav .nav-publish .nav-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#ff7900;color:#fff;font-size:32px;box-shadow:0 4px 12px #ff790055}
+    .bottom-nav .nav-publish{color:#172746}
+    .bottom-nav button.active{color:#ef790e;background:#fff5eb}
+    @media(max-width:430px){.app-header{padding:16px 18px}.market-main{padding:12px 12px 24px}.location-row{margin-bottom:10px}.search-panel{gap:6px;padding:7px 9px 7px 12px}.search-panel input{font-size:14px}.search-panel select{max-width:72px;font-size:11px}.search-panel button{padding:11px 10px;font-size:12px}.categories{gap:6px;margin:14px 0 16px}.cat{font-size:11px;min-height:88px;padding:8px 2px}.cat .emoji{font-size:25px}.promo-banner{min-height:166px;padding:16px}.promo-copy{max-width:73%}.promo-copy h2{font-size:20px}.promo-art{font-size:54px;margin-right:-5px}#listings .vehicle-img{height:125px}#listings .card-body{padding:9px}#listings .card h3{font-size:13px}#listings .price{font-size:16px}.partners-grid{gap:6px}.partners-grid>div{min-height:72px}.partners-grid strong{font-size:9px}.bottom-nav button{font-size:9px}}
+    @media(min-width:760px){.market-main{padding-top:22px}.promo-banner{min-height:220px}.promo-art{font-size:110px}#listings.grid{grid-template-columns:repeat(3,minmax(0,1fr))}#listings .vehicle-img{height:190px}}
+
   </style>
 </head>
 <body>
-<header>
-  <div><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Compra, venda e aluguel em todo o Brasil</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="ghost" id="loginOpen">Minha conta</button>
-    <button id="announceTop">+ Anunciar</button>
-  </div>
+<header class="app-header">
+  <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Compra, venda e aluguel em todo o Brasil</div></div>
+  <div class="header-actions"><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
-<main>
-  <section class="hero">
-    <div>
-      <h1>O que você está procurando hoje?</h1>
-      <p>Encontre oportunidades em veículos e imóveis. Compare opções e fale diretamente com quem anuncia.</p>
-      <div class="search">
-        <input id="searchText" placeholder="Ex.: Corolla, Honda, casa..." aria-label="Buscar anúncios">
-        <select id="searchCategory" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option></select>
-        <button id="searchBtn">Buscar</button>
-      </div>
-    </div>
-    <div class="hero-art" aria-hidden="true">🚗 🏍️ 🏠</div>
+<main class="market-main">
+  <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha sua região"><option value="">Brasil - Escolha sua região</option><option>Rondonópolis - MT</option><option>Lucas do Rio Verde - MT</option><option>São Paulo - SP</option><option>Juazeiro do Norte - CE</option></select><span>⌄</span></div>
+  <section class="search-panel">
+    <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
+    <span class="search-divider"></span><select id="searchCategory" aria-label="Filtros"><option value="">Filtros</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option></select>
+    <button id="searchBtn" aria-label="Buscar">Buscar</button>
   </section>
-
   <section class="categories" aria-label="Categorias">
-    <div class="cat" data-cat="Carro"><span class="emoji">🚗</span>Carros</div>
-    <div class="cat" data-cat="Moto"><span class="emoji">🏍️</span>Motos</div>
-    <div class="cat" data-cat="Caminhão"><span class="emoji">🚚</span>Caminhões</div>
-    <div class="cat" data-cat="Imóvel para venda"><span class="emoji">🏠</span>Imóveis à venda</div>
-    <div class="cat" data-cat="Imóvel para aluguel"><span class="emoji">🔑</span>Aluguel</div>
+    <button class="cat" data-cat="Carro"><span class="emoji">🚘</span>Carros</button>
+    <button class="cat" data-cat="Moto"><span class="emoji">🏍️</span>Motos</button>
+    <button class="cat" data-cat="Caminhão"><span class="emoji">🚚</span>Caminhões</button>
+    <button class="cat" data-cat="Imóvel para venda"><span class="emoji">⌂</span>Imóveis</button>
+    <button class="cat" data-cat="Imóvel para aluguel"><span class="emoji">🔑</span>Aluguel</button>
   </section>
-  <section class="sponsor-slot" aria-label="Espaço para parceiros">
-    <div><strong>Seu negócio em destaque no Giro Fácil BR</strong><span>Espaço reservado para concessionárias, imobiliárias e parceiros comerciais.</span></div>
-    <span style="font-weight:800;color:#ed7414">Publicidade</span>
+  <section class="promo-banner" aria-label="Espaço patrocinado">
+    <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
+    <div class="promo-art" aria-hidden="true">🚙</div>
   </section>
-
-  <div class="section-head"><h2>Anúncios em destaque</h2><span class="hint">Anúncios aprovados</span></div>
-  <div id="listingStatus" class="status">Configure a conexão com o Supabase para carregar os anúncios.</div>
+  <div class="section-head"><h2>🔥 Destaques da semana</h2><span class="hint">Ver todos ›</span></div>
+  <div id="listingStatus" class="status">Carregando anúncios...</div>
   <section id="listings" class="grid"></section>
+  <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
 
   <section id="authPanel" class="panel hidden">
     <h2 id="authTitle">Entrar no Giro Fácil</h2>
@@ -191,10 +226,10 @@
 <nav class="bottom-nav" aria-label="Navegação principal">
   <button type="button" class="active" id="navHome"><span class="nav-icon">⌂</span>Início</button>
   <button type="button" id="navSearch"><span class="nav-icon">⌕</span>Buscar</button>
-  <button type="button" id="navAnnounce"><span class="nav-icon">＋</span>Anunciar</button>
+  <button type="button" id="navAnnounce" class="nav-publish"><span class="nav-icon">＋</span>Anunciar</button>
   <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>
-  <button type="button" id="navMessages"><span class="nav-icon">✉</span>Mensagens</button>
-  <button type="button" id="navAccount"><span class="nav-icon">♙</span>Conta</button>
+  <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
+  <button type="button" id="navMessages" class="hidden">Mensagens</button>
 </nav>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil</footer>
 
@@ -242,6 +277,7 @@
   $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
   $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
+  $("partnerInfo").onclick=()=>{openAuth();status("authStatus","Entre na sua conta e fale com nossa equipe pelo chat para conhecer os espaços de divulgação.");};
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
   $("cancelPublish").onclick=()=>$("publishPanel").classList.add("hidden");
   $("closePayment").onclick=()=>$("paymentPanel").classList.add("hidden");

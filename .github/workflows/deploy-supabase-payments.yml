@@ -31,6 +31,7 @@ jobs:
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
             ASAAS_SINGLE_AD_PRICE="10.00" \
             ASAAS_MONTHLY_PLAN_PRICE="59.00"
+          supabase db push --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy asaas-create-payment --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy asaas-webhook --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy admin-dashboard --project-ref "$SUPABASE_PROJECT_REF"

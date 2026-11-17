@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     const orderKind = kind === "boost" ? "boost" : kind === "store" ? "store" : kind;
     const { data: order, error: orderError } = await admin.from("payment_orders").insert({
       user_id: user.id, listing_id: listingId, kind: orderKind, billing_type: billingType,
-      amount, status: "CREATING", asaas_customer_id: customerId, plan_code: planCode, duration_days: durationDays || null,
+      amount, status: "CREATING", asaas_customer_id: customerId,
     }).select("id").single();
     if (orderError) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
@@ -134,9 +134,17 @@ Deno.serve(async (req) => {
       });
       const subscription = await subscriptionResponse.json();
       if (!subscriptionResponse.ok) throw new Error(subscription.errors?.[0]?.description || "O Asaas não conseguiu criar a assinatura.");
-      await admin.from("payment_orders").update({
+      if (kind === "store") {
+        const { error: storeError } = await admin.from("store_plans").insert({
+          order_id: order.id, user_id: user.id, store_name: storeName, plan_code: planCode,
+          amount, status: "awaiting_payment",
+        });
+        if (storeError) throw new Error("Assinatura criada, mas não foi possível registrar o plano da loja.");
+      }
+      const { error: subscriptionOrderError } = await admin.from("payment_orders").update({
         asaas_subscription_id: subscription.id, status: "AWAITING_FIRST_PAYMENT",
       }).eq("id", order.id);
+      if (subscriptionOrderError) throw new Error("Assinatura criada, mas não foi possível atualizar o pedido.");
       const listResponse = await fetch(`${apiUrl}/subscriptions/${subscription.id}/payments`, { headers });
       let firstPayment: any = null;
       if (listResponse.ok) { const list = await listResponse.json(); firstPayment = list.data?.[0] || null; }
@@ -192,13 +200,6 @@ Deno.serve(async (req) => {
         duration_days: durationDays, amount, reach_multiplier: reachMultiplierForAmount(amount), status: "awaiting_payment",
       });
       if (error) throw new Error("Cobrança criada, mas não foi possível registrar o turbinamento.");
-    }
-    if (kind === "store") {
-      const { error } = await admin.from("store_plans").insert({
-        order_id: order.id, user_id: user.id, store_name: storeName, plan_code: planCode,
-        amount, status: "awaiting_payment",
-      });
-      if (error) throw new Error("Cobrança criada, mas não foi possível registrar o plano da loja.");
     }
 
     return json({

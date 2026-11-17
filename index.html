@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101827">
-  <title>Giro Fácil BR | Veículos e imóveis</title>
-  <meta name="description" content="Anuncie e encontre veículos e imóveis para venda ou aluguel em todo o Brasil.">
+  <title>Giro Fácil BR | Marketplace do Brasil</title>
+  <meta name="description" content="Compre, venda e alugue veículos, imóveis, máquinas, embarcações, roupas e produtos em todo o Brasil.">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{--navy:#101827;--navy2:#17243a;--orange:#ff8a24;--ink:#172033;--muted:#64748b;--bg:#f4f6fa;--line:#e5eaf1}
@@ -119,18 +119,23 @@
   <div class="header-actions"><button class="icon-action" id="navMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
 <main class="market-main">
-  <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha sua região"><option value="">Brasil - Escolha sua região</option><option>Rondonópolis - MT</option><option>Lucas do Rio Verde - MT</option><option>São Paulo - SP</option><option>Juazeiro do Norte - CE</option></select><span>⌄</span></div>
+  <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select></div>
   <section class="search-panel">
     <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
-    <span class="search-divider"></span><select id="searchCategory" aria-label="Filtros"><option value="">Filtros</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option></select>
+    <span class="search-divider"></span><select id="searchCategory" aria-label="Categorias"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option></select>
     <button id="searchBtn" aria-label="Buscar">Buscar</button>
   </section>
   <section class="categories" aria-label="Categorias">
     <button class="cat" data-cat="Carro"><span class="emoji">🚘</span>Carros</button>
     <button class="cat" data-cat="Moto"><span class="emoji">🏍️</span>Motos</button>
     <button class="cat" data-cat="Caminhão"><span class="emoji">🚚</span>Caminhões</button>
-    <button class="cat" data-cat="Imóvel para venda"><span class="emoji">⌂</span>Imóveis</button>
+    <button class="cat" data-cat="Utilitário"><span class="emoji">🚐</span>Utilitários</button>
+    <button class="cat" data-cat="Máquinas e equipamentos"><span class="emoji">🚜</span>Máquinas</button>
+    <button class="cat" data-cat="Embarcações"><span class="emoji">🛥️</span>Embarcações</button>
+    <button class="cat" data-cat="Imóvel para venda"><span class="emoji">🏠</span>Imóveis</button>
     <button class="cat" data-cat="Imóvel para aluguel"><span class="emoji">🔑</span>Aluguel</button>
+    <button class="cat" data-cat="Roupas e acessórios"><span class="emoji">👕</span>Roupas</button>
+    <button class="cat" data-cat="Objetos e diversos"><span class="emoji">📦</span>Objetos</button>
   </section>
   <section class="promo-banner" aria-label="Espaço patrocinado">
     <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
@@ -154,17 +159,17 @@
 
   <section id="publishPanel" class="panel hidden">
     <h2>Publicar anúncio</h2>
-    <p class="hint">Anuncie veículos ou imóveis para venda e aluguel. O anúncio ficará pendente até a aprovação do administrador. Adicione fotos para apresentar melhor seu anúncio.</p>
+    <p class="hint">Anuncie veículos, utilitários, máquinas, embarcações, imóveis, roupas e diversos produtos para venda ou aluguel. O anúncio ficará pendente até a aprovação do administrador.</p>
     <div id="publishStatus" class="status hidden"></div>
     <div class="form-grid">
       <div class="field full"><label for="title">Título do anúncio</label><input id="title" placeholder="Ex.: Toyota Corolla XEi 2020"></div>
-      <div class="field"><label for="category">Categoria do anúncio</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option></select></div>
+      <div class="field"><label for="category">Categoria do anúncio</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option></select></div>
       <div class="field"><label for="brand">Marca (se veículo)</label><input id="brand" placeholder="Ex.: Toyota"></div>
       <div class="field"><label for="model">Modelo / tipo do imóvel</label><input id="model" placeholder="Ex.: Corolla XEi ou casa"></div>
       <div class="field"><label for="year">Ano (se veículo)</label><input id="year" type="number" min="1950" max="2100" placeholder="2020"></div>
       <div class="field"><label for="price">Preço em R$</label><input id="price" type="number" min="0" step="0.01" placeholder="85000"></div>
-      <div class="field"><label for="city">Cidade</label><input id="city" placeholder="Sua cidade"></div>
-      <div class="field"><label for="state">Estado (UF)</label><input id="state" maxlength="2" placeholder="MT"></div>
+      <div class="field"><label for="state">Estado</label><select id="state"><option value="">Carregando Estados...</option></select></div>
+      <div class="field"><label for="city">Cidade</label><select id="city" disabled><option value="">Escolha primeiro o Estado</option></select></div>
       <div class="field"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" placeholder="65999999999"></div>
       <div class="field"><label for="photos">Fotos (até 5 MB cada)</label><input id="photos" type="file" accept="image/*" multiple><span class="hint">Você pode selecionar várias fotos do veículo ou imóvel.</span></div>
       <div class="field full"><label for="description">Descrição</label><textarea id="description" rows="4" placeholder="Conte mais sobre o veículo..."></textarea></div>
@@ -230,7 +235,7 @@
   <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>
   <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
 </nav>
-<footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil</footer>
+<footer>© <span id="yearNow"></span> Giro Fácil BR · Marketplace de produtos em todo o Brasil</footer>
 
 <script>
   // COLE AQUI a URL do projeto e a chave anon/public do Supabase.
@@ -437,8 +442,9 @@
     let q=db.from("anuncios").select("*").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
     if(cat && cat!=="Filtros")q=q.eq("categoria",cat);
-    const region=$("locationFilter")?.value||"";
-    if(region){const parts=region.split(" - ");if(parts.length===2){q=q.ilike("cidade",`%${parts[0]}%`).ilike("estado",parts[1]);}}
+    const uf=$("locationFilter")?.value||"", city=$("cityFilter")?.value||"";
+    if(uf)q=q.eq("estado",uf);
+    if(city)q=q.eq("cidade",city);
     if(term)q=q.or(`titulo.ilike.%${term}%,marca.ilike.%${term}%,modelo.ilike.%${term}%`);
     const {data,error}=await q;
     if(error){status("listingStatus","Não foi possível carregar os anúncios. Confira as permissões do banco.","err");return;}
@@ -459,16 +465,45 @@
       $("listings").appendChild(card);
     });
   }
+
+  // Localidades oficiais do IBGE: Estados e municípios carregados conforme a seleção.
+  const IBGE_API="https://servicodados.ibge.gov.br/api/v1/localidades";
+  async function fillStates(selectId, placeholder){
+    const el=$(selectId);if(!el)return;
+    try{
+      const response=await fetch(IBGE_API+"/estados?orderBy=nome");
+      if(!response.ok)throw new Error("Falha ao consultar IBGE");
+      const states=await response.json();
+      el.innerHTML='<option value="">'+placeholder+'</option>';
+      states.forEach(uf=>{const op=document.createElement("option");op.value=uf.sigla;op.textContent=uf.nome+" - "+uf.sigla;el.appendChild(op);});
+    }catch(err){el.innerHTML='<option value="">Não foi possível carregar Estados</option>';console.error(err);}
+  }
+  async function fillMunicipalities(citySelectId, uf){
+    const el=$(citySelectId);if(!el)return;
+    el.innerHTML='<option value="">'+(uf?"Carregando municípios...":"Todas as cidades")+'</option>';el.disabled=!uf;
+    if(!uf)return;
+    try{
+      const response=await fetch(IBGE_API+"/estados/"+encodeURIComponent(uf)+"/municipios?orderBy=nome");
+      if(!response.ok)throw new Error("Falha ao consultar municípios do IBGE");
+      const cities=await response.json();el.innerHTML='<option value="">Todas as cidades</option>';
+      cities.forEach(city=>{const op=document.createElement("option");op.value=city.nome;op.textContent=city.nome;el.appendChild(op);});
+      el.disabled=false;
+    }catch(err){el.innerHTML='<option value="">Erro ao carregar cidades</option>';console.error(err);}
+  }
+  async function initializeLocations(){await Promise.all([fillStates("locationFilter","Brasil inteiro · Todos os Estados"),fillStates("state","Selecione o Estado")]);}
+  $("state").addEventListener("change",()=>fillMunicipalities("city",$("state").value));
+  initializeLocations();
   function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
-  $("locationFilter").onchange=()=>{favoritesOnly=false;loadListings();};
+  $("locationFilter").onchange=async()=>{favoritesOnly=false;await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
+  $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
   $("publishBtn").onclick=async()=>{
     if(!db||!currentUser)return;
     const title=$("title").value.trim(),brand=$("brand").value.trim(),model=$("model").value.trim(),price=Number($("price").value);
     const category=$("category").value;
-    const isProperty=category.startsWith("Imóvel");
-    if(!title||!price||price<0||(!isProperty&&(!brand||!model))){status("publishStatus",isProperty?"Preencha título e preço do imóvel.":"Preencha título, marca, modelo e preço.","err");return;}
+    const isVehicle=["Carro","Moto","Caminhão","Utilitário"].includes(category);
+    if(!title||!price||price<0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e preço.":"Preencha título e preço do anúncio.","err");return;}
     $("publishBtn").disabled=true;
     try{
       const urls=[],files=[...$("photos").files];
@@ -481,7 +516,7 @@
         if(upErr)throw upErr;
         const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
       }
-      const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||null,modelo:model||null,ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value.trim(),estado:$("state").value.trim().toUpperCase(),fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
+      const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||null,modelo:model||null,ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
       const {data:createdListing,error}=await db.from("anuncios").insert(payload).select("id").single();if(error)throw error;
       pendingListingId=createdListing.id;
       status("publishStatus","Anúncio enviado! Agora escolha o pagamento avulso ou o plano mensal. A aprovação do administrador continua necessária.","ok");

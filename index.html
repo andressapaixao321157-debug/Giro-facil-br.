@@ -289,7 +289,7 @@
     data.forEach(item=>{
       const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-      const wa=(item.whatsapp||"").replace(/\\D/g,"");
+      const wa=(item.whatsapp||"").replace(/\D/g,"");
       const msg=encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.titulo}`);
       const reach=reachByListing.get(item.id)||1;
       const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";

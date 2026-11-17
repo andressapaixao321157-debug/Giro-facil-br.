@@ -30,9 +30,12 @@ Deno.serve(async (req) => {
       .insert({ event_id: payload.id, event_type: payload.event, payload })
       .select("event_id").single();
     if (eventError) {
-      if (eventError.code === "23505") return new Response("OK", { status: 200 });
-      console.error("Webhook persistence error", eventError);
-      return new Response("Could not persist event", { status: 500 });
+      if (eventError.code !== "23505") {
+        console.error("Webhook persistence error", eventError);
+        return new Response("Could not persist event", { status: 500 });
+      }
+      // Evento duplicado pode ser uma repetição após falha transitória; continue
+      // o processamento idempotente em vez de descartá-lo.
     }
 
     const payment = payload.payment;
@@ -42,17 +45,31 @@ Deno.serve(async (req) => {
       if (externalReference) query = query.eq("id", externalReference);
       else if (payment.subscription) query = query.eq("asaas_subscription_id", payment.subscription);
       else query = query.eq("asaas_payment_id", payment.id);
-      const { data: order } = await query.maybeSingle();
+      let { data: order, error: orderLookupError } = await query.maybeSingle();
+      if (orderLookupError) throw orderLookupError;
+      if (!order && externalReference && payment.subscription) {
+        const fallback = await admin.from("payment_orders").select("*")
+          .eq("asaas_subscription_id", payment.subscription).maybeSingle();
+        order = fallback.data;
+        if (fallback.error) throw fallback.error;
+      }
+      if (!order && externalReference) {
+        const fallback = await admin.from("payment_orders").select("*")
+          .eq("asaas_payment_id", payment.id).maybeSingle();
+        order = fallback.data;
+        if (fallback.error) throw fallback.error;
+      }
 
       if (order) {
         const paid = ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"].includes(payload.event);
         const refunded = ["PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED"].includes(payload.event);
         const nextStatus = paid ? "PAID" : refunded ? "REFUNDED" :
           payload.event === "PAYMENT_OVERDUE" ? "OVERDUE" : order.status;
-        await admin.from("payment_orders").update({
+        const { error: paymentUpdateError } = await admin.from("payment_orders").update({
           status: nextStatus, asaas_payment_id: payment.id,
           updated_at: new Date().toISOString(),
         }).eq("id", order.id);
+        if (paymentUpdateError) throw paymentUpdateError;
 
         if (order.kind === "single" && order.listing_id && paid) {
           await admin.from("anuncios").update({ pagamento_status: "pago" })
@@ -72,13 +89,17 @@ Deno.serve(async (req) => {
 
         if (order.kind === "boost") {
           if (paid) {
-            const { data: boost } = await admin.from("ad_boosts").select("id,duration_days").eq("order_id", order.id).maybeSingle();
-            if (boost) {
+            const { data: boost, error: boostLookupError } = await admin.from("ad_boosts")
+              .select("id,duration_days,status").eq("order_id", order.id).maybeSingle();
+            if (boostLookupError) throw boostLookupError;
+            // Repetir o webhook não reinicia o prazo de um destaque já ativo.
+            if (boost && boost.status === "awaiting_payment") {
               const starts = new Date();
               const ends = new Date(starts.getTime() + Number(boost.duration_days) * 86400000);
-              await admin.from("ad_boosts").update({
+              const { error: boostUpdateError } = await admin.from("ad_boosts").update({
                 status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
               }).eq("id", boost.id);
+              if (boostUpdateError) throw boostUpdateError;
             }
           } else if (refunded) {
             await admin.from("ad_boosts").update({ status: "refunded" }).eq("order_id", order.id);

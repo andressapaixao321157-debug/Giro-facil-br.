@@ -20,6 +20,10 @@ const BOOSTS: Record<string, { amount: number; days: number }> = {
 };
 const STORES: Record<string, number> = { loja_basica: 99, loja_pro: 199, loja_premium: 399 };
 
+// O valor maior compra prioridade de exposição, não uma quantidade garantida de compradores.
+const reachMultiplierForAmount = (amount: number) =>
+  amount >= 150 ? 10 : amount >= 90 ? 7 : amount >= 60 ? 5 : amount >= 35 ? 3 : 2;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
@@ -185,7 +189,7 @@ Deno.serve(async (req) => {
     if (kind === "boost") {
       const { error } = await admin.from("ad_boosts").insert({
         order_id: order.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
-        duration_days: durationDays, amount, status: "awaiting_payment",
+        duration_days: durationDays, amount, reach_multiplier: reachMultiplierForAmount(amount), status: "awaiting_payment",
       });
       if (error) throw new Error("Cobrança criada, mas não foi possível registrar o turbinamento.");
     }

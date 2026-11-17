@@ -36,6 +36,10 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install
+      - name: Validate JavaScript syntax
+        run: |
+          node -e "const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim()); if(!scripts.length) throw new Error('Nenhum script inline encontrado'); fs.writeFileSync('/tmp/giro-inline.js',scripts.join('\\n'));"
+          node --check /tmp/giro-inline.js
       - name: Prepare web assets
         run: |
           mkdir -p www

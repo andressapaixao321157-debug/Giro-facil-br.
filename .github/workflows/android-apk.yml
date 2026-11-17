@@ -29,6 +29,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      # Keep the same Android debug certificate between clean GitHub runners.
+      # Without this cache, every APK gets a new signing key and Android refuses updates.
+      - name: Restore persistent Android debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: giro-facil-br-debug-keystore-v1
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
       - name: Install Android SDK packages
@@ -53,6 +60,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+      - name: Verify APK signature and application ID
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='br.com.girofacil.app'"
+          ls -lh "$APK"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

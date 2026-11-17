@@ -43,6 +43,27 @@ Deno.serve(async (req) => {
       .select("papel").eq("id", authData.user.id).maybeSingle();
     if (profileError || profile?.papel !== "admin") return reply({ error: "Acesso restrito ao administrador." }, 403);
 
+    const body = await req.json().catch(() => ({}));
+    if (body?.action === "moderate_listing") {
+      const listingId = String(body.listingId ?? "");
+      const nextStatus = String(body.status ?? "");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(listingId)) {
+        return reply({ error: "ID de anúncio inválido." }, 400);
+      }
+      if (!["ativo", "rejeitado"].includes(nextStatus)) {
+        return reply({ error: "Status de moderação inválido." }, 400);
+      }
+      const { data: listing, error: moderationError } = await admin.from("anuncios")
+        .update({ status: nextStatus })
+        .eq("id", listingId)
+        .eq("status", "pendente")
+        .select("id,status")
+        .maybeSingle();
+      if (moderationError) throw moderationError;
+      if (!listing) return reply({ error: "Anúncio pendente não encontrado ou já moderado." }, 404);
+      return reply({ success: true, listing });
+    }
+
     const [users, ads, pending, paid, orders, latestAds, boosts, stores] = await Promise.all([
       admin.from("perfis").select("id", { count: "exact", head: true }),
       admin.from("anuncios").select("id", { count: "exact", head: true }),

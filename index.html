@@ -56,6 +56,16 @@
     footer{padding-bottom:30px}
     @media(max-width:760px){main{padding:16px 14px}.hero{padding:24px 20px;border-radius:20px}.hero p{font-size:15px}.search{grid-template-columns:minmax(0,1fr);gap:9px}.search button{justify-self:start}.categories{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0 28px}.cat{min-height:108px;font-size:14px}.cat .emoji{font-size:30px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.vehicle-img{height:145px}.card-body{padding:12px}.card h3{font-size:15px}.price{font-size:18px}.sponsor-slot{align-items:flex-start;flex-direction:column;padding:18px}}
     @media(max-width:390px){.categories{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.section-head h2{font-size:21px}}
+
+    .chat-shell{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.5fr);gap:14px;min-height:360px}
+    .chat-list,.chat-thread{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;min-width:0}
+    .chat-list button{display:block;width:100%;text-align:left;background:#f5f7fa;color:var(--ink);margin:6px 0;padding:11px;border:1px solid var(--line)}
+    .chat-list button.selected{border-color:var(--orange);background:#fff7ef}
+    .chat-messages{height:260px;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:8px 2px}
+    .chat-bubble{max-width:85%;padding:10px 12px;border-radius:12px;background:#eef2f7;align-self:flex-start;overflow-wrap:anywhere}
+    .chat-bubble.mine{background:#fff0df;align-self:flex-end}
+    .chat-compose{display:flex;gap:8px;align-items:flex-end;margin-top:10px}.chat-compose textarea{flex:1;min-width:0}
+    @media(max-width:620px){.chat-shell{grid-template-columns:1fr}.chat-list{max-height:170px;overflow:auto}.chat-messages{height:230px}}
   </style>
 </head>
 <body>
@@ -126,6 +136,18 @@
     </div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
   </section>
+  <section id="chatPanel" class="panel hidden">
+    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose">Fechar</button></div>
+    <div id="chatStatus" class="status hidden"></div>
+    <div class="chat-shell">
+      <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
+      <div class="chat-thread">
+        <strong id="chatThreadTitle">Selecione uma conversa</strong>
+        <div id="chatMessages" class="chat-messages"><div class="hint">Suas conversas com compradores e vendedores aparecerão aqui.</div></div>
+        <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
+      </div>
+    </div>
+  </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
     <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal R$ 59,00 · Turbinamento e lojas com pagamento confirmado pelo Asaas.</p>
@@ -170,7 +192,8 @@
   <button type="button" class="active" id="navHome"><span class="nav-icon">⌂</span>Início</button>
   <button type="button" id="navSearch"><span class="nav-icon">⌕</span>Buscar</button>
   <button type="button" id="navAnnounce"><span class="nav-icon">＋</span>Anunciar</button>
-  <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
+  <button type="button" id="navMessages"><span class="nav-icon">✉</span>Mensagens</button>
+  <button type="button" id="navAccount"><span class="nav-icon">♙</span>Conta</button>
 </nav>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Veículos e imóveis para venda e aluguel em todo o Brasil</footer>
 
@@ -216,7 +239,7 @@
   $("loginOpen").onclick=openAuth;$("announceTop").onclick=openPublish;
   $("navHome").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
   $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
-  $("navAnnounce").onclick=openPublish;$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
+  $("navAnnounce").onclick=openPublish;$("navMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
   $("cancelPublish").onclick=()=>$("publishPanel").classList.add("hidden");
@@ -287,6 +310,61 @@
   }
   $("adminOpen").onclick=()=>{$("adminPanel").classList.remove("hidden");$("adminPanel").scrollIntoView({behavior:"smooth"});loadAdminDashboard();};
   $("adminRefresh").onclick=loadAdminDashboard;
+
+  let activeConversationId=null, activeConversationTitle="";
+  async function openChat(conversationId=null){
+    if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
+    if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar as mensagens.");return;}
+    $("chatPanel").classList.remove("hidden");$("chatPanel").scrollIntoView({behavior:"smooth"});
+    await loadConversations(conversationId);
+  }
+  async function loadConversations(selectId=null){
+    const {data,error}=await db.from("conversas").select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo)").or("comprador_id.eq."+currentUser.id+",vendedor_id.eq."+currentUser.id).order("ultima_mensagem_em",{ascending:false}).limit(50);
+    if(error){status("chatStatus","Não foi possível carregar conversas: "+error.message,"err");return;}
+    const list=$("chatConversationList");list.innerHTML="";
+    if(!data?.length){list.textContent="Você ainda não tem conversas. Abra um anúncio e toque em Enviar mensagem.";activeConversationId=null;return;}
+    data.forEach(conv=>{
+      const b=document.createElement("button");b.type="button";b.textContent=(conv.anuncios?.titulo||"Anúncio")+" · "+(conv.comprador_id===currentUser.id?"Você é comprador":"Você é vendedor");
+      b.classList.toggle("selected",conv.id===(selectId||activeConversationId));
+      b.onclick=()=>loadConversations(conv.id);list.appendChild(b);
+    });
+    const chosen=data.find(x=>x.id===(selectId||activeConversationId))||data[0];
+    activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";
+    $("chatThreadTitle").textContent=activeConversationTitle;
+    [...list.children].forEach((b,i)=>b.classList.toggle("selected",data[i].id===activeConversationId));
+    await loadMessages();
+  }
+  async function loadMessages(){
+    if(!activeConversationId)return;
+    const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);
+    if(error){status("chatStatus","Não foi possível carregar mensagens: "+error.message,"err");return;}
+    const box=$("chatMessages");box.innerHTML="";
+    (data||[]).forEach(m=>{const bubble=document.createElement("div");bubble.className="chat-bubble"+(m.remetente_id===currentUser.id?" mine":"");bubble.textContent=m.conteudo;box.appendChild(bubble);});
+    if(!data?.length){const empty=document.createElement("div");empty.className="hint";empty.textContent="Inicie a conversa enviando uma mensagem.";box.appendChild(empty);}
+    box.scrollTop=box.scrollHeight;
+  }
+  async function startListingChat(listingId,title,sellerId){
+    if(!currentUser){openAuth();status("authStatus","Entre ou crie uma conta para conversar com o anunciante.");return;}
+    if(sellerId===currentUser.id){status("chatStatus","Este é seu próprio anúncio. As mensagens recebidas aparecem na sua caixa de entrada.");await openChat();return;}
+    const {data:existing,error:findErr}=await db.from("conversas").select("id").eq("anuncio_id",listingId).eq("comprador_id",currentUser.id).maybeSingle();
+    if(findErr){alert("Não foi possível verificar a conversa: "+findErr.message);return;}
+    let id=existing?.id;
+    if(!id){const {data,error}=await db.from("conversas").insert({anuncio_id:listingId,comprador_id:currentUser.id,vendedor_id:sellerId}).select("id").single();if(error){alert("Não foi possível iniciar a conversa: "+error.message);return;}id=data.id;}
+    await openChat(id);
+    $("chatMessageInput").focus();
+  }
+  $("chatClose").onclick=()=>$("chatPanel").classList.add("hidden");
+  $("chatSend").onclick=async()=>{
+    const content=$("chatMessageInput").value.trim();if(!content||!activeConversationId)return;
+    $("chatSend").disabled=true;
+    const {error}=await db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content});
+    if(error)status("chatStatus","Não foi possível enviar: "+error.message,"err");
+    else{$("chatMessageInput").value="";await loadMessages();await loadConversations(activeConversationId);}
+    $("chatSend").disabled=false;
+  };
+  document.addEventListener("click",e=>{const b=e.target.closest(".listing-chat");if(b)startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);});
+  setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000);
+
   $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
@@ -331,12 +409,10 @@
     data.forEach(item=>{
       const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-      const wa=(item.whatsapp||"").replace(/\D/g,"");
-      const msg=encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.titulo}`);
       const reach=reachByListing.get(item.id)||1;
       const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";
       const card=document.createElement("article");card.className="card";
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}" ${wa ? "" : "hidden"}>Tenho interesse</a></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
       $("listings").appendChild(card);
     });
   }

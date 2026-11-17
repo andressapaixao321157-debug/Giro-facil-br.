@@ -8,6 +8,8 @@ on:
       - "supabase/functions/asaas-create-payment/**"
       - "supabase/functions/asaas-webhook/**"
       - "supabase/functions/admin-dashboard/**"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
       - ".github/workflows/deploy-supabase-payments.yml"
 
 jobs:
@@ -20,15 +22,35 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: 2.122.1
-      - name: Deploy functions
+      - name: Validate deployment secrets
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
+          ASAAS_WEBHOOK_TOKEN: ${{ secrets.ASAAS_WEBHOOK_TOKEN }}
         run: |
           set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN"
-          test -n "$SUPABASE_PROJECT_REF"
+          if [[ "$SUPABASE_ACCESS_TOKEN" != sbp_* ]]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN inválido ou ausente. Cadastre um Personal Access Token Supabase que comece com sbp_. Não use a chave anon/publishable nem service_role."
+            exit 1
+          fi
+          test -n "$SUPABASE_PROJECT_REF" || { echo "::error::Cadastre SUPABASE_PROJECT_REF nas Actions secrets."; exit 1; }
+          test -n "$ASAAS_API_KEY" || { echo "::error::Cadastre ASAAS_API_KEY nas Actions secrets."; exit 1; }
+          test -n "$ASAAS_WEBHOOK_TOKEN" || { echo "::error::Cadastre ASAAS_WEBHOOK_TOKEN nas Actions secrets."; exit 1; }
+      - name: Deploy database and payment functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
+          ASAAS_WEBHOOK_TOKEN: ${{ secrets.ASAAS_WEBHOOK_TOKEN }}
+          ASAAS_API_URL: ${{ secrets.ASAAS_API_URL }}
+        run: |
+          set -euo pipefail
+          API_URL="${ASAAS_API_URL:-https://api-sandbox.asaas.com/v3}"
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
+            ASAAS_API_KEY="$ASAAS_API_KEY" \
+            ASAAS_API_URL="$API_URL" \
+            ASAAS_WEBHOOK_TOKEN="$ASAAS_WEBHOOK_TOKEN" \
             ASAAS_SINGLE_AD_PRICE="10.00" \
             ASAAS_MONTHLY_PLAN_PRICE="59.00"
           supabase db push --project-ref "$SUPABASE_PROJECT_REF"

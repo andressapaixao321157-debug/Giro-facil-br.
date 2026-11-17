@@ -237,7 +237,8 @@
       const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores]];
       $("adminTotals").innerHTML=cards.map(([k,v])=>'<div class="panel"><strong>'+k+'</strong><div style="font-size:22px;margin-top:8px">'+v+'</div></div>').join("");
       $("adminOrders").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>ID</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Data</th></tr>'+data.orders.map(o=>'<tr><td>'+escapeHtml(o.id.slice(0,8))+'</td><td>'+escapeHtml(o.kind)+'</td><td>'+Number(o.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(o.status)+'</td><td>'+new Date(o.created_at).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
-      $("adminListings").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>Anúncio</th><th>Preço</th><th>Status</th><th>Data</th></tr>'+data.listings.map(a=>'<tr><td>'+escapeHtml(a.titulo)+'</td><td>'+Number(a.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(a.status)+'</td><td>'+new Date(a.criado_em).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
+      $("adminListings").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>Anúncio</th><th>Preço</th><th>Status</th><th>Data</th><th>Ação</th></tr>'+data.listings.map(a=>'<tr><td>'+escapeHtml(a.titulo)+'</td><td>'+Number(a.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(a.status)+'</td><td>'+new Date(a.criado_em).toLocaleDateString("pt-BR")+'</td><td>'+(a.status==="pendente"?'<button data-moderate="'+a.id+'" data-next-status="ativo">Aprovar</button> <button class="secondary" data-moderate="'+a.id+'" data-next-status="reprovado">Reprovar</button>':'—')+'</td></tr>').join("")+'</table>';
+      $("adminListings").onclick=async(ev)=>{const btn=ev.target.closest("[data-moderate]");if(!btn)return;btn.disabled=true;try{const {error}=await db.from("anuncios").update({status:btn.dataset.nextStatus}).eq("id",btn.dataset.moderate);if(error)throw error;await loadAdminDashboard();await loadListings();}catch(e){status("adminStatus",e.message||"Não foi possível atualizar o anúncio.","err");btn.disabled=false;}};
       status("adminStatus","Painel atualizado com dados do servidor.","ok");
     }catch(e){status("adminStatus",e.message||"Não foi possível carregar o painel.","err");}
     finally{$("adminRefresh").disabled=false;}
@@ -279,15 +280,21 @@
     if(term)q=q.or(`titulo.ilike.%${term}%,marca.ilike.%${term}%,modelo.ilike.%${term}%`);
     const {data,error}=await q;
     if(error){status("listingStatus","Não foi possível carregar os anúncios. Confira as permissões do banco.","err");return;}
+    const {data:activeBoosts}=await db.from("ad_boosts").select("listing_id,reach_multiplier").eq("status","active").gt("ends_at",new Date().toISOString());
+    const reachByListing=new Map();
+    (activeBoosts||[]).forEach(boost=>reachByListing.set(boost.listing_id,Math.max(reachByListing.get(boost.listing_id)||1,Number(boost.reach_multiplier)||1)));
+    (data||[]).sort((a,b)=>(reachByListing.get(b.id)||1)-(reachByListing.get(a.id)||1)||new Date(b.criado_em)-new Date(a.criado_em));
     $("listingStatus").classList.add("hidden");$("listings").innerHTML="";
     if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados. Seja o primeiro a anunciar!</div>';return;}
     data.forEach(item=>{
       const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-      const wa=(item.whatsapp||"").replace(/\D/g,"");
+      const wa=(item.whatsapp||"").replace(/\\D/g,"");
       const msg=encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.titulo}`);
+      const reach=reachByListing.get(item.id)||1;
+      const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";
       const card=document.createElement("article");card.className="card";
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}" ${wa ? "" : "hidden"}>Tenho interesse</a></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><h3>${escapeHtml(item.titulo)}</h3><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}" ${wa ? "" : "hidden"}>Tenho interesse</a></div>`;
       $("listings").appendChild(card);
     });
   }

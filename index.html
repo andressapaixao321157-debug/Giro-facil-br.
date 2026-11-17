@@ -238,7 +238,7 @@
     $("publishPanel").classList.remove("hidden");$("publishPanel").scrollIntoView({behavior:"smooth"});
   }
   $("loginOpen").onclick=openAuth;$("announceTop").onclick=openPublish;
-  $("navHome").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
+  $("navHome").onclick=()=>{favoritesOnly=false;loadListings();window.scrollTo({top:0,behavior:"smooth"});};
   $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
   $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
@@ -424,8 +424,8 @@
     });
   }
   function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-  $("searchBtn").onclick=loadListings;
-  document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{$("searchCategory").value=el.dataset.cat;loadListings();});
+  $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
+  document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
   $("publishBtn").onclick=async()=>{
     if(!db||!currentUser)return;
     const title=$("title").value.trim(),brand=$("brand").value.trim(),model=$("model").value.trim(),price=Number($("price").value);

@@ -2,6 +2,13 @@ name: Deploy Supabase payment functions
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/asaas-create-payment/**"
+      - "supabase/functions/asaas-webhook/**"
+      - "supabase/functions/admin-dashboard/**"
+      - ".github/workflows/deploy-supabase-payments.yml"
 
 jobs:
   deploy:
@@ -26,3 +33,4 @@ jobs:
             ASAAS_MONTHLY_PLAN_PRICE="59.00"
           supabase functions deploy asaas-create-payment --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy asaas-webhook --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+          supabase functions deploy admin-dashboard --project-ref "$SUPABASE_PROJECT_REF"

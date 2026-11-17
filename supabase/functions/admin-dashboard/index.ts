@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       admin.from("anuncios").select("id", { count: "exact", head: true }),
       admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "pendente"),
       admin.from("payment_orders").select("amount").eq("status", "PAID"),
-      admin.from("payment_orders").select("id,user_id,kind,amount,status,created_at,plan_code").order("created_at", { ascending: false }).limit(30),
+      admin.from("payment_orders").select("id,user_id,kind,amount,status,created_at").order("created_at", { ascending: false }).limit(30),
       admin.from("anuncios").select("id,titulo,preco,status,usuario_id,criado_em").order("criado_em", { ascending: false }).limit(30),
       admin.from("ad_boosts").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),

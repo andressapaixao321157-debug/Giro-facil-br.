@@ -2,9 +2,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const expectedToken = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
-  const receivedToken = req.headers.get("asaas-access-token");
+  const expectedToken = (Deno.env.get("ASAAS_WEBHOOK_TOKEN") ?? "").trim();
+  const receivedToken = (req.headers.get("asaas-access-token") ?? "").trim();
   if (!expectedToken || !receivedToken || receivedToken !== expectedToken) {
+    console.warn("Asaas webhook authentication mismatch", {
+      expectedConfigured: expectedToken.length > 0,
+      receivedHeaderPresent: receivedToken.length > 0,
+      expectedLength: expectedToken.length,
+      receivedLength: receivedToken.length,
+    });
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -108,13 +114,22 @@ Deno.serve(async (req) => {
 
         if (order.kind === "store") {
           if (paid) {
-            const starts = new Date();
-            const ends = new Date(starts); ends.setUTCMonth(ends.getUTCMonth() + 1);
-            await admin.from("store_plans").update({
-              status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
-            }).eq("order_id", order.id);
+            const { data: storePlan, error: storeLookupError } = await admin.from("store_plans")
+              .select("id,status").eq("order_id", order.id).maybeSingle();
+            if (storeLookupError) throw storeLookupError;
+            // Ativa uma única vez: reentregas do webhook não renovam indevidamente o mês.
+            if (storePlan && storePlan.status === "awaiting_payment") {
+              const starts = new Date();
+              const ends = new Date(starts); ends.setUTCMonth(ends.getUTCMonth() + 1);
+              const { error: storeUpdateError } = await admin.from("store_plans").update({
+                status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+              }).eq("id", storePlan.id).eq("status", "awaiting_payment");
+              if (storeUpdateError) throw storeUpdateError;
+            }
           } else if (refunded) {
-            await admin.from("store_plans").update({ status: "refunded" }).eq("order_id", order.id);
+            const { error: storeRefundError } = await admin.from("store_plans")
+              .update({ status: "refunded" }).eq("order_id", order.id);
+            if (storeRefundError) throw storeRefundError;
           }
         }
       }

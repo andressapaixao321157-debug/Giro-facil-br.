@@ -336,7 +336,7 @@
       <div class="field"><label for="state">Estado</label><select id="state"><option value="">Carregando Estados...</option></select></div>
       <div class="field"><label for="city">Cidade</label><select id="city" disabled><option value="">Escolha primeiro o Estado</option></select></div>
       <div class="field"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" placeholder="65999999999"></div>
-      <div class="field"><label for="photos">Fotos (até 5 MB cada)</label><input id="photos" type="file" accept="image/*" multiple><span class="hint">Você pode selecionar várias fotos do veículo ou imóvel.</span></div>
+      <div class="field"><label for="photos">Fotos (até 5 MB cada)</label><input id="photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple><span class="hint">Você pode selecionar várias fotos do veículo ou imóvel.</span></div>
       <div class="field full"><label for="description">Descrição</label><textarea id="description" rows="4" placeholder="Conte mais sobre o veículo..."></textarea></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
@@ -674,7 +674,7 @@
     try{
       const urls=[],files=[...$("photos").files];
       for(const file of files){
-        if(!file.type.startsWith("image/"))throw new Error("Envie somente imagens.");
+        if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type))throw new Error("Formato não aceito. Envie fotos JPG, PNG, WEBP ou GIF.");
         if(file.size>5*1024*1024)throw new Error("Cada foto deve ter no máximo 5 MB.");
         const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
         const path=`${currentUser.id}/${Date.now()}-${safe}`;

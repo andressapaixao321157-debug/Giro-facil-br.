@@ -342,7 +342,7 @@
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
   </section>
   <section id="chatPanel" class="panel hidden">
-    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose">Fechar</button></div>
+    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="assistantOpen" type="button">Assistente virtual IA</button><button class="secondary" id="chatClose">Fechar</button></div></div>
     <div id="chatStatus" class="status hidden"></div>
     <div class="chat-shell">
       <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
@@ -352,6 +352,16 @@
         <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
       </div>
     </div>
+  </section>
+  <section id="assistantPanel" class="panel hidden">
+    <div class="section-head"><h2>Assistente virtual Giro Fácil</h2><button class="secondary" id="assistantClose" type="button">Fechar</button></div>
+    <p class="hint">Tire dúvidas sobre cadastro, anúncios, compras, vendas e uso da plataforma. Para acessar, entre na sua conta.</p>
+    <div id="assistantStatus" class="status hidden"></div>
+    <div id="assistantMessages" class="chat-messages" aria-live="polite" style="height:320px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff">
+      <div class="chat-bubble">Olá! Sou o assistente virtual do Giro Fácil BR. Como posso ajudar?</div>
+    </div>
+    <div class="chat-compose"><textarea id="assistantInput" rows="2" maxlength="4000" placeholder="Digite sua dúvida..." aria-label="Mensagem para o assistente"></textarea><button id="assistantSend" type="button">Enviar</button></div>
+    <p class="hint">Não envie senhas, códigos de acesso ou dados completos de cartão.</p>
   </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
@@ -576,6 +586,42 @@
     $("chatMessageInput").focus();
   }
   $("chatClose").onclick=()=>$("chatPanel").classList.add("hidden");
+  let assistantHistory=[];
+  function addAssistantBubble(content, mine=false){
+    const bubble=document.createElement("div");
+    bubble.className="chat-bubble"+(mine?" mine":"");
+    bubble.textContent=content;
+    $("assistantMessages").appendChild(bubble);
+    $("assistantMessages").scrollTop=$("assistantMessages").scrollHeight;
+  }
+  $("assistantOpen").onclick=()=>{
+    if(!currentUser){openAuth();status("authStatus","Entre na sua conta para conversar com o assistente virtual.");return;}
+    $("assistantPanel").classList.remove("hidden");
+    $("assistantPanel").scrollIntoView({behavior:"smooth"});
+    $("assistantInput").focus();
+  };
+  $("assistantClose").onclick=()=>$("assistantPanel").classList.add("hidden");
+  async function sendAssistantMessage(){
+    const message=$("assistantInput").value.trim();
+    if(!message)return;
+    if(!currentUser){openAuth();status("authStatus","Entre na sua conta para usar o assistente virtual.");return;}
+    $("assistantSend").disabled=true;
+    $("assistantInput").value="";
+    addAssistantBubble(message,true);
+    try{
+      const {data,error}=await db.functions.invoke("giro-assistant",{body:{message,history:assistantHistory}});
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+      if(!data?.answer)throw new Error("O assistente não retornou uma resposta.");
+      assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:data.answer}].slice(-10);
+      addAssistantBubble(data.answer,false);
+    }catch(err){
+      const messageError=err?.message||"Não foi possível conectar ao assistente. Tente novamente.";
+      addAssistantBubble("Não consegui responder agora: "+messageError,false);
+    }finally{$("assistantSend").disabled=false;$("assistantInput").focus();}
+  }
+  $("assistantSend").onclick=sendAssistantMessage;
+  $("assistantInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
   $("chatSend").onclick=async()=>{
     const content=$("chatMessageInput").value.trim();if(!content||!activeConversationId)return;
     $("chatSend").disabled=true;

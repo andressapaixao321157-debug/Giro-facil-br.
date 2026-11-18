@@ -319,7 +319,7 @@
       <div class="field full"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="voce@email.com"></div>
       <div class="field full"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" placeholder="Mínimo de 6 caracteres"></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="authSubmit">Entrar</button><button class="secondary" id="toggleSignup">Criar conta</button><button class="ghost" id="closeAuth" style="color:#334155;border-color:#cbd5e1">Fechar</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="authSubmit">Entrar</button><button class="secondary" id="toggleSignup">Criar conta</button><button class="ghost" id="forgotPassword" style="color:#334155;border-color:#cbd5e1">Esqueci minha senha</button><button class="ghost" id="closeAuth" style="color:#334155;border-color:#cbd5e1">Fechar</button></div>
   </section>
 
   <section id="publishPanel" class="panel hidden">
@@ -464,16 +464,32 @@
       if(signupMode){
         const name=$("fullName").value.trim();if(!name)throw new Error("Informe seu nome.");
         const {data,error}=await db.auth.signUp({email,password,options:{data:{nome:name}}});if(error)throw error;
-        if(data.user && data.session){
+        if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+          status("authStatus","Este e-mail já possui cadastro. Entre com sua senha ou use “Esqueci minha senha” para recuperar o acesso.","err");
+        } else if(data.user && data.session){
           await db.from("perfis").upsert({id:data.user.id,nome:name});
-          status("authStatus","Conta criada! Você já pode anunciar.","ok");
-        } else status("authStatus","Cadastro iniciado. Confira seu e-mail e confirme o endereço antes de entrar.","ok");
+          status("authStatus","Conta criada e acesso liberado! Você já pode anunciar.","ok");
+        } else {
+          status("authStatus","Cadastro recebido. A confirmação depende da entrega do e-mail pelo serviço de autenticação. Confira também a pasta de spam; se a mensagem não chegar, use “Esqueci minha senha” após configurar o envio de e-mails.","ok");
+        }
       } else {
         const {error}=await db.auth.signInWithPassword({email,password});if(error)throw error;
         $("authPanel").classList.add("hidden");
       }
     }catch(e){status("authStatus",e.message||"Não foi possível concluir.","err");}
     finally{$("authSubmit").disabled=false;}
+  };
+  $("forgotPassword").onclick=async()=>{
+    if(!db)return;
+    const email=$("email").value.trim();
+    if(!email){status("authStatus","Digite seu e-mail para receber as instruções de recuperação.","err");$("email").focus();return;}
+    $("forgotPassword").disabled=true;
+    try{
+      const {error}=await db.auth.resetPasswordForEmail(email);
+      if(error)throw error;
+      status("authStatus","Se houver uma conta para este endereço, as instruções de recuperação serão enviadas. Confira a caixa de entrada e o spam.","ok");
+    }catch(e){status("authStatus",e.message||"Não foi possível solicitar a recuperação da senha.","err");}
+    finally{$("forgotPassword").disabled=false;}
   };
   function updatePaymentFields(){
     const kind=$("paymentKind").value, boost=kind==="boost", store=kind==="store";

@@ -259,6 +259,18 @@
       .bottom-nav button{min-width:0;overflow-wrap:anywhere}
     }
 
+  
+    /* Busca e categorias: alinhamento consistente em telas pequenas e grandes */
+    .search-panel{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(150px,210px) auto;align-items:center;}
+    .search-panel .search-divider{display:none}
+    .search-panel select{width:100%;max-width:none;min-height:44px;border:1px solid #e0e6ef;border-radius:10px;padding:10px 12px;background:#fff}
+    .search-panel button{min-width:104px;min-height:44px}
+    .categories{grid-template-columns:repeat(5,minmax(0,1fr));}
+    .cat{overflow-wrap:anywhere;word-break:normal;}
+    #seeAllListings{padding:9px 13px;border-radius:10px;font-size:13px}
+    @media(max-width:760px){.search-panel{grid-template-columns:24px minmax(0,1fr);gap:8px}.search-panel input{grid-column:2}.search-panel select,.search-panel button{grid-column:1/-1;width:100%;max-width:none}.categories{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
+    @media(max-width:430px){.categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cat{min-height:104px;padding:12px 8px;font-size:13px}.search-panel{display:grid;grid-template-columns:24px minmax(0,1fr);padding:10px 12px}.search-panel input{grid-column:2}.search-panel select,.search-panel button{grid-column:1/-1}}
+
   </style>
 </head>
 <body>
@@ -270,7 +282,7 @@
   <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select></div>
   <section class="search-panel">
     <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
-    <span class="search-divider"></span><select id="searchCategory" aria-label="Categorias"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option></select>
+    <span class="search-divider"></span><select id="searchCategory" aria-label="Categorias"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select>
     <button id="searchBtn" aria-label="Buscar">Buscar</button>
   </section>
   <section class="categories" aria-label="Categorias">
@@ -284,12 +296,17 @@
     <button class="cat" data-cat="Imóvel para aluguel"><span class="emoji">🔑</span>Aluguel</button>
     <button class="cat" data-cat="Roupas e acessórios"><span class="emoji">👕</span>Roupas</button>
     <button class="cat" data-cat="Objetos e diversos"><span class="emoji">📦</span>Objetos</button>
+    <button class="cat" data-cat="Móveis e decoração"><span class="emoji">🛋️</span>Móveis</button>
+    <button class="cat" data-cat="Eletrônicos"><span class="emoji">📱</span>Eletrônicos</button>
+    <button class="cat" data-cat="Casa e construção"><span class="emoji">🧰</span>Casa e construção</button>
+    <button class="cat" data-cat="Agro e pecuária"><span class="emoji">🌾</span>Agro e pecuária</button>
+    <button class="cat" data-cat="Esportes e lazer"><span class="emoji">⚽</span>Esportes e lazer</button>
   </section>
   <section class="promo-banner" aria-label="Espaço patrocinado">
     <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
     <div class="promo-art" aria-hidden="true">🚙</div>
   </section>
-  <div class="section-head"><h2>🔥 Destaques da semana</h2><span class="hint">Ver todos ›</span></div>
+  <div class="section-head"><h2>🔥 Destaques da semana</h2><button type="button" class="secondary" id="seeAllListings">Ver todos ›</button></div>
   <div id="listingStatus" class="status">Carregando anúncios...</div>
   <section id="listings" class="grid"></section>
   <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
@@ -307,11 +324,11 @@
 
   <section id="publishPanel" class="panel hidden">
     <h2>Publicar anúncio</h2>
-    <p class="hint">Anuncie veículos, utilitários, máquinas, embarcações, imóveis, roupas e diversos produtos para venda ou aluguel. O anúncio ficará pendente até a aprovação do administrador.</p>
+    <p class="hint">Anuncie veículos, utilitários, máquinas, embarcações, imóveis, roupas, móveis, eletrônicos, itens para casa, agro e lazer para venda ou aluguel. O anúncio ficará pendente até a aprovação do administrador.</p>
     <div id="publishStatus" class="status hidden"></div>
     <div class="form-grid">
       <div class="field full"><label for="title">Título do anúncio</label><input id="title" placeholder="Ex.: Toyota Corolla XEi 2020"></div>
-      <div class="field"><label for="category">Categoria do anúncio</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option></select></div>
+      <div class="field"><label for="category">Categoria do anúncio</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select></div>
       <div class="field"><label for="brand">Marca (se veículo)</label><input id="brand" placeholder="Ex.: Toyota"></div>
       <div class="field"><label for="model">Modelo / tipo do imóvel</label><input id="model" placeholder="Ex.: Corolla XEi ou casa"></div>
       <div class="field"><label for="year">Ano (se veículo)</label><input id="year" type="number" min="1950" max="2100" placeholder="2020"></div>
@@ -643,6 +660,7 @@
   initializeLocations();
   function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
+  $("seeAllListings").onclick=()=>{favoritesOnly=false;$("searchText").value="";$("searchCategory").value="";$("locationFilter").value="";$("cityFilter").innerHTML='<option value="">Todas as cidades</option>';$("cityFilter").disabled=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};
   $("locationFilter").onchange=async()=>{favoritesOnly=false;await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
   $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});

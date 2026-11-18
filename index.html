@@ -682,7 +682,7 @@
         if(upErr)throw upErr;
         const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
       }
-      const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||null,modelo:model||null,ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
+      const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
       const {data:createdListing,error}=await db.from("anuncios").insert(payload).select("id").single();if(error)throw error;
       pendingListingId=createdListing.id;
       status("publishStatus","Anúncio enviado! Agora escolha o pagamento avulso ou o plano mensal. A aprovação do administrador continua necessária.","ok");

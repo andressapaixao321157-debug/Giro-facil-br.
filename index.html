@@ -204,6 +204,61 @@
       .bottom-nav button{font-size:9px;padding-left:1px;padding-right:1px}
     }
 
+  
+    /* Correção definitiva do layout mobile: remove a mistura de grid com carrossel */
+    .categories{
+      display:grid !important;
+      grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+      grid-auto-flow:row !important;
+      grid-auto-columns:auto !important;
+      width:100%;
+      max-width:100%;
+      overflow:visible !important;
+      align-items:stretch;
+      min-width:0;
+    }
+    .categories .cat{
+      width:100%;
+      min-width:0;
+      max-width:100%;
+      box-sizing:border-box;
+      white-space:normal;
+      overflow:hidden;
+      overflow-wrap:anywhere;
+      word-break:normal;
+      text-align:center;
+      justify-content:center;
+    }
+    @media(max-width:760px){
+      .categories{
+        grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+        gap:10px !important;
+        margin:18px 0 24px !important;
+        padding:0 !important;
+      }
+      .categories .cat{min-height:108px;padding:12px 8px;font-size:13px;line-height:1.25}
+      .categories .cat .emoji{font-size:29px}
+    }
+    @media(max-width:430px){
+      .categories{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+        grid-auto-flow:row !important;
+        gap:10px !important;
+      }
+      .categories .cat{min-height:104px;padding:12px 8px;font-size:13px}
+      .categories .cat .emoji{font-size:30px}
+      .location-row{grid-template-columns:22px minmax(0,1fr) !important;gap:8px 10px}
+      .location-row select{grid-column:2;min-width:0;width:100%;max-width:100%}
+      .search-panel{grid-template-columns:24px minmax(0,1fr);width:100%;min-width:0}
+      .search-panel input{width:100%;min-width:0}
+      .search-panel select,.search-panel button{grid-column:1/-1;width:100%;max-width:none}
+      .app-header{min-width:0}
+      .header-brand{flex:1;min-width:0}
+      .header-actions{flex-shrink:0}
+      .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));}
+      .bottom-nav button{min-width:0;overflow-wrap:anywhere}
+    }
+
   </style>
 </head>
 <body>

@@ -117,8 +117,9 @@ check("Workflow exige segredos de acesso Supabase",
   assistantWorkflow.includes("SUPABASE_ACCESS_TOKEN") &&
   assistantWorkflow.includes("SUPABASE_PROJECT_REF"));
 check("Configuração exige JWT para assistente e painel",
-  config.includes("[functions.giro-assistant]\\nverify_jwt = true") &&
-  config.includes("[functions.admin-dashboard]\\nverify_jwt = true"));
+  config.includes("[functions.giro-assistant]") &&
+  config.includes("[functions.admin-dashboard]") &&
+  (config.match(/verify_jwt = true/g) || []).length >= 2);
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

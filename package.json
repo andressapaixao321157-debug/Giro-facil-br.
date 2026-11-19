@@ -4,7 +4,8 @@
   "private": true,
   "description": "Giro Fácil BR - marketplace de veículos e imóveis",
   "scripts": {
-    "build": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.copyFileSync('index.html','www/index.html');console.log('Giro Fácil web assets preparados em www/')\""
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.copyFileSync('index.html','www/index.html');console.log('Giro Fácil web assets preparados em www/')\"",
+    "test": "node scripts/smoke-test.js"
   },
   "dependencies": {
     "@capacitor/core": "^6.2.0"

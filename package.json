@@ -4,11 +4,12 @@
   "private": true,
   "description": "Giro Fácil BR - marketplace de veículos e imóveis",
   "scripts": {
-    "build": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.copyFileSync('index.html','www/index.html');console.log('Giro Fácil web assets preparados em www/')\"",
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('www/vendor',{recursive:true});fs.copyFileSync('index.html','www/index.html');fs.copyFileSync('node_modules/@supabase/supabase-js/dist/umd/supabase.js','www/vendor/supabase.js');console.log('Giro Fácil assets + Supabase SDK local preparados em www/')\"",
     "test": "node scripts/smoke-test.js"
   },
   "dependencies": {
-    "@capacitor/core": "^7.6.10"
+    "@capacitor/core": "^7.6.10",
+    "@supabase/supabase-js": "2.109.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.6.10",

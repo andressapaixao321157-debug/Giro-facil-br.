@@ -44,6 +44,11 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install
+      - name: Audit dependency vulnerabilities
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node -e "const a=require('/tmp/npm-audit.json'); console.log('Dependency audit:', JSON.stringify(a.metadata?.vulnerabilities || {})); for (const [name,v] of Object.entries(a.vulnerabilities || {})) console.log(name + ': ' + v.severity + '; direct=' + v.isDirect + '; fix=' + JSON.stringify(v.fixAvailable));"
+          npm ls tar glob --all || true
       - name: Validate JavaScript syntax
         run: |
           node -e "const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim()); if(!scripts.length) throw new Error('Nenhum script inline encontrado'); fs.writeFileSync('/tmp/giro-inline.js',scripts.join('\\n'));"

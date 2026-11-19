@@ -8,10 +8,10 @@
     "test": "node scripts/smoke-test.js"
   },
   "dependencies": {
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/core": "^7.6.10"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.2.0",
-    "@capacitor/android": "^6.2.0"
+    "@capacitor/cli": "^7.6.10",
+    "@capacitor/android": "^7.6.10"
   }
 }

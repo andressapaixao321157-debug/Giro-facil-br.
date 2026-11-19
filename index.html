@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#101827">
   <title>Giro Fácil BR | Marketplace do Brasil</title>
   <meta name="description" content="Compre, venda e alugue veículos, imóveis, máquinas, embarcações, roupas e produtos em todo o Brasil.">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="document.write('<scr'+'ipt src=&quot;https://unpkg.com/@supabase/supabase-js@2&quot;><\\/scr'+'ipt>')"></script>
   <style>
     :root{--navy:#101827;--navy2:#17243a;--orange:#ff8a24;--ink:#172033;--muted:#64748b;--bg:#f4f6fa;--line:#e5eaf1}
     *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
@@ -469,8 +469,12 @@
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); loadListings();});
     db.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAccount();});
+  } else if(!window.supabase) {
+    status("listingStatus","Não foi possível carregar o serviço de conexão. Verifique a internet do celular, feche e abra o Giro Fácil novamente. Se persistir, atualize o aplicativo.");
+    console.error("Supabase JS SDK indisponível: os CDNs principal e alternativo não carregaram.");
   } else {
-    status("listingStatus","Falta conectar o Supabase: substitua a URL e a chave anon/public no final do arquivo.");
+    status("listingStatus","Configuração do Supabase ausente ou inválida. A equipe técnica precisa revisar a conexão do aplicativo.");
+    console.error("Configuração Supabase inválida: confira URL e chave pública.");
   }
   async function updateAccount(){
     $("accountBar").classList.toggle("hidden",!currentUser);

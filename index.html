@@ -804,15 +804,19 @@
   $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
   $("publishBtn").onclick=async()=>{
-    if(!db||!currentUser)return;
+    if(!db){status("publishStatus","Conexão com o servidor indisponível. Feche e abra o Giro Fácil e tente novamente.","err");return;}
+    if(!currentUser){status("publishStatus","Sua sessão expirou. Entre novamente na sua conta antes de enviar o anúncio.","err");openAuth();return;}
     const title=$("title").value.trim(),brand=$("brand").value.trim(),model=$("model").value.trim(),price=Number($("price").value);
     const category=$("category").value;
     const isVehicle=["Carro","Moto","Caminhão","Utilitário"].includes(category);
     if(!title||!price||price<0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e preço.":"Preencha título e preço do anúncio.","err");return;}
     $("publishBtn").disabled=true;
+    status("publishStatus","Preparando seu anúncio...", "ok");
     try{
       const urls=[],files=[...$("photos").files];
-      for(const file of files){
+      for(let index=0;index<files.length;index++){
+        const file=files[index];
+        status("publishStatus",`Enviando foto ${index+1} de ${files.length}...`, "ok");
         if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type))throw new Error("Formato não aceito. Envie fotos JPG, PNG, WEBP ou GIF.");
         if(file.size>5*1024*1024)throw new Error("Cada foto deve ter no máximo 5 MB.");
         const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
@@ -821,10 +825,13 @@
         if(upErr)throw upErr;
         const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
       }
+      status("publishStatus","Fotos enviadas. Salvando o anúncio no servidor...", "ok");
       const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
-      const {data:createdListing,error}=await db.from("anuncios").insert(payload).select("id").single();if(error)throw error;
+      const {data:createdListing,error}=await db.from("anuncios").insert(payload).select("id").single();
+      if(error){console.error("Erro ao salvar anúncio",error);throw new Error(error.message||"O servidor não conseguiu salvar o anúncio.");}
+      if(!createdListing?.id)throw new Error("O servidor não confirmou o cadastro do anúncio.");
       pendingListingId=createdListing.id;
-      status("publishStatus","Anúncio enviado! Agora escolha o pagamento avulso ou o plano mensal. A aprovação do administrador continua necessária.","ok");
+      status("publishStatus","Anúncio enviado e salvo! Agora escolha o pagamento avulso ou o plano mensal. A aprovação administrativa continua necessária.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{if(el.type==="file")el.value="";else el.value="";});
       $("paymentKind").value="single";updatePaymentFields();$("paymentPanel").classList.remove("hidden");await loadOwnListings();$("paymentListingId").value=pendingListingId;$("paymentPanel").scrollIntoView({behavior:"smooth"});
     }catch(e){status("publishStatus",e.message||"Não foi possível publicar o anúncio.","err");}

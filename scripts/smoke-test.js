@@ -100,6 +100,11 @@ check("Upload de fotos usa bucket esperado e limite de 5 MB",
   html.includes("file.size>5*1024*1024"));
 check("Tipos de imagem aceitos estão definidos",
   html.includes('"image/jpeg","image/png","image/webp","image/gif"'));
+check("Publicação informa cada etapa e não falha silenciosamente sem sessão",
+  html.includes("Sua sessão expirou. Entre novamente") &&
+  html.includes("Enviando foto") &&
+  html.includes("Salvando o anúncio no servidor") &&
+  html.includes("O servidor não confirmou o cadastro do anúncio"));
 check("Anúncios novos entram como pendentes",
   html.includes('status:"pendente"'));
 check("Todos os IDs HTML são únicos",

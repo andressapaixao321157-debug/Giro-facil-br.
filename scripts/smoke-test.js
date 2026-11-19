@@ -3,10 +3,12 @@ const fs = require("node:fs");
 const html = fs.readFileSync("index.html", "utf8");
 const assistantPath = "supabase/functions/giro-assistant/index.ts";
 const adminPath = "supabase/functions/admin-dashboard/index.ts";
+const paymentPath = "supabase/functions/asaas-create-payment/index.ts";
 const assistantWorkflowPath = ".github/workflows/deploy-giro-assistant.yml";
 const configPath = "supabase/config.toml";
 const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
+const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
 const assistantWorkflow = fs.existsSync(assistantWorkflowPath) ? fs.readFileSync(assistantWorkflowPath, "utf8") : "";
 const config = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "";
 const checks = [];
@@ -59,8 +61,8 @@ check("Planos e pagamentos têm botão e painel separados",
   html.includes('$("paymentPanel").classList.remove("hidden")'));
 check("Pagamento usa função Asaas e limita tipos de cobrança",
   html.includes('db.functions.invoke("asaas-create-payment"') &&
-  html.includes('["single", "monthly", "boost", "store"]') &&
-  html.includes('["PIX", "BOLETO"]'));
+  payment.includes('["single", "monthly", "boost", "store"]') &&
+  payment.includes('["PIX", "BOLETO"]'));
 check("Chat de anúncios envia mensagem como usuário autenticado",
   html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
 check("Chat desabilita envio quando não existe conversa",

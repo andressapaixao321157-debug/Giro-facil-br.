@@ -141,13 +141,20 @@ Deno.serve(async (req: Request) => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       console.error("OpenAI API error", response.status, result?.error?.code ?? "unknown");
+      // Keep the in-app support usable when the AI provider is rate-limited
+      // or temporarily unavailable. Do not expose upstream 429/5xx to the app.
+      if (response.status === 429 || response.status >= 500) {
+        return respond({
+          answer: localAnswer(message),
+          mode: "ajuda-basica",
+          notice: "A resposta inteligente está temporariamente indisponível. O atendimento básico continua funcionando.",
+        });
+      }
       return respond({
         error: response.status === 401
-          ? "A chave de IA foi recusada. A equipe precisa revisar a configuração segura."
-          : response.status === 429
-            ? "O limite ou crédito da IA foi atingido. Tente novamente mais tarde."
-            : "Não foi possível gerar uma resposta agora. Tente novamente.",
-      }, response.status === 429 ? 429 : 502);
+          ? "A configuração segura da IA precisa ser revisada pela equipe."
+          : "Não foi possível gerar uma resposta agora. Tente novamente.",
+      }, 502);
     }
 
     const answer = typeof result.output_text === "string"

@@ -25,11 +25,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Setup Java 17
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       # Keep the same Android debug certificate between clean GitHub runners.
       # Without this cache, every APK gets a new signing key and Android refuses updates.
       - name: Restore persistent Android debug signing key

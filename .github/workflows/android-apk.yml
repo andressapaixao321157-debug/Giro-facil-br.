@@ -55,10 +55,8 @@ jobs:
           node --check /tmp/giro-inline.js
       - name: Run automated smoke tests
         run: npm test
-      - name: Prepare web assets
-        run: |
-          mkdir -p www
-          cp index.html www/index.html
+      - name: Prepare web assets including local Supabase SDK
+        run: npm run build
       - name: Generate Android project
         run: npx cap add android
       - name: Sync Android project

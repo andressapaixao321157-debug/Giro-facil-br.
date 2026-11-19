@@ -21,6 +21,15 @@ check("Assistente chama a função de backend esperada", html.includes('db.funct
 check("Painel administrativo chama a função de backend esperada", html.includes('db.functions.invoke("admin-dashboard"'));
 check("Tratamento de envio do assistente restaura botão", html.includes('sendButton.disabled=false;') && html.includes('sendButton.textContent="Enviar";'));
 check("Estilo das fotos evita sobreposição", html.includes("object-fit:cover") && html.includes("isolation:isolate"));
+// Detecta qualquer ID duplicado, não apenas os botões já conhecidos.
+const ids = [...html.matchAll(/\\bid\\s*=\\s*["']([^"']+)["']/g)].map(match => match[1]);
+const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+check("Todos os IDs HTML são únicos", duplicates.length === 0);
+check("Publicação usa o bucket correto de fotos", html.includes('db.storage.from("anuncios-fotos").upload'));
+check("Anúncios são enviados inicialmente como pendentes", html.includes('status:"pendente"'));
+check("Pagamento usa PIX ou boleto via Asaas", html.includes('db.functions.invoke("asaas-create-payment"'));
+check("Fotos têm limite de 5 MB e tipos permitidos", html.includes("file.size>5*1024*1024") && html.includes('"image/webp"'));
+check("Mensagens são enviadas pelo usuário autenticado", html.includes("remetente_id:currentUser.id"));
 const failed = checks.filter(x => !x.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\\n" + checks.length + " verificações; " + failed.length + " falhas.");

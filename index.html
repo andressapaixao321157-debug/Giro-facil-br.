@@ -271,6 +271,38 @@
     @media(max-width:760px){.search-panel{grid-template-columns:24px minmax(0,1fr);gap:8px}.search-panel input{grid-column:2}.search-panel select,.search-panel button{grid-column:1/-1;width:100%;max-width:none}.categories{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
     @media(max-width:430px){.categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cat{min-height:104px;padding:12px 8px;font-size:13px}.search-panel{display:grid;grid-template-columns:24px minmax(0,1fr);padding:10px 12px}.search-panel input{grid-column:2}.search-panel select,.search-panel button{grid-column:1/-1}}
 
+  
+    /* Correções de usabilidade, rolagem e sobreposição no celular */
+    html{scroll-padding-top:18px;scroll-padding-bottom:120px}
+    body{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+    main{overflow:visible}
+    .panel{min-width:0;overflow:hidden;overflow-wrap:anywhere}
+    .account-panel{display:block}
+    .account-email{display:block;margin-bottom:14px;overflow-wrap:anywhere}
+    .account-actions{display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch}
+    .account-actions .account-action{width:100%;min-height:54px;margin:0!important;white-space:normal}
+    .account-actions .account-logout{width:auto;justify-self:start;min-width:120px}
+    #assistantPanel .chat-messages{height:auto!important;min-height:180px;max-height:360px;overflow-y:auto;overscroll-behavior:contain}
+    #assistantPanel .chat-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+    #assistantPanel .chat-compose textarea{width:100%;min-width:0;min-height:58px;max-height:150px;resize:vertical}
+    #assistantPanel .chat-compose button{min-width:88px;min-height:48px;flex-shrink:0}
+    .chat-bubble{max-width:min(88%,620px);white-space:pre-wrap;overflow-wrap:anywhere}
+    #listings .card{min-width:0;overflow:hidden}
+    #listings .vehicle-img{position:relative;overflow:hidden}
+    #listings .vehicle-img img{display:block;width:100%;height:100%;object-fit:cover}
+    img,video,iframe{max-width:100%}
+    .bottom-nav{z-index:40;padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+    .bottom-nav button{min-width:0;overflow:hidden}
+    #paymentPanel,#adminPanel,#assistantPanel,#chatPanel{scroll-margin-bottom:120px}
+    @media(max-width:620px){
+      .account-actions{grid-template-columns:1fr}
+      .account-actions .account-logout{width:100%}
+      #assistantPanel .chat-compose{grid-template-columns:minmax(0,1fr) 88px}
+      #assistantPanel .chat-messages{max-height:300px}
+      .bottom-nav{gap:2px;padding-left:5px;padding-right:5px}
+      .bottom-nav button{font-size:9px;padding-left:1px;padding-right:1px}
+    }
+
   </style>
 </head>
 <body>
@@ -388,11 +420,13 @@
     <div id="paymentResult" class="hint" style="margin-top:12px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="payBtn">Gerar pagamento</button><button class="secondary" id="closePayment">Fechar</button></div>
   </section>
-  <section id="accountBar" class="panel hidden">
-    <span id="accountEmail"></span>
-    <button class="secondary" id="plansOpen" style="margin-left:10px">Planos e pagamentos</button>
-    <button class="secondary hidden" id="adminOpen" style="margin-left:10px">Painel administrativo</button>
-    <button class="secondary" id="logoutBtn" style="margin-left:10px">Sair</button>
+  <section id="accountBar" class="panel hidden account-panel">
+    <div id="accountEmail" class="account-email"></div>
+    <div class="account-actions">
+      <button class="secondary account-action" id="plansOpen" type="button">Planos e pagamentos</button>
+      <button class="secondary account-action hidden" id="adminOpen" type="button">Painel administrativo</button>
+      <button class="secondary account-action account-logout" id="logoutBtn" type="button">Sair</button>
+    </div>
   </section>
   <section id="adminPanel" class="panel hidden">
     <h2>Painel administrativo — Giro Fácil</h2>
@@ -540,7 +574,19 @@
     }catch(e){status("adminStatus",e.message||"Não foi possível carregar o painel.","err");}
     finally{$("adminRefresh").disabled=false;}
   }
-  $("adminOpen").onclick=()=>{$("adminPanel").classList.remove("hidden");$("adminPanel").scrollIntoView({behavior:"smooth"});loadAdminDashboard();};
+  $("plansOpen").onclick=async()=>{
+    if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar planos e pagamentos.");return;}
+    $("paymentPanel").classList.remove("hidden");
+    $("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    await loadOwnListings();
+    updatePaymentFields();
+  };
+  $("adminOpen").onclick=()=>{
+    if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar o painel administrativo.");return;}
+    $("adminPanel").classList.remove("hidden");
+    $("adminPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    loadAdminDashboard();
+  };
   $("adminRefresh").onclick=loadAdminDashboard;
 
   let activeConversationId=null, activeConversationTitle="";
@@ -602,23 +648,39 @@
   };
   $("assistantClose").onclick=()=>$("assistantPanel").classList.add("hidden");
   async function sendAssistantMessage(){
-    const message=$("assistantInput").value.trim();
+    const input=$("assistantInput");
+    const sendButton=$("assistantSend");
+    const message=input.value.trim();
     if(!message)return;
+    if(!db){status("assistantStatus","O serviço ainda não está conectado. Atualize a página e tente novamente.","err");return;}
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para usar o assistente virtual.");return;}
-    $("assistantSend").disabled=true;
-    $("assistantInput").value="";
+    if(sendButton.disabled)return;
+    sendButton.disabled=true;
+    sendButton.textContent="Enviando...";
+    input.value="";
     addAssistantBubble(message,true);
+    status("assistantStatus","Enviando sua mensagem para o assistente...");
     try{
       const {data,error}=await db.functions.invoke("giro-assistant",{body:{message,history:assistantHistory}});
-      if(error)throw error;
+      if(error){
+        const detail=error.message||"Falha ao chamar o serviço.";
+        throw new Error(detail);
+      }
       if(data?.error)throw new Error(data.error);
-      if(!data?.answer)throw new Error("O assistente não retornou uma resposta.");
+      if(typeof data?.answer!=="string"||!data.answer.trim())throw new Error("O assistente não retornou uma resposta.");
       assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:data.answer}].slice(-10);
       addAssistantBubble(data.answer,false);
+      $("assistantStatus").classList.add("hidden");
     }catch(err){
       const messageError=err?.message||"Não foi possível conectar ao assistente. Tente novamente.";
-      addAssistantBubble("Não consegui responder agora: "+messageError,false);
-    }finally{$("assistantSend").disabled=false;$("assistantInput").focus();}
+      addAssistantBubble("Não consegui responder agora: "+messageError+". Sua mensagem foi mantida para você tentar novamente.",false);
+      input.value=message;
+      status("assistantStatus","Falha no envio. Confira sua conexão e tente novamente.","err");
+    }finally{
+      sendButton.disabled=false;
+      sendButton.textContent="Enviar";
+      input.focus();
+    }
   }
   $("assistantSend").onclick=sendAssistantMessage;
   $("assistantInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});

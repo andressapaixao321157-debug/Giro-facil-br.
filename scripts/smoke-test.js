@@ -110,6 +110,24 @@ check("Assistente retorna erros sem expor credenciais",
   assistant.includes("Sessão inválida") &&
   assistant.includes("temporariamente indisponível"));
 
+
+check("Assistente usa a Responses API atual e modelo GPT-6.2 Astra por padrão",
+  assistant.includes('https://api.openai.com/v1/responses') &&
+  assistant.includes('"gpt-6.2-astra"') &&
+  assistant.includes("max_output_tokens"));
+check("Assistente desativa armazenamento de conversas na chamada de IA",
+  assistant.includes("store: false"));
+check("Assistente limita origens CORS e mantém suporte ao app Android",
+  assistant.includes("capacitor://localhost") &&
+  assistant.includes("https://girofacilbr.com.br") &&
+  assistant.includes("Vary"));
+check("Assistente valida JWT com token explícito",
+  assistant.includes('auth.getUser(token)') &&
+  assistant.includes('authHeader.startsWith("Bearer ")'));
+check("Assistente tem respostas de contingência quando não há chave IA",
+  assistant.includes("function localAnswer") &&
+  assistant.includes('mode: "ajuda-basica"'));
+
 // Deploy e autenticação das funções.
 check("Workflow de deploy do assistente existe",
   assistantWorkflow.includes("supabase functions deploy giro-assistant"));

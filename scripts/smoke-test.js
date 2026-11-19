@@ -105,7 +105,7 @@ check("A interface alerta para não enviar dados secretos",
 check("Função giro-assistant existe no repositório", assistant.length > 0);
 check("Assistente exige sessão autenticada do Supabase",
   assistant.includes('req.headers.get("Authorization")') &&
-  assistant.includes('authHeader.startsWith("Bearer ")') &&
+  assistant.includes('authHeader?.startsWith("Bearer ")') &&
   assistant.includes("supabase.auth.getUser(token)"));
 check("Assistente valida mensagem vazia e limite de 4.000 caracteres",
   assistant.includes("if (!message)") && assistant.includes("message.length > 4000"));
@@ -136,7 +136,7 @@ check("Assistente limita origens CORS e mantém suporte ao app Android",
   assistant.includes("Vary"));
 check("Assistente valida JWT com token explícito",
   assistant.includes('auth.getUser(token)') &&
-  assistant.includes('authHeader.startsWith("Bearer ")'));
+  assistant.includes('authHeader?.startsWith("Bearer ")'));
 check("Assistente tem respostas de contingência quando não há chave IA",
   assistant.includes("function localAnswer") &&
   assistant.includes('mode: "ajuda-basica"'));

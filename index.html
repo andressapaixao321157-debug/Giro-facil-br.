@@ -102,7 +102,7 @@
     .partners-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
     .partners-grid>div{min-height:78px;padding:10px 5px;border-radius:14px;background:linear-gradient(145deg,#fff,#f1f5fc);border:1px solid #d9e2ef;box-shadow:0 4px 12px #0b214012;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-size:22px;color:#ef790e}
     .partners-grid strong{font-size:11px;color:#172746}.partners-grid small{font-size:10px;color:#64748b}
-    .bottom-nav{grid-template-columns:repeat(5,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));}
+    .bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr));padding:8px 10px calc(8px + env(safe-area-inset-bottom));}
     .bottom-nav button{font-size:10px;min-height:55px}
     .bottom-nav button .nav-icon{font-size:22px}
     .bottom-nav .nav-publish .nav-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#ff7900;color:#fff;font-size:32px;box-shadow:0 4px 12px #ff790055}
@@ -137,7 +137,7 @@
     .section-head h2{margin:0;line-height:1.25}
     #listings.grid{gap:18px}
     #listings .card{min-width:0;display:flex;flex-direction:column}
-    #listings .vehicle-img{width:100%;overflow:hidden}
+    #listings .vehicle-img{position:relative;width:100%;height:190px;min-height:0;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:center}\n    #listings .vehicle-img img{position:static!important;display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:cover;object-position:center;flex:0 0 100%;z-index:auto}
     #listings .card-body{display:flex;flex-direction:column;gap:8px;padding:16px}
     #listings .card h3{margin:0;min-height:2.5em;overflow-wrap:anywhere}
     #listings .price,#listings .meta{margin:0}
@@ -291,7 +291,7 @@
     #listings .vehicle-img{position:relative;overflow:hidden}
     #listings .vehicle-img img{display:block;width:100%;height:100%;object-fit:cover}
     img,video,iframe{max-width:100%}
-    .bottom-nav{z-index:40;padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+    .bottom-nav{z-index:40;padding-bottom:calc(8px + env(safe-area-inset-bottom));grid-template-columns:repeat(6,minmax(0,1fr));}
     .bottom-nav button{min-width:0;overflow:hidden}
     #paymentPanel,#adminPanel,#assistantPanel,#chatPanel{scroll-margin-bottom:120px}
     @media(max-width:620px){
@@ -441,7 +441,7 @@
   <button type="button" class="active" id="navHome"><span class="nav-icon">⌂</span>Início</button>
   <button type="button" id="navSearch"><span class="nav-icon">⌕</span>Buscar</button>
   <button type="button" id="navAnnounce" class="nav-publish"><span class="nav-icon">＋</span>Anunciar</button>
-  <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>
+  <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>\n  <button type="button" id="navMessages"><span class="nav-icon">✉</span>Mensagens</button>
   <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
 </nav>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Marketplace de produtos em todo o Brasil</footer>
@@ -684,14 +684,22 @@
   }
   $("assistantSend").onclick=sendAssistantMessage;
   $("assistantInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
-  $("chatSend").onclick=async()=>{
-    const content=$("chatMessageInput").value.trim();if(!content||!activeConversationId)return;
-    $("chatSend").disabled=true;
-    const {error}=await db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content});
-    if(error)status("chatStatus","Não foi possível enviar: "+error.message,"err");
-    else{$("chatMessageInput").value="";await loadMessages();await loadConversations(activeConversationId);}
-    $("chatSend").disabled=false;
-  };
+  async function sendChatMessage(){
+    const input=$("chatMessageInput"),button=$("chatSend"),content=input.value.trim();
+    if(!content||!activeConversationId)return;
+    if(!db||!currentUser){status("chatStatus","Entre na sua conta para enviar mensagens.","err");return;}
+    if(button.disabled)return;
+    button.disabled=true;button.textContent="Enviando...";
+    try{
+      const {error}=await db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content});
+      if(error)throw error;
+      input.value="";status("chatStatus","Mensagem enviada.","ok");
+      await loadMessages();await loadConversations(activeConversationId);
+    }catch(err){status("chatStatus","Não foi possível enviar: "+(err?.message||"erro inesperado"),"err");}
+    finally{button.disabled=false;button.textContent="Enviar";input.focus();}
+  }
+  $("chatSend").onclick=sendChatMessage;
+  $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
   document.addEventListener("click",e=>{
     const b=e.target.closest(".listing-chat");if(b){startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
     const fav=e.target.closest(".favorite-toggle");if(fav){const id=fav.dataset.favoriteId;let ids=JSON.parse(localStorage.getItem("giro_favorites")||"[]");ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];localStorage.setItem("giro_favorites",JSON.stringify(ids));fav.textContent=ids.includes(id)?"♥":"♡";if(favoritesOnly)loadListings();}

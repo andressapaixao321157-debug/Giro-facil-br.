@@ -1,0 +1,51 @@
+name: Deploy Giro Fácil assistant
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/giro-assistant/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-giro-assistant.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+      - name: Validate deployment access
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          if [[ "$SUPABASE_ACCESS_TOKEN" != sbp_* ]]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN ausente ou inválido."
+            exit 1
+          fi
+          test -n "$SUPABASE_PROJECT_REF" || { echo "::error::SUPABASE_PROJECT_REF ausente."; exit 1; }
+      - name: Configure optional AI secret
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${OPENAI_MODEL:-}" ]]; then
+            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY" OPENAI_MODEL="$OPENAI_MODEL"
+          else
+            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY"
+          fi
+      - name: Deploy assistant function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy giro-assistant --project-ref "$SUPABASE_PROJECT_REF"

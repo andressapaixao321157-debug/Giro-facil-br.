@@ -105,7 +105,8 @@ check("A interface alerta para não enviar dados secretos",
 check("Função giro-assistant existe no repositório", assistant.length > 0);
 check("Assistente exige sessão autenticada do Supabase",
   assistant.includes('req.headers.get("Authorization")') &&
-  assistant.includes("userClient.auth.getUser()"));
+  assistant.includes('authHeader.startsWith("Bearer ")') &&
+  assistant.includes("supabase.auth.getUser(token)"));
 check("Assistente valida mensagem vazia e limite de 4.000 caracteres",
   assistant.includes("if (!message)") && assistant.includes("message.length > 4000"));
 check("Histórico do assistente é filtrado e limitado",
@@ -116,11 +117,11 @@ check("Assistente possui respostas básicas sem depender de chave externa",
   assistant.includes('mode: "ajuda-basica"'));
 check("Assistente usa chave de IA somente no servidor",
   assistant.includes('Deno.env.get("OPENAI_API_KEY")') &&
-  assistant.includes('https://api.openai.com/v1/chat/completions') &&
+  assistant.includes('https://api.openai.com/v1/responses') &&
   !html.includes("OPENAI_API_KEY"));
 check("Assistente retorna erros sem expor credenciais",
   assistant.includes("Sessão inválida") &&
-  assistant.includes("temporariamente indisponível"));
+  assistant.includes("Não foi possível gerar uma resposta agora"));
 
 
 check("Assistente usa a Responses API atual e modelo GPT-6.2 Astra por padrão",

@@ -1,36 +1,131 @@
 const fs = require("node:fs");
+const path = require("node:path");
+
 const html = fs.readFileSync("index.html", "utf8");
+const assistantPath = "supabase/functions/giro-assistant/index.ts";
+const adminPath = "supabase/functions/admin-dashboard/index.ts";
+const assistantWorkflowPath = ".github/workflows/deploy-giro-assistant.yml";
+const configPath = "supabase/config.toml";
+const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
+const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
+const assistantWorkflow = fs.existsSync(assistantWorkflowPath) ? fs.readFileSync(assistantWorkflowPath, "utf8") : "";
+const config = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "";
 const checks = [];
+
 function check(name, condition) {
   checks.push({ name, ok: Boolean(condition) });
 }
 function countId(id) {
-  const doubleQuoted = 'id="' + id + '"';
-  const singleQuoted = "id='" + id + "'";
-  return html.split(doubleQuoted).length - 1 + html.split(singleQuoted).length - 1;
+  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matches = [...html.matchAll(new RegExp('\\bid\\s*=\\s*["\\']' + escaped + '["\\']', "g"))];
+  return matches.length;
 }
-check("Botão de mensagens inferior possui ID único", countId("navMessages") === 1);
-check("Botão de mensagens do cabeçalho possui ID único", countId("headerMessages") === 1);
-check("Os dois botões de mensagens abrem o chat", html.includes('$("navMessages").onclick=()=>openChat()') && html.includes('$("headerMessages").onclick=()=>openChat()'));
-check("Assistente virtual tem botão próprio", countId("assistantOpen") === 1 && html.includes('$("assistantOpen").onclick='));
-check("Painel administrativo é separado", countId("adminPanel") === 1 && countId("adminOpen") === 1);
-check("Planos e pagamentos têm acesso separado", countId("paymentPanel") === 1 && countId("plansOpen") === 1);
-check("Chat bloqueia envio sem conversa selecionada", html.includes('$("chatMessageInput").disabled=true;$("chatSend").disabled=true;'));
-check("Chat permite envio após selecionar conversa", html.includes('$("chatMessageInput").disabled=false;$("chatSend").disabled=false;'));
-check("Assistente chama a função de backend esperada", html.includes('db.functions.invoke("giro-assistant"'));
-check("Painel administrativo chama a função de backend esperada", html.includes('db.functions.invoke("admin-dashboard"'));
-check("Tratamento de envio do assistente restaura botão", html.includes('sendButton.disabled=false;') && html.includes('sendButton.textContent="Enviar";'));
-check("Estilo das fotos evita sobreposição", html.includes("object-fit:cover") && html.includes("isolation:isolate"));
-// Detecta qualquer ID duplicado, não apenas os botões já conhecidos.
-const ids = [...html.matchAll(/(?:^|\s)id\s*=\s*["']([^"']+)["']/gm)].map(match => match[1]);
-const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
-check("Todos os IDs HTML são únicos", duplicates.length === 0);
-check("Publicação usa o bucket correto de fotos", html.includes('db.storage.from("anuncios-fotos").upload'));
-check("Anúncios são enviados inicialmente como pendentes", html.includes('status:"pendente"'));
-check("Pagamento usa PIX ou boleto via Asaas", html.includes('db.functions.invoke("asaas-create-payment"'));
-check("Fotos têm limite de 5 MB e tipos permitidos", html.includes("file.size>5*1024*1024") && html.includes('"image/webp"'));
-check("Mensagens são enviadas pelo usuário autenticado", html.includes("remetente_id:currentUser.id"));
-const failed = checks.filter(x => !x.ok);
+function hasId(id) {
+  return countId(id) === 1;
+}
+
+// Estrutura da interface e navegação.
+[
+  "navHome", "navSearch", "navAnnounce", "navFavorites", "navMessages",
+  "navAccount", "headerMessages", "chatPanel", "assistantPanel",
+  "assistantOpen", "assistantClose", "assistantInput", "assistantSend",
+  "paymentPanel", "plansOpen", "adminPanel", "adminOpen", "adminRefresh",
+  "chatConversationList", "chatMessages", "chatMessageInput", "chatSend",
+].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
+
+check("Navegação inferior e cabeçalho abrem mensagens",
+  html.includes('$("navMessages").onclick=()=>openChat()') &&
+  html.includes('$("headerMessages").onclick=()=>openChat()'));
+check("Botão do assistente abre painel próprio",
+  html.includes('$("assistantOpen").onclick=') &&
+  html.includes('$("assistantPanel").classList.remove("hidden")'));
+check("Envio do assistente por botão e Enter",
+  html.includes('$("assistantSend").onclick=sendAssistantMessage') &&
+  html.includes('$("assistantInput").addEventListener("keydown"'));
+check("Assistente desabilita botão durante envio e restaura ao finalizar",
+  html.includes('sendButton.disabled=true;') &&
+  html.includes('sendButton.disabled=false;') &&
+  html.includes('sendButton.textContent="Enviar";'));
+check("Erro do assistente preserva a mensagem para nova tentativa",
+  html.includes('input.value=message;') &&
+  html.includes("Falha no envio. Confira sua conexão"));
+check("Painel administrativo separado e protegido por papel admin",
+  hasId("adminPanel") && hasId("adminOpen") &&
+  html.includes('data?.papel==="admin"') &&
+  admin.includes('profile?.papel !== "admin"'));
+check("Painel administrativo consulta backend e modera anúncios",
+  html.includes('db.functions.invoke("admin-dashboard"') &&
+  admin.includes('action === "moderate_listing"') &&
+  admin.includes('["ativo", "rejeitado"]'));
+check("Planos e pagamentos têm botão e painel separados",
+  html.includes('$("plansOpen").onclick=') &&
+  html.includes('$("paymentPanel").classList.remove("hidden")'));
+check("Pagamento usa função Asaas e limita tipos de cobrança",
+  html.includes('db.functions.invoke("asaas-create-payment"') &&
+  html.includes('["single", "monthly", "boost", "store"]') &&
+  html.includes('["PIX", "BOLETO"]'));
+check("Chat de anúncios envia mensagem como usuário autenticado",
+  html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
+check("Chat desabilita envio quando não existe conversa",
+  html.includes('$("chatMessageInput").disabled=true;$("chatSend").disabled=true;'));
+check("Chat reabilita envio ao selecionar conversa",
+  html.includes('$("chatMessageInput").disabled=false;$("chatSend").disabled=false;'));
+
+// Imagens, publicação e proteção básica.
+check("Fotos usam contenção visual para evitar sobreposição",
+  html.includes("object-fit:cover") && html.includes("isolation:isolate") &&
+  html.includes("position:static!important"));
+check("Upload de fotos usa bucket esperado e limite de 5 MB",
+  html.includes('db.storage.from("anuncios-fotos").upload') &&
+  html.includes("file.size>5*1024*1024"));
+check("Tipos de imagem aceitos estão definidos",
+  html.includes('"image/jpeg","image/png","image/webp","image/gif"'));
+check("Anúncios novos entram como pendentes",
+  html.includes('status:"pendente"'));
+check("Todos os IDs HTML são únicos",
+  (() => {
+    const ids = [...html.matchAll(/(?:^|\\s)id\\s*=\\s*["']([^"']+)["']/gm)].map(m => m[1]);
+    return new Set(ids).size === ids.length;
+  })());
+check("A interface alerta para não enviar dados secretos",
+  html.includes("Não envie senhas, códigos de acesso ou dados completos de cartão"));
+
+// Backend do assistente: autenticação, validação, contexto e resposta.
+check("Função giro-assistant existe no repositório", assistant.length > 0);
+check("Assistente exige sessão autenticada do Supabase",
+  assistant.includes('req.headers.get("Authorization")') &&
+  assistant.includes("userClient.auth.getUser()"));
+check("Assistente valida mensagem vazia e limite de 4.000 caracteres",
+  assistant.includes("if (!message)") && assistant.includes("message.length > 4000"));
+check("Histórico do assistente é filtrado e limitado",
+  assistant.includes("body.history.slice(-8)") &&
+  assistant.includes('["user", "assistant"].includes(item.role)'));
+check("Assistente possui respostas básicas sem depender de chave externa",
+  assistant.includes("function localAnswer") &&
+  assistant.includes('mode: "ajuda-basica"'));
+check("Assistente usa chave de IA somente no servidor",
+  assistant.includes('Deno.env.get("OPENAI_API_KEY")') &&
+  assistant.includes('https://api.openai.com/v1/chat/completions') &&
+  !html.includes("OPENAI_API_KEY"));
+check("Assistente retorna erros sem expor credenciais",
+  assistant.includes("Sessão inválida") &&
+  assistant.includes("temporariamente indisponível"));
+
+// Deploy e autenticação das funções.
+check("Workflow de deploy do assistente existe",
+  assistantWorkflow.includes("supabase functions deploy giro-assistant"));
+check("Workflow exige segredos de acesso Supabase",
+  assistantWorkflow.includes("SUPABASE_ACCESS_TOKEN") &&
+  assistantWorkflow.includes("SUPABASE_PROJECT_REF"));
+check("Configuração exige JWT para assistente e painel",
+  config.includes("[functions.giro-assistant]\\nverify_jwt = true") &&
+  config.includes("[functions.admin-dashboard]\\nverify_jwt = true"));
+
+const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\\n" + checks.length + " verificações; " + failed.length + " falhas.");
-if (failed.length) process.exit(1);
+if (failed.length) {
+  console.error("\\nVerificações que precisam de correção:");
+  failed.forEach(item => console.error(" - " + item.name));
+  process.exit(1);
+}

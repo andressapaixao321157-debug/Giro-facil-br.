@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.admin-dashboard]
 verify_jwt = true
+
+[functions.giro-assistant]
+verify_jwt = true

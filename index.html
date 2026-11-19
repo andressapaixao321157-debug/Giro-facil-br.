@@ -309,7 +309,7 @@
 <body>
 <header class="app-header">
   <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Compra, venda e aluguel em todo o Brasil</div></div>
-  <div class="header-actions"><button class="icon-action" id="navMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
+  <div class="header-actions"><button class="icon-action" id="headerMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
 <main class="market-main">
   <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select></div>
@@ -491,7 +491,7 @@
   $("loginOpen").onclick=openAuth;$("announceTop").onclick=openPublish;
   $("navHome").onclick=()=>{favoritesOnly=false;loadListings();window.scrollTo({top:0,behavior:"smooth"});};
   $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
-  $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
+  $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("headerMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
   $("partnerInfo").onclick=()=>{openAuth();status("authStatus","Entre na sua conta e fale com nossa equipe pelo chat para conhecer os espaços de divulgação.");};
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");

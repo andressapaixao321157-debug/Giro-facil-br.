@@ -812,18 +812,30 @@
     if(!title||!price||price<0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e preço.":"Preencha título e preço do anúncio.","err");return;}
     $("publishBtn").disabled=true;
     status("publishStatus","Preparando seu anúncio...", "ok");
+    const uploadedPaths=[];
     try{
       const urls=[],files=[...$("photos").files];
       for(let index=0;index<files.length;index++){
         const file=files[index];
-        status("publishStatus",`Enviando foto ${index+1} de ${files.length}...`, "ok");
         if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type))throw new Error("Formato não aceito. Envie fotos JPG, PNG, WEBP ou GIF.");
         if(file.size>5*1024*1024)throw new Error("Cada foto deve ter no máximo 5 MB.");
         const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-        const path=`${currentUser.id}/${Date.now()}-${safe}`;
-        const {error:upErr}=await db.storage.from("anuncios-fotos").upload(path,file,{upsert:false,contentType:file.type});
-        if(upErr)throw upErr;
-        const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);urls.push(data.publicUrl);
+        const path=`${currentUser.id}/${Date.now()}-${index}-${safe}`;
+        let uploadError=null;
+        for(let attempt=1;attempt<=3;attempt++){
+          status("publishStatus",attempt===1
+            ? `Enviando foto ${index+1} de ${files.length}...`
+            : `Conexão instável. Tentativa ${attempt} de 3 para a foto ${index+1}...`, "ok");
+          const result=await db.storage.from("anuncios-fotos").upload(path,file,{upsert:true,contentType:file.type});
+          uploadError=result.error;
+          if(!uploadError)break;
+          console.warn("Falha no upload da foto",index+1,"tentativa",attempt,uploadError);
+          if(attempt<3)await new Promise(resolve=>setTimeout(resolve,700*attempt));
+        }
+        if(uploadError)throw new Error(`Não foi possível enviar a foto ${index+1} após 3 tentativas. Verifique a internet e tente novamente.`);
+        uploadedPaths.push(path);
+        const {data}=db.storage.from("anuncios-fotos").getPublicUrl(path);
+        urls.push(data.publicUrl);
       }
       status("publishStatus","Fotos enviadas. Salvando o anúncio no servidor...", "ok");
       const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
@@ -834,7 +846,16 @@
       status("publishStatus","Anúncio enviado e salvo! Agora escolha o pagamento avulso ou o plano mensal. A aprovação administrativa continua necessária.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{if(el.type==="file")el.value="";else el.value="";});
       $("paymentKind").value="single";updatePaymentFields();$("paymentPanel").classList.remove("hidden");await loadOwnListings();$("paymentListingId").value=pendingListingId;$("paymentPanel").scrollIntoView({behavior:"smooth"});
-    }catch(e){status("publishStatus",e.message||"Não foi possível publicar o anúncio.","err");}
+    }catch(e){
+      if(uploadedPaths.length){
+        try{await db.storage.from("anuncios-fotos").remove(uploadedPaths);}catch(cleanupError){console.warn("Não foi possível limpar fotos de anúncio não salvo",cleanupError);}
+      }
+      const message=e?.message==="Failed to fetch"
+        ? "A conexão caiu durante o envio. As fotos serão reenviadas automaticamente quando você tentar novamente. Confira a internet do celular."
+        : (e.message||"Não foi possível publicar o anúncio.");
+      status("publishStatus",message,"err");
+      console.error("Falha na publicação do anúncio",e);
+    }
     finally{$("publishBtn").disabled=false;}
   };
 </script>

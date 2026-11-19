@@ -375,7 +375,8 @@
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
   </section>
   <section id="chatPanel" class="panel hidden">
-    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="assistantOpen" type="button">Assistente virtual IA</button><button class="secondary" id="chatClose">Fechar</button></div></div>
+    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose" type="button">Fechar</button></div>
+    <button id="assistantOpen" type="button" style="display:block;width:100%;min-height:54px;margin:0 0 14px;background:#ff7900;color:#172033">Conversar com o assistente virtual do Giro Fácil</button>
     <div id="chatStatus" class="status hidden"></div>
     <div class="chat-shell">
       <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
@@ -602,14 +603,14 @@
     const {data,error}=await db.from("conversas").select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo)").or("comprador_id.eq."+currentUser.id+",vendedor_id.eq."+currentUser.id).order("ultima_mensagem_em",{ascending:false}).limit(50);
     if(error){status("chatStatus","Não foi possível carregar conversas: "+error.message,"err");return;}
     const list=$("chatConversationList");list.innerHTML="";
-    if(!data?.length){list.textContent="Você ainda não tem conversas. Abra um anúncio e toque em Enviar mensagem.";activeConversationId=null;return;}
+    if(!data?.length){list.textContent="Você ainda não tem conversas com compradores ou vendedores. Para falar com a equipe virtual, use o botão laranja acima.";activeConversationId=null;$("chatThreadTitle").textContent="Nenhuma conversa selecionada";$("chatMessages").innerHTML='<div class="hint">As mensagens de anúncios aparecerão aqui quando alguém iniciar uma conversa.</div>';$("chatMessageInput").disabled=true;$("chatSend").disabled=true;return;}
     data.forEach(conv=>{
       const b=document.createElement("button");b.type="button";b.textContent=(conv.anuncios?.titulo||"Anúncio")+" · "+(conv.comprador_id===currentUser.id?"Você é comprador":"Você é vendedor");
       b.classList.toggle("selected",conv.id===(selectId||activeConversationId));
       b.onclick=()=>loadConversations(conv.id);list.appendChild(b);
     });
     const chosen=data.find(x=>x.id===(selectId||activeConversationId))||data[0];
-    activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";
+    activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";$("chatMessageInput").disabled=false;$("chatSend").disabled=false;
     $("chatThreadTitle").textContent=activeConversationTitle;
     [...list.children].forEach((b,i)=>b.classList.toggle("selected",data[i].id===activeConversationId));
     await loadMessages();

@@ -22,7 +22,7 @@ check("Painel administrativo chama a função de backend esperada", html.include
 check("Tratamento de envio do assistente restaura botão", html.includes('sendButton.disabled=false;') && html.includes('sendButton.textContent="Enviar";'));
 check("Estilo das fotos evita sobreposição", html.includes("object-fit:cover") && html.includes("isolation:isolate"));
 // Detecta qualquer ID duplicado, não apenas os botões já conhecidos.
-const ids = [...html.matchAll(/(?:^|\\s)id\\s*=\\s*["']([^"']+)["']/gm)].map(match => match[1]);
+const ids = [...html.matchAll(/(?:^|\s)id\s*=\s*["']([^"']+)["']/gm)].map(match => match[1]);
 const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 check("Todos os IDs HTML são únicos", duplicates.length === 0);
 check("Publicação usa o bucket correto de fotos", html.includes('db.storage.from("anuncios-fotos").upload'));

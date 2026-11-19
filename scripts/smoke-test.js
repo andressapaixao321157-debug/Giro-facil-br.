@@ -1,5 +1,4 @@
 const fs = require("node:fs");
-const path = require("node:path");
 
 const html = fs.readFileSync("index.html", "utf8");
 const assistantPath = "supabase/functions/giro-assistant/index.ts";

@@ -32,6 +32,12 @@ function hasId(id) {
   "chatConversationList", "chatMessages", "chatMessageInput", "chatSend",
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
+check("Supabase SDK tem CDN principal e fallback alternativo",
+  html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js@2") &&
+  html.includes("unpkg.com/@supabase/supabase-js@2"));
+check("Falha de SDK é diagnosticada sem acusar configuração ausente",
+  html.includes("Supabase JS SDK indisponível") &&
+  html.includes("Configuração do Supabase ausente ou inválida"));
 check("Navegação inferior e cabeçalho abrem mensagens",
   html.includes('$("navMessages").onclick=()=>openChat()') &&
   html.includes('$("headerMessages").onclick=()=>openChat()'));

@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/smoke-test.js'
       - 'capacitor.config.json'
       - '.github/workflows/android-apk.yml'
 

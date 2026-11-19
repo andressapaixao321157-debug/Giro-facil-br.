@@ -53,6 +53,27 @@ Deno.serve(async (req) => {
       if (!["ativo", "rejeitado"].includes(nextStatus)) {
         return reply({ error: "Status de moderação inválido." }, 400);
       }
+      const { data: candidate, error: candidateError } = await admin.from("anuncios")
+        .select("id,usuario_id,pagamento_status,status")
+        .eq("id", listingId)
+        .eq("status", "pendente")
+        .maybeSingle();
+      if (candidateError) throw candidateError;
+      if (!candidate) return reply({ error: "Anúncio pendente não encontrado ou já moderado." }, 404);
+
+      if (nextStatus === "ativo") {
+        const { data: owner, error: ownerError } = await admin.from("perfis")
+          .select("plano_status")
+          .eq("id", candidate.usuario_id)
+          .maybeSingle();
+        if (ownerError) throw ownerError;
+        const paidIndividually = candidate.pagamento_status === "pago";
+        const coveredByPlan = candidate.pagamento_status === "plano" && owner?.plano_status === "ativo";
+        if (!paidIndividually && !coveredByPlan) {
+          return reply({ error: "Não é possível aprovar: o pagamento do anúncio ainda não foi confirmado." }, 409);
+        }
+      }
+
       const { data: listing, error: moderationError } = await admin.from("anuncios")
         .update({ status: nextStatus })
         .eq("id", listingId)

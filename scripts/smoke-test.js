@@ -54,8 +54,10 @@ check("Painel administrativo separado e protegido por papel admin",
   admin.includes('profile?.papel !== "admin"'));
 check("Painel administrativo consulta backend e modera anúncios",
   html.includes('db.functions.invoke("admin-dashboard"') &&
-  admin.includes('action === "moderate_listing"') &&
-  admin.includes('["ativo", "rejeitado"]'));
+  admin.includes('body?.action === "moderate_listing"') &&
+  admin.includes('nextStatus === "ativo"') &&
+  admin.includes('candidate.pagamento_status === "pago"') &&
+  admin.includes('owner?.plano_status === "ativo"'));
 check("Planos e pagamentos têm botão e painel separados",
   html.includes('$("plansOpen").onclick=') &&
   html.includes('$("paymentPanel").classList.remove("hidden")'));
@@ -69,6 +71,16 @@ check("Chat desabilita envio quando não existe conversa",
   html.includes('$("chatMessageInput").disabled=true;$("chatSend").disabled=true;'));
 check("Chat reabilita envio ao selecionar conversa",
   html.includes('$("chatMessageInput").disabled=false;$("chatSend").disabled=false;'));
+
+
+check("Webhook Asaas valida token secreto antes de processar eventos",
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('receivedToken !== expectedToken'));
+check("Webhook Asaas é idempotente para eventos duplicados",
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('eventError.code !== "23505"'));
+check("Webhook ativa plano somente após confirmação de pagamento",
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]'));
+check("Webhook não renova destaque ao receber evento repetido",
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('boost.status === "awaiting_payment"'));
 
 // Imagens, publicação e proteção básica.
 check("Fotos usam contenção visual para evitar sobreposição",

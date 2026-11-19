@@ -15,9 +15,7 @@ function check(name, condition) {
   checks.push({ name, ok: Boolean(condition) });
 }
 function countId(id) {
-  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const matches = [...html.matchAll(new RegExp('\\bid\\s*=\\s*["\\']' + escaped + '["\\']', "g"))];
-  return matches.length;
+  return html.split('id="' + id + '"').length - 1 + html.split("id='" + id + "'").length - 1;
 }
 function hasId(id) {
   return countId(id) === 1;
@@ -122,9 +120,9 @@ check("Configuração exige JWT para assistente e painel",
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
-console.log("\\n" + checks.length + " verificações; " + failed.length + " falhas.");
+console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");
 if (failed.length) {
-  console.error("\\nVerificações que precisam de correção:");
+  console.error("\nVerificações que precisam de correção:");
   failed.forEach(item => console.error(" - " + item.name));
   process.exit(1);
 }

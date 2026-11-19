@@ -117,6 +117,10 @@ check("A interface alerta para não enviar dados secretos",
 
 // Backend do assistente: autenticação, validação, contexto e resposta.
 check("Função giro-assistant existe no repositório", assistant.length > 0);
+check("Assistente usa resposta básica se a API de IA retornar 429 ou 5xx",
+  assistant.includes("response.status === 429 || response.status >= 500") &&
+  assistant.includes('mode: "ajuda-basica"') &&
+  !assistant.includes("response.status === 429 ? 429 : 502"));
 check("Assistente exige sessão autenticada do Supabase",
   assistant.includes('req.headers.get("Authorization")') &&
   assistant.includes('authHeader?.startsWith("Bearer ")') &&

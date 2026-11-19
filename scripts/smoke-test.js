@@ -5,7 +5,9 @@ function check(name, condition) {
   checks.push({ name, ok: Boolean(condition) });
 }
 function countId(id) {
-  return (html.match(new RegExp('id=["\\']' + id + '["\\']', "g")) || []).length;
+  const doubleQuoted = 'id="' + id + '"';
+  const singleQuoted = "id='" + id + "'";
+  return html.split(doubleQuoted).length - 1 + html.split(singleQuoted).length - 1;
 }
 check("Botão de mensagens inferior possui ID único", countId("navMessages") === 1);
 check("Botão de mensagens do cabeçalho possui ID único", countId("headerMessages") === 1);

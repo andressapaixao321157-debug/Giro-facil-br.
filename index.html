@@ -347,7 +347,26 @@
   <div class="section-head"><h2>🔥 Destaques da semana</h2><button type="button" class="secondary" id="seeAllListings">Ver todos ›</button></div>
   <div id="listingStatus" class="status">Carregando anúncios...</div>
   <section id="listings" class="grid"></section>
-  <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
+
+  <section id="acquisitionPanel" class="panel">
+    <h2>🚀 Anuncie no Giro Fácil BR</h2>
+    <p class="hint">Cadastre seu interesse gratuitamente. Atendemos anunciantes e empresas de todo o Brasil.</p>
+    <div id="acquisitionStatus" class="status hidden"></div>
+    <div class="form-grid">
+      <div class="field"><label for="acqType">Quero</label><select id="acqType"><option value="anunciante">Anunciar um produto</option><option value="loja">Divulgar minha loja</option><option value="parceiro">Ser parceiro</option></select></div>
+      <div class="field"><label for="acqName">Seu nome *</label><input id="acqName" maxlength="120" autocomplete="name"></div>
+      <div class="field"><label for="acqBusiness">Empresa / loja</label><input id="acqBusiness" maxlength="160"></div>
+      <div class="field"><label for="acqPhone">Telefone com DDD *</label><input id="acqPhone" maxlength="18" inputmode="tel" placeholder="(11) 99999-9999"></div>
+      <div class="field"><label for="acqEmail">E-mail</label><input id="acqEmail" type="email" maxlength="254"></div>
+      <div class="field"><label for="acqCategory">Categoria</label><select id="acqCategory"><option value="">Selecione</option><option>Veículos</option><option>Imóveis</option><option>Máquinas e agro</option><option>Roupas e acessórios</option><option>Eletrônicos</option><option>Comércio em geral</option><option>Outros</option></select></div>
+      <div class="field"><label for="acqCity">Cidade *</label><input id="acqCity" maxlength="100"></div>
+      <div class="field"><label for="acqState">Estado *</label><select id="acqState"><option value="">Selecione a UF</option></select></div>
+      <div class="field full"><label for="acqMessage">Como podemos ajudar?</label><textarea id="acqMessage" rows="3" maxlength="1000"></textarea></div>
+      <div class="field full"><label style="display:flex;gap:9px;align-items:flex-start;font-weight:500"><input id="acqConsent" type="checkbox" style="width:auto;margin-top:3px"> Autorizo o Giro Fácil BR a usar esses dados para responder minha solicitação, conforme o aviso de privacidade. *</label></div>
+      <div class="field full"><button id="acqSubmit" type="button">Enviar meu cadastro</button></div>
+    </div>
+  </section>
+\n  <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
 
   <section id="authPanel" class="panel hidden">
     <h2 id="authTitle">Entrar no Giro Fácil</h2>
@@ -481,6 +500,9 @@
     <div id="adminTotals" class="form-grid"></div>
     <h3>Captação de anúncios em lote</h3><p class="hint">Cadastre até 20 anúncios por vez para a conta administradora. Formato por linha: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL da foto.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
+    <h3>Captação nacional — CRM</h3>
+    <p class="hint">Interessados que chegaram pelo formulário público. Atualize a etapa do atendimento.</p>
+    <div id="adminAcquisitionMetrics" class="form-grid"></div><div id="adminAcquisitionLeads" style="overflow:auto"></div>
     <h3>Pagamentos recentes</h3><div id="adminOrders" style="overflow:auto"></div>
     <h3>Anúncios recentes</h3><div id="adminListings" style="overflow:auto"></div>
     <button id="adminRefresh" style="margin-top:12px">Atualizar painel</button>
@@ -810,7 +832,31 @@
   });
   setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000);
 
-  $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
+
+  // Captação orgânica nacional: origem, campanha e indicação.
+  const acqParams=new URLSearchParams(location.search);
+  const acqRef=(acqParams.get("ref")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,32);
+  const acqCampaign=(acqParams.get("utm_campaign")||"").slice(0,120);
+  const acqSource=acqRef?"indicacao":(acqParams.has("utm_source")?"social":"organico");
+  const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
+  async function trackAcqEvent(eventName){
+    if(!db)return;
+    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
+  }
+  $("acqState").innerHTML='<option value="">Selecione a UF</option>';
+  ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});
+  $("acqSubmit").onclick=async()=>{
+    if(!db){status("acquisitionStatus","Serviço temporariamente indisponível. Tente novamente mais tarde.","err");return;}
+    const payload={lead_type:$("acqType").value,contact_name:$("acqName").value.trim(),business_name:$("acqBusiness").value.trim()||null,phone:$("acqPhone").value.trim(),email:$("acqEmail").value.trim()||null,category:$("acqCategory").value||null,city:$("acqCity").value.trim(),state:$("acqState").value,message:$("acqMessage").value.trim()||null,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,user_id:currentUser?.id||null,consent_lgpd:$("acqConsent").checked};
+    if(payload.contact_name.length<2||payload.city.length<2||!payload.state||payload.phone.replace(/\D/g,"").length<10||!payload.consent_lgpd){status("acquisitionStatus","Preencha nome, telefone, cidade, UF e aceite o uso dos dados para atendimento.","err");return;}
+    const b=$("acqSubmit");b.disabled=true;
+    try{const {error}=await db.from("acquisition_leads").insert(payload);if(error)throw error;await trackAcqEvent("partner_lead");status("acquisitionStatus","Cadastro recebido! Nossa equipe poderá entrar em contato para orientar os próximos passos.","ok");["acqName","acqBusiness","acqPhone","acqEmail","acqCity","acqMessage"].forEach(id=>$(id).value="");$("acqConsent").checked=false;}
+    catch(e){status("acquisitionStatus","Não foi possível enviar agora. Confira os dados e tente novamente.","err");console.error(e);}
+    finally{b.disabled=false;}
+  };
+  trackAcqEvent("page_view");
+  const originalLoadAdminDashboard=loadAdminDashboard;
+\n  $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
     const kind=$("paymentKind").value, billingType=$("billingType").value;

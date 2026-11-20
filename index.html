@@ -469,7 +469,27 @@ footer{color:#64748b;padding-bottom:100px}
  #listings .vehicle-img{height:190px}
 }
 
-  </style>
+  
+.listing-details{background:#203c68;color:#fff;border:0;border-radius:10px;padding:11px 12px;font-weight:800}
+.listing-detail-overlay{position:fixed;inset:0;z-index:1000;background:#07152fbb;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.listing-detail-sheet{position:relative;width:min(760px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:#fff;border-radius:20px;color:#18243a;box-shadow:0 24px 80px #0006}
+.detail-close{position:sticky;top:10px;float:right;z-index:3;margin:10px 10px -48px 0;border:0;border-radius:50%;width:40px;height:40px;background:#fff;color:#18243a;font-size:20px;box-shadow:0 2px 12px #0003}
+.detail-gallery{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;background:#eaf0f8;min-height:180px}
+.detail-gallery img{flex:0 0 100%;width:100%;height:min(55vw,390px);object-fit:contain;scroll-snap-align:center;background:#eaf0f8}
+.detail-no-photo{padding:70px 20px;margin:auto;color:#64748b}
+.detail-content{padding:22px}
+.detail-content h2{font-size:clamp(22px,5vw,30px);line-height:1.2;margin:0 0 10px;overflow-wrap:anywhere}
+.detail-price{font-size:26px;font-weight:900;color:#e8790b;margin-bottom:8px}
+.detail-location{color:#52627d;font-weight:700;margin-bottom:20px}
+.detail-content h3{margin:18px 0 7px}
+.detail-description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;color:#34445d}
+.detail-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+.detail-facts>div{display:flex;flex-direction:column;gap:3px;padding:12px;background:#f3f6fb;border-radius:10px;min-width:0;overflow-wrap:anywhere}
+.detail-facts strong{font-size:11px;color:#64748b;text-transform:uppercase}
+.detail-contact{width:100%;padding:14px;background:#ff8500;color:#18243a;border:0;border-radius:12px;font-weight:900}
+@media(max-width:520px){.listing-detail-overlay{padding:0;align-items:flex-end}.listing-detail-sheet{width:100%;max-height:94dvh;border-radius:20px 20px 0 0}.detail-content{padding:18px}.detail-gallery img{height:58vw}.detail-facts{grid-template-columns:1fr 1fr}}
+
+</style>
 </head>
 <body>
 <header class="app-header">
@@ -1087,7 +1107,7 @@ footer{color:#64748b;padding-bottom:100px}
       const card=document.createElement("article");card.className="card";
       const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]"),isFav=favs.includes(item.id);
       const ownerActions=currentUser?.id===item.usuario_id?`<div class="owner-listing-actions"><button type="button" class="owner-edit" data-edit-listing="${escapeHtml(item.id)}">Editar anúncio</button><button type="button" class="owner-boost" data-boost-listing="${escapeHtml(item.id)}">Turbinar anúncio</button></div>`:"";
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}<button type="button" class="listing-details" data-open-listing="${escapeHtml(item.id)}" style="display:block;width:100%;margin-top:10px">Ver anúncio completo</button>${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
       $("listings").appendChild(card);
     });
   }
@@ -1095,6 +1115,26 @@ footer{color:#64748b;padding-bottom:100px}
 
   // Ações do proprietário nos cards da vitrine.
   document.addEventListener("click",async(event)=>{
+    const details=event.target.closest("[data-open-listing]");
+    if(details){
+      const id=details.dataset.openListing;
+      details.disabled=true;
+      const {data:item,error}=await db.from("anuncios").select("*").eq("id",id).eq("status","ativo").maybeSingle();
+      details.disabled=false;
+      if(error||!item){alert("Este anúncio não está disponível no momento.");return;}
+      const photos=Array.isArray(item.fotos)?item.fotos:[];
+      const overlay=document.createElement("div");overlay.className="listing-detail-overlay";
+      const photoMarkup=photos.map((url,index)=>'<img src="'+escapeHtml(url)+'" alt="Foto '+(index+1)+' de '+escapeHtml(item.titulo)+'">').join("");
+      const location=[item.cidade,item.estado].filter(Boolean).map(escapeHtml).join(" / ");
+      const rows=[["Categoria",item.categoria],["Marca",item.marca],["Modelo",item.modelo],["Ano",item.ano],["Localização",location],["WhatsApp",item.whatsapp]].filter(pair=>pair[1]);
+      overlay.innerHTML='<section class="listing-detail-sheet" role="dialog" aria-modal="true" aria-label="Detalhes do anúncio"><button class="detail-close" type="button" aria-label="Fechar">✕</button><div class="detail-gallery">'+(photoMarkup||'<div class="detail-no-photo">Sem fotos disponíveis</div>')+'</div><div class="detail-content"><h2>'+escapeHtml(item.titulo)+'</h2><div class="detail-price">'+Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</div><div class="detail-location">📍 '+(location||"Localização não informada")+'</div><h3>Descrição</h3><p class="detail-description">'+escapeHtml(item.descricao||"O anunciante não informou uma descrição.")+'</p><div class="detail-facts">'+rows.map(([k,v])=>'<div><strong>'+escapeHtml(k)+'</strong><span>'+escapeHtml(v)+'</span></div>').join("")+'</div><button class="detail-contact" type="button" data-listing-id="'+escapeHtml(item.id)+'" data-listing-title="'+escapeHtml(item.titulo)+'" data-seller-id="'+escapeHtml(item.usuario_id)+'">Enviar mensagem</button></div></section>';
+      document.body.appendChild(overlay);document.body.style.overflow="hidden";
+      const close=()=>{overlay.remove();document.body.style.overflow="";};
+      overlay.querySelector(".detail-close").onclick=close;
+      overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+      overlay.querySelector(".detail-contact").addEventListener("click",()=>{close();openChat?.(item.usuario_id,item.id,item.titulo);});
+      return;
+    }
     const edit=event.target.closest("[data-edit-listing]");
     const boost=event.target.closest("[data-boost-listing]");
     if(edit){

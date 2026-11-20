@@ -490,7 +490,7 @@
       <div class="field full"><button id="partnerApplyBtn" type="button">Enviar solicitação de parceria</button></div>
     </div>
     <div id="partnerApprovedArea" class="hidden"><h3>Cadastro de estoque em lote</h3>
-      <p class="hint">Uma linha por anúncio, separando os campos com ponto e vírgula: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL da foto. Até 20 anúncios por envio. Não inclua ponto e vírgula dentro dos campos.</p>
+      <p class="hint">Cada linha precisa ter os 11 campos nesta ordem: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 anúncios por lote. Use uma categoria válida do Giro Fácil e não coloque ponto e vírgula dentro dos campos. Os anúncios entram como pendentes e só são publicados após revisão e confirmação do pagamento.</p>
       <textarea id="partnerBulkInput" rows="7" placeholder="Toyota SW4 SRX 2025;Carro;250000;Toyota;SW4 SRX;2025;Rondonópolis;MT;66999999999;Único dono;https://..."></textarea>
       <button id="partnerBulkSubmit" type="button" style="margin-top:10px">Enviar lote para aprovação</button>
     </div>
@@ -499,7 +499,7 @@
     <h2>Painel administrativo — Giro Fácil</h2>
     <div id="adminStatus" class="status hidden"></div>
     <div id="adminTotals" class="form-grid"></div>
-    <h3>Captação de anúncios em lote</h3><p class="hint">Cadastre até 20 anúncios por vez para a conta administradora. Formato por linha: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL da foto.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
+    <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
     <h3>Captação nacional — CRM</h3>
     <p class="hint">Interessados que chegaram pelo formulário público. Atualize a etapa do atendimento.</p>
@@ -702,8 +702,13 @@
   function parseBulkListings(raw){
     return raw.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map((line,index)=>{
       const p=line.split(";").map(v=>v.trim());
-      if(p.length<3)throw new Error("Linha "+(index+1)+": use pelo menos Título;Categoria;Preço.");
-      return {titulo:p[0],categoria:p[1],preco:Number(p[2]),marca:p[3]||"",modelo:p[4]||"",ano:p[5]||null,cidade:p[6]||"",estado:p[7]||"",whatsapp:p[8]||"",descricao:p[9]||"",fotos:p[10]?[p[10]]:[]};
+      if(p.length!==11)throw new Error("Linha "+(index+1)+": informe exatamente 11 campos, de Título até URL HTTPS da foto.");
+      const required=[0,1,2,3,4,6,7,10];
+      if(required.some(i=>!p[i]))throw new Error("Linha "+(index+1)+": faltam título, categoria, preço, marca, modelo, cidade, UF ou foto.");
+      if(!Number.isFinite(Number(p[2]))||Number(p[2])<=0)throw new Error("Linha "+(index+1)+": o preço deve ser um número maior que zero.");
+      if(p[7].length!==2)throw new Error("Linha "+(index+1)+": informe a UF com duas letras.");
+      if(!/^https:\/\//i.test(p[10]))throw new Error("Linha "+(index+1)+": a foto precisa ter uma URL HTTPS.");
+      return {titulo:p[0],categoria:p[1],preco:Number(p[2]),marca:p[3],modelo:p[4],ano:p[5]||null,cidade:p[6],estado:p[7].toUpperCase(),whatsapp:p[8],descricao:p[9],fotos:[p[10]]};
     });
   }
   async function submitBulkListings(inputId,buttonId){

@@ -70,6 +70,8 @@ check("Painel administrativo consulta backend e modera anúncios",
 check("Planos e pagamentos têm botão e painel separados",
   html.includes('$("plansOpen").onclick=') &&
   html.includes('$("paymentPanel").classList.remove("hidden")'));
+check("Backend concede turbinamento gratuito somente a administradores", payment.includes('const freeAdminBoost = kind === "boost" && isAdmin') && payment.includes('freeForAdmin: true') && payment.includes('status: "active"'));
+check("Interface informa e confirma turbinamento gratuito do administrador", html.includes('id="adminBoostNotice"') && html.includes('data.freeForAdmin?') && html.includes('document.body.dataset.isAdmin==="true"'));
 check("Pagamento usa função Asaas e limita tipos de cobrança",
   html.includes('db.functions.invoke("asaas-create-payment"') &&
   payment.includes('["single", "monthly", "boost", "store"]') &&

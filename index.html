@@ -671,7 +671,7 @@
     finally{$("partnerApplyBtn").disabled=false;}
   };
   function parseBulkListings(raw){
-    return raw.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean).map((line,index)=>{
+    return raw.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map((line,index)=>{
       const p=line.split(";").map(v=>v.trim());
       if(p.length<3)throw new Error("Linha "+(index+1)+": use pelo menos Título;Categoria;Preço.");
       return {titulo:p[0],categoria:p[1],preco:Number(p[2]),marca:p[3]||"",modelo:p[4]||"",ano:p[5]||null,cidade:p[6]||"",estado:p[7]||"",whatsapp:p[8]||"",descricao:p[9]||"",fotos:p[10]?[p[10]]:[]};

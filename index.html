@@ -489,6 +489,15 @@ footer{color:#64748b;padding-bottom:100px}
 .detail-contact{width:100%;padding:14px;background:#ff8500;color:#18243a;border:0;border-radius:12px;font-weight:900}
 @media(max-width:520px){.listing-detail-overlay{padding:0;align-items:flex-end}.listing-detail-sheet{width:100%;max-height:94dvh;border-radius:20px 20px 0 0}.detail-content{padding:18px}.detail-gallery img{height:58vw}.detail-facts{grid-template-columns:1fr 1fr}}
 
+
+.market-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:10px;align-items:end;margin:-8px 0 20px;padding:14px;background:#fff;border:1px solid #dce4ef;border-radius:16px;box-shadow:0 4px 14px #0b28530b}
+.market-filters .filter-title{grid-column:1/-1;display:flex;align-items:baseline;gap:9px;color:#172746}
+.market-filters .filter-title span{font-size:12px;color:#718096}
+.market-filters label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;font-weight:800;color:#53647e}
+.market-filters input,.market-filters select{width:100%;min-width:0;height:42px;padding:8px 10px;border:1px solid #d5dfec;border-radius:9px;background:#f8faff;color:#172746}
+.market-filters button{height:42px;padding:8px 16px;border:0;border-radius:9px;background:#ff8500;color:#17243a;font-weight:900}
+@media(max-width:520px){.market-filters{grid-template-columns:1fr 1fr;gap:8px;padding:12px}.market-filters .filter-title{grid-column:1/-1}.market-filters label:last-of-type{grid-column:1/-1}.market-filters button{grid-column:1/-1;width:100%}}
+
 </style>
 </head>
 <body>
@@ -502,6 +511,13 @@ footer{color:#64748b;padding-bottom:100px}
     <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
     <span class="search-divider"></span><select id="searchCategory" aria-label="Categorias"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select>
     <button id="searchBtn" aria-label="Buscar">Buscar</button>
+  </section>
+  <section class="market-filters" aria-label="Filtros de anúncios">
+    <div class="filter-title"><strong>Filtrar resultados</strong><span>Refine sua busca</span></div>
+    <label>Preço mínimo (R$)<input id="priceMinFilter" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Qualquer valor"></label>
+    <label>Preço máximo (R$)<input id="priceMaxFilter" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Sem limite"></label>
+    <label>Ordenar por<select id="sortListings"><option value="recent">Mais recentes</option><option value="price_asc">Menor preço</option><option value="price_desc">Maior preço</option></select></label>
+    <button id="applyFilters" type="button">Aplicar filtros</button>
   </section>
   <section class="categories" aria-label="Categorias">
     <button class="cat" data-cat="Carro"><span class="emoji">🚘</span>Carros</button>
@@ -1090,13 +1106,23 @@ footer{color:#64748b;padding-bottom:100px}
     const uf=$("locationFilter")?.value||"", city=$("cityFilter")?.value||"";
     if(uf)q=q.eq("estado",uf);
     if(city)q=q.eq("cidade",city);
+    const minPrice=Number($("priceMinFilter")?.value||0),maxPrice=Number($("priceMaxFilter")?.value||0);
+    if($("priceMinFilter")?.value!=="")q=q.gte("preco",minPrice);
+    if($("priceMaxFilter")?.value!=="")q=q.lte("preco",maxPrice);
     if(term)q=q.or(`titulo.ilike.%${term}%,marca.ilike.%${term}%,modelo.ilike.%${term}%`);
     const {data,error}=await q;
     if(error){status("listingStatus","Não foi possível carregar os anúncios. Confira as permissões do banco.","err");return;}
     const {data:activeBoosts}=await db.from("ad_boosts").select("listing_id,reach_multiplier").eq("status","active").gt("ends_at",new Date().toISOString());
     const reachByListing=new Map();
     (activeBoosts||[]).forEach(boost=>reachByListing.set(boost.listing_id,Math.max(reachByListing.get(boost.listing_id)||1,Number(boost.reach_multiplier)||1)));
-    (data||[]).sort((a,b)=>(reachByListing.get(b.id)||1)-(reachByListing.get(a.id)||1)||new Date(b.criado_em)-new Date(a.criado_em));
+    const sortMode=$("sortListings")?.value||"recent";
+    (data||[]).sort((a,b)=>{
+      const boostDiff=(reachByListing.get(b.id)||1)-(reachByListing.get(a.id)||1);
+      if(boostDiff)return boostDiff;
+      if(sortMode==="price_asc")return Number(a.preco||0)-Number(b.preco||0);
+      if(sortMode==="price_desc")return Number(b.preco||0)-Number(a.preco||0);
+      return new Date(b.criado_em)-new Date(a.criado_em);
+    });
     $("listingStatus").classList.add("hidden");$("listings").innerHTML="";
     if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados disponíveis. Os anúncios enviados passam por revisão e confirmação das condições de publicação antes de aparecerem aqui. Volte em breve para conferir as novidades.</div>';return;}
     data.forEach(item=>{
@@ -1197,6 +1223,7 @@ footer{color:#64748b;padding-bottom:100px}
   initializeLocations();
   function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
+  $("applyFilters").onclick=()=>{favoritesOnly=false;loadListings();};
   $("seeAllListings").onclick=()=>{favoritesOnly=false;$("searchText").value="";$("searchCategory").value="";$("locationFilter").value="";$("cityFilter").innerHTML='<option value="">Todas as cidades</option>';$("cityFilter").disabled=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};
   $("locationFilter").onchange=async()=>{favoritesOnly=false;await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
   $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};

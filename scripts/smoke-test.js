@@ -60,7 +60,7 @@ check("Erro do assistente preserva a mensagem para nova tentativa",
 check("Painel administrativo separado e protegido por papel admin",
   hasId("adminPanel") && hasId("adminOpen") &&
   html.includes('profile?.papel==="admin"') &&
-  admin.includes('role !== "admin"'));
+  admin.includes('profile?.papel === "admin"') && admin.includes('if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403)'));
 check("Painel administrativo consulta backend e modera anúncios",
   html.includes('db.functions.invoke("admin-dashboard"') &&
   admin.includes('body?.action === "moderate_listing"') &&

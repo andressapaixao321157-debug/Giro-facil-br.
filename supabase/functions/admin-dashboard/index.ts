@@ -137,9 +137,14 @@ Deno.serve(async (req) => {
       if (nextStatus === "ativo") {
         const { data: owner, error: ownerError } = await admin.from("perfis").select("plano_status").eq("id", candidate.usuario_id).maybeSingle();
         if (ownerError) throw ownerError;
+        // O administrador pode aprovar gratuitamente os próprios anúncios.
+        // Anúncios de outros usuários continuam sujeitos à confirmação de pagamento/plano.
+        const adminOwnListing = isAdmin && candidate.usuario_id === userId;
         const paidIndividually = candidate.pagamento_status === "pago";
         const coveredByPlan = candidate.pagamento_status === "plano" && owner?.plano_status === "ativo";
-        if (!paidIndividually && !coveredByPlan) return reply({ error: "Não é possível aprovar: o pagamento do anúncio ainda não foi confirmado." }, 409);
+        if (!adminOwnListing && !paidIndividually && !coveredByPlan) {
+          return reply({ error: "Não é possível aprovar: o pagamento do anúncio ainda não foi confirmado." }, 409);
+        }
       }
       const { data: listing, error: moderationError } = await admin.from("anuncios").update({ status: nextStatus })
         .eq("id", listingId).eq("status", "pendente").select("id,status").maybeSingle();

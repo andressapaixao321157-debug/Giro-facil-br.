@@ -9,6 +9,7 @@ const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const uuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const states = new Set("AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" "));
+const categories = new Set(["Carro","Moto","Caminhão","Utilitário","Máquinas e equipamentos","Embarcações","Imóvel para venda","Imóvel para aluguel","Roupas e acessórios","Objetos e diversos","Móveis e decoração","Eletrônicos","Casa e construção","Agro e pecuária","Esportes e lazer"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -62,8 +63,8 @@ Deno.serve(async (req) => {
         const descricao = String(item.descricao ?? "").trim();
         const fotos = Array.isArray(item.fotos) ? item.fotos.map((x: unknown) => String(x).trim()).filter(Boolean) : [];
         const ano = item.ano === null || item.ano === "" || item.ano === undefined ? null : Number(item.ano);
-        if (!titulo || !categoria || !marca || !modelo || !Number.isFinite(preco) || preco <= 0 || !cidade || !states.has(estado)) {
-          return reply({ error: "Linha " + (i + 1) + ": informe título, categoria, marca, modelo, preço válido, cidade e UF válida." }, 400);
+        if (!titulo || !categories.has(categoria) || !marca || !modelo || !Number.isFinite(preco) || preco <= 0 || !cidade || !states.has(estado)) {
+          return reply({ error: "Linha " + (i + 1) + ": informe título, uma categoria válida do Giro Fácil, marca, modelo, preço válido, cidade e UF válida." }, 400);
         }
         if (ano !== null && (!Number.isInteger(ano) || ano < 1900 || ano > new Date().getFullYear() + 1)) return reply({ error: "Linha " + (i + 1) + ": ano inválido." }, 400);
         if (fotos.length < 1 || fotos.some((photo: string) => { try { return new URL(photo).protocol !== "https:"; } catch { return true; } })) {

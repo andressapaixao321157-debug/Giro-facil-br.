@@ -665,6 +665,7 @@ footer{color:#64748b;padding-bottom:100px}
     <h2>Pagamento do Giro Fácil</h2>
     <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal R$ 59,00 · Turbinamento e lojas com pagamento confirmado pelo Asaas.</p>
     <div id="paymentStatus" class="status hidden"></div>
+    <p id="adminBoostNotice" class="hint hidden" style="background:#e8f7ee;border:1px solid #9bd7b1;border-radius:10px;padding:12px;color:#14532d;font-weight:700">Benefício do proprietário: o turbinamento dos seus próprios anúncios é gratuito. Nenhuma cobrança será gerada.</p>
     <div class="form-grid">
       <div class="field"><label for="paymentKind">O que deseja contratar?</label><select id="paymentKind">
         <option value="single">Anúncio avulso — R$ 10,00</option><option value="monthly">Plano mensal — R$ 59,00</option>
@@ -793,6 +794,7 @@ footer{color:#64748b;padding-bottom:100px}
         db.from("perfis").select("papel").eq("id",currentUser.id).maybeSingle(),
         db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle()
       ]);
+      document.body.dataset.isAdmin=profile?.papel==="admin"?"true":"false";
       if(profile?.papel==="admin")$("adminOpen").classList.remove("hidden");
       const approved=partner?.status==="ativo";
       $("partnerApplicationForm").classList.toggle("hidden",approved);
@@ -864,6 +866,7 @@ footer{color:#64748b;padding-bottom:100px}
     $("storeFields").classList.toggle("hidden",!store);
     $("paymentListingWrap").classList.toggle("hidden",!(kind==="single"||boost));
     const custom=boost && $("boostPlan").value==="boost_custom";
+    $("adminBoostNotice").classList.toggle("hidden",!(boost && document.body.dataset.isAdmin==="true"));
     $("customAmountField").classList.toggle("hidden",!custom);
     $("customDaysField").classList.toggle("hidden",!custom);
   }
@@ -1162,7 +1165,7 @@ footer{color:#64748b;padding-bottom:100px}
       const {data,error}=await db.functions.invoke("asaas-create-payment",{body:payload});
       if(error)throw error;
       if(data.error)throw new Error(data.error);
-      status("paymentStatus","Cobrança criada: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Status: "+(data.status||"aguardando pagamento")+".","ok");
+      status("paymentStatus",data.freeForAdmin?"Turbinamento gratuito ativado para seu anúncio! Nenhuma cobrança foi gerada.":"Cobrança criada: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Status: "+(data.status||"aguardando pagamento")+".","ok");
       const result=$("paymentResult");
       if(data.pixEncodedImage){const img=document.createElement("img");img.alt="QR Code PIX";img.src="data:image/png;base64,"+data.pixEncodedImage;img.style="display:block;max-width:220px;margin:12px 0";result.appendChild(img);}
       if(data.pixCopyPaste){const label=document.createElement("p");label.textContent="PIX copia e cola:";result.appendChild(label);const code=document.createElement("textarea");code.readOnly=true;code.value=data.pixCopyPaste;code.rows=3;result.appendChild(code);const copy=document.createElement("button");copy.textContent="Copiar código PIX";copy.style.marginTop="8px";copy.onclick=async()=>{await navigator.clipboard.writeText(data.pixCopyPaste);copy.textContent="Código copiado";};result.appendChild(copy);}

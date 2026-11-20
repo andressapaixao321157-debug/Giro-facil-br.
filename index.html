@@ -396,7 +396,41 @@ footer{color:#64748b;padding-bottom:100px}
  #adminPanel{padding:14px}
 }
 
-</style>
+/* Painel executivo Giro Fácil BR — identidade aprovada 1+3 */
+#adminPanel{position:relative;isolation:isolate;overflow:hidden;color:#edf3ff;background:radial-gradient(ellipse at 90% 0%,#203d70 0%,transparent 38%),linear-gradient(145deg,#07152f 0%,#0b2045 55%,#102b58 100%);border:1px solid #294574;border-radius:24px;padding:clamp(18px,3vw,32px);box-shadow:0 22px 55px #06132c38}
+#adminPanel:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#ff7900,#ffb14b,#ff7900);z-index:-1}
+#adminPanel .admin-console-head{padding:8px 2px 22px;border-bottom:1px solid #ffffff20;margin-bottom:20px}
+#adminPanel .admin-console-head h2{color:#fff;font-size:clamp(25px,4vw,36px);letter-spacing:-.8px;margin:0}
+#adminPanel .admin-console-head h2:after{content:"PAINEL ADMINISTRATIVO NACIONAL";display:block;margin-top:9px;color:#ff9a32;font-size:10px;letter-spacing:2px;font-weight:900}
+#adminPanel .admin-console-head .hint,#adminPanel .hint{color:#bdcbe2}
+#adminPanel h3{color:#fff;border:0;border-bottom:1px solid #ffffff20;padding:0 0 12px;margin:30px 0 14px;font-size:18px}
+#adminPanel .section-head{margin-top:28px}#adminPanel .section-head h3{margin:0;border:0;padding:0}
+#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 26px}
+#adminPanel #adminTotals>.panel,#adminPanel #adminAcquisitionMetrics>.panel{min-width:0;margin:0;padding:17px 16px;border:1px solid #35517d;border-radius:16px;background:linear-gradient(145deg,#142e59,#0d2144);box-shadow:0 9px 22px #020b1c40}
+#adminPanel #adminTotals>.panel strong,#adminPanel #adminAcquisitionMetrics>.panel strong{display:block;color:#b7c7e1;font-size:10px;letter-spacing:1px;text-transform:uppercase;line-height:1.4}
+#adminPanel #adminTotals>.panel div,#adminPanel #adminAcquisitionMetrics>.panel div{color:#fff!important;font-size:clamp(20px,3vw,29px)!important;font-weight:900;margin-top:10px!important}
+#adminPanel #adminTotals>.panel:nth-child(4){border-color:#9b622d;background:linear-gradient(145deg,#49331f,#1e2b45)}
+#adminPanel #adminTotals>.panel:nth-child(4) div{color:#ffb15b!important}
+#adminPanel #adminBulkInput{background:#0a1a37;color:#fff;border:1px solid #35517d}
+#adminPanel input,#adminPanel select,#adminPanel textarea{background:#0a1a37;color:#fff;border-color:#3b5680}
+#adminPanel button{background:#ff8500;color:#1a2333;border:0;font-weight:800}
+#adminPanel button.secondary{background:#243e68;color:#fff;border:1px solid #48618a}
+#adminPanel #adminRefresh{background:#ff8500;color:#17243a;border:0}
+#adminPanel [style*="overflow:auto"]{max-width:100%;overflow-x:auto;border:1px solid #2d4770;border-radius:14px;background:#0b1c3a}
+#adminPanel table{width:100%;min-width:650px;border-collapse:collapse;font-size:12px}
+#adminPanel th{background:#18345f;color:#ffb15b;padding:13px 12px;text-transform:uppercase;font-size:10px;letter-spacing:.7px}
+#adminPanel td{color:#e1eafa;padding:12px;border-bottom:1px solid #263e65}
+#adminPanel tr:last-child td{border-bottom:0}
+#adminPanel .partner-card{background:#10284f;border:1px solid #35517d;color:#fff}
+#adminPanel .partner-card strong{color:#fff}#adminPanel .partner-card small{color:#bdcbe2}
+#adminPanel .status{background:#18345f;color:#fff;border:1px solid #42618d}
+#adminPanel .status.ok{background:#123e39;color:#b9f4df;border-color:#287c69}
+#adminPanel .status.err{background:#4a2028;color:#ffd4d4;border-color:#a04b56}
+#adminPanel #adminAcquisitionMetrics>.field{grid-column:1/-1;color:#d6e2f4}
+@media(max-width:850px){#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#adminPanel{padding:16px;border-radius:18px}#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{gap:8px}#adminPanel #adminTotals>.panel,#adminPanel #adminAcquisitionMetrics>.panel{padding:13px 11px}#adminPanel #adminTotals>.panel strong,#adminPanel #adminAcquisitionMetrics>.panel strong{font-size:9px}#adminPanel #adminTotals>.panel div,#adminPanel #adminAcquisitionMetrics>.panel div{font-size:20px!important}#adminPanel h3{font-size:16px}}
+
+  </style>
 </head>
 <body>
 <header class="app-header">

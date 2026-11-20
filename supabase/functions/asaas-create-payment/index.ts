@@ -93,13 +93,36 @@ Deno.serve(async (req) => {
       if (!planCode || !(planCode in STORES) || storeName.length < 2) return json({ error: "Escolha um plano de loja e informe o nome da loja." }, 400);
       amount = STORES[planCode];
     }
-    if (!Number.isFinite(amount) || amount <= 0) return json({ error: "Preço inválido." }, 400);
+    const { data: currentProfile, error: currentProfileError } = await admin.from("perfis").select("papel").eq("id", user.id).maybeSingle();
+    if (currentProfileError) throw new Error("Não foi possível verificar o perfil administrativo.");
+    const isAdmin = currentProfile?.papel === "admin";
+    const freeAdminBoost = kind === "boost" && isAdmin;
+    if (!Number.isFinite(amount) || (amount <= 0 && !freeAdminBoost)) return json({ error: "Preço inválido." }, 400);
+    if (freeAdminBoost) amount = 0;
 
     if (kind === "single" || kind === "boost") {
       if (!listingId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(listingId)) return json({ error: "Selecione um anúncio válido." }, 400);
       const { data: listing, error } = await admin.from("anuncios").select("id,usuario_id,status").eq("id", listingId).eq("usuario_id", user.id).maybeSingle();
       if (error || !listing) return json({ error: "Anúncio não encontrado para esta conta." }, 404);
       if (kind === "single" && listing.status !== "pendente") return json({ error: "Este anúncio não está aguardando pagamento." }, 409);
+    }
+
+    if (freeAdminBoost) {
+      const now = new Date();
+      const endsAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      const { data: freeOrder, error: freeOrderError } = await admin.from("payment_orders").insert({
+        user_id: user.id, listing_id: listingId, kind: "boost", billing_type: billingType,
+        amount: 0, status: "PAID", asaas_customer_id: null,
+      }).select("id").single();
+      if (freeOrderError || !freeOrder) throw new Error("Não foi possível registrar o turbinamento gratuito do administrador.");
+      const baseAmount = planCode === "boost_custom" ? Number(body.customAmount) : (BOOSTS[planCode!]?.amount || 19.90);
+      const { error: freeBoostError } = await admin.from("ad_boosts").insert({
+        order_id: freeOrder.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
+        duration_days: durationDays, amount: 0, reach_multiplier: reachMultiplierForAmount(baseAmount),
+        status: "active", starts_at: now.toISOString(), ends_at: endsAt.toISOString(),
+      });
+      if (freeBoostError) throw new Error("O pedido foi registrado, mas não foi possível ativar o turbinamento gratuito.");
+      return json({ orderId: freeOrder.id, kind, billingType, amount: 0, status: "ACTIVE", freeForAdmin: true, startsAt: now.toISOString(), endsAt: endsAt.toISOString() });
     }
 
     const { data: profile } = await admin.from("perfis").select("nome,asaas_customer_id").eq("id", user.id).maybeSingle();
@@ -208,7 +231,14 @@ Deno.serve(async (req) => {
       pixCopyPaste: pix?.payload || null, pixEncodedImage: pix?.encodedImage || null,
     });
   } catch (error) {
-    console.error("Asaas payment creation error", error);
-    return json({ error: error instanceof Error ? error.message : "Erro inesperado ao criar pagamento." }, 500);
+    const message = error instanceof Error ? error.message : "Erro inesperado ao criar pagamento.";
+    console.error("Asaas payment creation error", message);
+    if (/não pertence a este ambiente|does not belong to this environment/i.test(message)) {
+      return json({
+        code: "ASAAS_ENVIRONMENT_MISMATCH",
+        error: "A chave do Asaas não corresponde ao ambiente configurado. A equipe precisa alinhar a chave e a URL (sandbox ou produção). Nenhuma cobrança deve ser repetida até essa conferência.",
+      }, 503);
+    }
+    return json({ error: message }, 500);
   }
 });

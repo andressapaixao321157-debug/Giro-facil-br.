@@ -366,7 +366,8 @@
       <div class="field full"><button id="acqSubmit" type="button">Enviar meu cadastro</button></div>
     </div>
   </section>
-\n  <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
+
+  <section class="partners-section"><div class="section-head"><h2>▣ Parceiros e patrocinadores</h2></div><div class="partners-grid"><div>🚗<strong>Sua concessionária</strong><small>Veículos</small></div><div>⌂<strong>Sua imobiliária</strong><small>Imóveis</small></div><div>◎<strong>Seu negócio</strong><small>Parceiro</small></div><div>＋<strong>Anuncie aqui</strong><small>Patrocínio</small></div></div></section>
 
   <section id="authPanel" class="panel hidden">
     <h2 id="authTitle">Entrar no Giro Fácil</h2>
@@ -856,7 +857,8 @@
   };
   trackAcqEvent("page_view");
   const originalLoadAdminDashboard=loadAdminDashboard;
-\n  $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
+
+  $("logoutBtn").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();};
   $("payBtn").onclick=async()=>{
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
     const kind=$("paymentKind").value, billingType=$("billingType").value;

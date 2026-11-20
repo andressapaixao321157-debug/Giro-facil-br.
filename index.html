@@ -599,6 +599,7 @@
           status("authStatus","Este e-mail já possui cadastro. Entre com sua senha ou use “Esqueci minha senha” para recuperar o acesso.","err");
         } else if(data.user && data.session){
           await db.from("perfis").upsert({id:data.user.id,nome:name});
+          await trackAcqEvent("signup");
           status("authStatus","Conta criada e acesso liberado! Você já pode anunciar.","ok");
         } else {
           status("authStatus","Cadastro recebido. A confirmação depende da entrega do e-mail pelo serviço de autenticação. Confira também a pasta de spam; se a mensagem não chegar, use “Esqueci minha senha” após configurar o envio de e-mails.","ok");
@@ -833,7 +834,7 @@
   $("chatSend").onclick=sendChatMessage;
   $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
   document.addEventListener("click",e=>{
-    const b=e.target.closest(".listing-chat");if(b){startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
+    const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("listing_view",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
     const fav=e.target.closest(".favorite-toggle");if(fav){const id=fav.dataset.favoriteId;let ids=JSON.parse(localStorage.getItem("giro_favorites")||"[]");ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];localStorage.setItem("giro_favorites",JSON.stringify(ids));fav.textContent=ids.includes(id)?"♥":"♡";if(favoritesOnly)loadListings();}
   });
   setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000);
@@ -845,9 +846,9 @@
   const acqCampaign=(acqParams.get("utm_campaign")||"").slice(0,120);
   const acqSource=acqRef?"indicacao":(acqParams.has("utm_source")?"social":"organico");
   const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
-  async function trackAcqEvent(eventName){
+  async function trackAcqEvent(eventName,listingId=null){
     if(!db)return;
-    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
+    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';
   ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});
@@ -1071,6 +1072,7 @@
       if(error){console.error("Erro ao salvar anúncio",error);throw new Error(error.message||"O servidor não conseguiu salvar o anúncio.");}
       if(!createdListing?.id)throw new Error("O servidor não confirmou o cadastro do anúncio.");
       pendingListingId=createdListing.id;
+      await trackAcqEvent("listing_created",createdListing.id);
       status("publishStatus","Anúncio enviado e salvo! Agora escolha o pagamento avulso ou o plano mensal. A aprovação administrativa continua necessária.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{el.value="";});selectedPhotoFiles=[];renderSelectedPhotos();showPublishStep(1);
       $("paymentKind").value="single";updatePaymentFields();$("paymentPanel").classList.remove("hidden");await loadOwnListings();$("paymentListingId").value=pendingListingId;$("paymentPanel").scrollIntoView({behavior:"smooth"});

@@ -309,6 +309,25 @@
     .publish-wizard{padding:22px;overflow:hidden}.publish-heading h2{font-size:27px;margin:4px 0}.publish-kicker{font-size:11px;font-weight:900;letter-spacing:1.2px;color:#ed790e}.wizard-steps{display:flex;align-items:center;gap:8px;margin:22px 0 26px}.wizard-steps>i{height:3px;background:#dce4f0;flex:1;border-radius:4px}.wizard-step{display:flex;align-items:center;gap:7px;color:#718096;font-size:12px;white-space:nowrap}.wizard-step span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e7ecf4;font-weight:900}.wizard-step.active,.wizard-step.done{color:#102b5d}.wizard-step.active span,.wizard-step.done span{background:#ff7900;color:white}.wizard-title{font-size:19px;margin:0 0 16px;color:#10234a}.wizard-page{animation:wizardIn .18s ease}@keyframes wizardIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}.wizard-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:22px}.wizard-actions button{min-height:48px;flex:1}.photo-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.photo-count{background:#eaf1ff;color:#124a9c;border-radius:20px;padding:6px 11px;font-size:12px;font-weight:900;white-space:nowrap}.photo-picker{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:116px;margin:16px 0;border:2px dashed #9bb9e8;border-radius:16px;background:#f5f8ff;color:#124a9c;cursor:pointer;text-align:center}.photo-picker-icon{font-size:30px;line-height:1}.photo-picker small{font-size:11px;color:#64748b}.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.photo-empty{grid-column:1/-1;border:1px solid #e2e8f0;border-radius:12px;padding:22px;text-align:center;color:#718096;font-size:13px}.photo-item{position:relative;min-width:0;border:1px solid #dbe3ef;border-radius:13px;overflow:hidden;background:#fff}.photo-item img{display:block;width:100%;height:145px;object-fit:cover;background:#edf2f8}.photo-item.cover{border:2px solid #ff7900}.photo-cover-tag{position:absolute;left:7px;top:7px;background:#ff7900;color:white;border-radius:20px;padding:4px 8px;font-size:10px;font-weight:900}.photo-tools{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:7px}.photo-tools button{padding:8px 2px;min-height:35px;font-size:11px;background:#eef3fb;color:#17345f;border-radius:8px}.photo-tools button.remove-photo{background:#fff0f0;color:#b42318}.photo-tools button:disabled{opacity:.35}.photo-guidance{margin-top:12px;padding:12px;border-radius:10px;background:#edf4ff;color:#35527d;font-size:12px;line-height:1.5}.publish-review{border:1px solid #e1e7f0;border-radius:14px;padding:14px;margin-bottom:14px}.review-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:14px}.review-photos img{width:100%;height:82px;object-fit:cover;border-radius:8px}.review-line{padding:9px 0;border-bottom:1px solid #edf1f6;font-size:13px;overflow-wrap:anywhere}.review-line:last-child{border:0}.review-line strong{display:block;color:#64748b;font-size:11px;margin-bottom:2px}
     @media(max-width:480px){.publish-wizard{padding:16px}.wizard-step{gap:5px;font-size:10px}.wizard-step span{width:27px;height:27px}.wizard-steps{gap:5px}.photo-grid{gap:8px}.photo-item img{height:125px}.photo-tools button{font-size:10px;padding:7px 1px}.wizard-actions button{min-width:100%;}}
 .partner-card{border:1px solid #dce4ef;border-radius:12px;padding:12px;margin:8px 0;background:#fff}.partner-card strong{display:block;color:#102b5d}.partner-card small{display:block;color:#64748b;margin:4px 0 10px}.partner-actions{display:flex;gap:8px}.partner-actions button{flex:1}
+
+/* Console administrativo profissional */
+#adminPanel{border:1px solid #d8e1ee;border-radius:22px;padding:clamp(16px,3vw,28px);background:linear-gradient(180deg,#fff 0%,#f8faff 100%);box-shadow:0 14px 38px #102b5d12}
+#adminPanel>h2{font-size:clamp(24px,4vw,32px);letter-spacing:-.7px;color:#10234a;margin-bottom:6px}
+#adminPanel>h2:after{content:"GESTÃO DA PLATAFORMA";display:block;margin-top:7px;font-size:10px;letter-spacing:1.6px;color:#ed790e;font-weight:900}
+#adminTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 28px}
+#adminTotals>.panel{margin:0;padding:17px;border:1px solid #dfe6f1;border-radius:15px;box-shadow:0 5px 16px #102b5d0a;min-width:0}
+#adminTotals>.panel strong{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.4px}
+#adminTotals>.panel div{font-size:clamp(19px,3vw,26px)!important;font-weight:900;color:#102b5d;overflow-wrap:anywhere}
+#adminPanel h3{margin:28px 0 12px;padding-bottom:10px;border-bottom:1px solid #e4eaf3;color:#142b50;font-size:18px}
+#adminPanel table{min-width:620px;font-size:13px}
+#adminPanel th{background:#edf3fb;color:#334968;text-align:left;padding:12px;white-space:nowrap}
+#adminPanel td{padding:11px 12px;border-bottom:1px solid #edf1f6;color:#34445d}
+#adminPanel button{border-radius:10px;min-height:40px}
+#adminPanel #adminRefresh{width:100%;margin-top:22px;min-height:48px;background:#102b5d;color:#fff}
+#adminPanel #adminBulkInput{min-height:130px;border-radius:12px;background:#fbfcff}
+#adminPanel .partner-card{border-radius:14px;padding:16px;box-shadow:0 4px 14px #102b5d08}
+@media(max-width:760px){#adminTotals{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#adminTotals>.panel{padding:13px}#adminPanel h3{font-size:16px}}
+
 </style>
 </head>
 <body>
@@ -457,8 +476,8 @@
         <option value="boost_15d">15 dias — R$ 59,90</option><option value="boost_30d">30 dias — R$ 89,90</option>
         <option value="boost_60d">60 dias — R$ 149,90</option><option value="boost_custom">Orçamento personalizado</option>
       </select></div>
-      <div class="field hidden" id="customAmountField"><label for="customBoostAmount">Seu orçamento (R$ 20 a R$ 5.000)</label><input id="customBoostAmount" type="number" min="20" max="5000" step="0.01" placeholder="Ex.: 120"></div>
-      <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" placeholder="Ex.: 10"></div>
+      <div class="field hidden" id="customAmountField"><label for="customBoostAmount">Seu orçamento (R$ 20 a R$ 5.000)</label><input id="customBoostAmount" type="number" min="20" max="5000" step="0.01" value="20" placeholder="Ex.: 120"></div>
+      <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" value="1" placeholder="Ex.: 10"></div>
       <div class="field full hidden" id="storeFields"><label for="storeName">Nome da loja</label><input id="storeName" placeholder="Nome comercial da sua loja"><label for="storePlan">Plano mensal da loja</label><select id="storePlan">
         <option value="loja_basica">Básico — R$ 99/mês</option><option value="loja_pro">Pro — R$ 199/mês</option><option value="loja_premium">Premium — R$ 399/mês</option>
       </select></div>
@@ -496,7 +515,7 @@
     </div>
   </section>
   <section id="adminPanel" class="panel hidden">
-    <h2>Painel administrativo — Giro Fácil</h2>
+    <div class="admin-console-head"><h2>Painel administrativo — Giro Fácil</h2><p class="hint">Central de operação: acompanhe anúncios, pagamentos, parceiros, captação e indicadores em um só lugar.</p></div>
     <div id="adminStatus" class="status hidden"></div>
     <div id="adminTotals" class="form-grid"></div>
     <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
@@ -874,7 +893,7 @@
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
     const kind=$("paymentKind").value, billingType=$("billingType").value;
     const listingId=$("paymentListingId").value.trim()||pendingListingId;
-    if((kind==="single"||kind==="boost")&&!listingId){status("paymentStatus","Informe o ID do anúncio que deseja pagar ou turbinar.","err");return;}
+    if((kind==="single"||kind==="boost")&&!listingId){status("paymentStatus","Selecione o anúncio que deseja pagar ou turbinar.","err");return;}if(kind==="boost"&&$("boostPlan").value==="boost_custom"){const amount=Number($("customBoostAmount").value),days=Number($("customBoostDays").value);if(!Number.isFinite(amount)||amount<20||amount>5000){status("paymentStatus","Informe um orçamento entre R$ 20 e R$ 5.000.","err");return;}if(!Number.isInteger(days)||days<1||days>30){status("paymentStatus","Informe uma duração entre 1 e 30 dias.","err");return;}}
     if(kind==="store"&&$("storeName").value.trim().length<2){status("paymentStatus","Informe o nome da loja.","err");return;}
     $("payBtn").disabled=true;$("paymentResult").innerHTML="";
     try{
@@ -893,7 +912,7 @@
       const url=data.boletoUrl||data.paymentUrl;
       if(url){const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener";link.textContent=data.boletoUrl?"Abrir boleto bancário":"Abrir fatura Asaas";link.style="display:inline-block;margin:12px 0;font-weight:700";result.appendChild(link);}
       if(data.subscriptionId){const note=document.createElement("p");note.textContent="Sua assinatura mensal foi criada. A ativação ocorrerá após a confirmação da primeira cobrança.";result.appendChild(note);}
-    }catch(e){status("paymentStatus",e.message||"Não foi possível gerar a cobrança.","err");}
+    }catch(e){let detail=e?.message||"Não foi possível gerar a cobrança.";try{if(e?.context&&typeof e.context.json==="function"){const body=await e.context.json();detail=body?.error||body?.message||detail;}}catch{}status("paymentStatus",detail,"err");}
     finally{$("payBtn").disabled=false;}
   };
   async function loadListings(){
@@ -913,7 +932,7 @@
     (activeBoosts||[]).forEach(boost=>reachByListing.set(boost.listing_id,Math.max(reachByListing.get(boost.listing_id)||1,Number(boost.reach_multiplier)||1)));
     (data||[]).sort((a,b)=>(reachByListing.get(b.id)||1)-(reachByListing.get(a.id)||1)||new Date(b.criado_em)-new Date(a.criado_em));
     $("listingStatus").classList.add("hidden");$("listings").innerHTML="";
-    if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados. Seja o primeiro a anunciar!</div>';return;}
+    if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados disponíveis. Os anúncios enviados passam por revisão e confirmação das condições de publicação antes de aparecerem aqui. Volte em breve para conferir as novidades.</div>';return;}
     data.forEach(item=>{
       const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});

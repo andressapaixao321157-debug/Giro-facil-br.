@@ -848,7 +848,7 @@
       }
       publishStage="gravação do anúncio no banco de dados";
       status("publishStatus","Fotos enviadas. Salvando o anúncio no servidor...", "ok");
-      const payload={usuario_id:currentUser.id,titulo:title,categoria,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
+      const payload={usuario_id:currentUser.id,titulo:title,categoria:category,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
       let insertResult;
       try{insertResult=await db.from("anuncios").insert(payload).select("id").single();}
       catch(networkError){throw new Error("Falha de conexão ao salvar os dados do anúncio. Suas fotos foram enviadas, mas o cadastro não foi confirmado. Tente novamente.");}

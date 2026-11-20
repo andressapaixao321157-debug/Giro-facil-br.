@@ -102,19 +102,20 @@ Deno.serve(async (req) => {
       admin.from("anuncios").select("id,titulo,preco,status,usuario_id,criado_em").order("criado_em", { ascending: false }).limit(30),
       admin.from("ad_boosts").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
-      admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at").order("created_at",{ascending:false}).limit(100),
+      admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(100),
       admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at",{ascending:false}).limit(1000),
     ]);
     const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents].find(x => x.error);
     if (queryError?.error) throw new Error("Não foi possível carregar os dados administrativos.");
     const revenue = (paid.data || []).reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
+    const byState = (acquisitionLeads.data || []).reduce((acc: Record<string, number>, row: any) => { const uf=String(row.state||"").trim(); if(uf) acc[uf]=(acc[uf]||0)+1; return acc; }, {});
     return reply({
       totals: {
         users: users.count || 0, ads: ads.count || 0, pendingAds: pending.count || 0,
         paidRevenue: revenue, activeBoosts: boosts.count || 0, activeStores: stores.count || 0,
       },
       orders: orders.data || [], listings: latestAds.data || [],
-      acquisition: { total: acquisitionLeads.data?.length || 0, newLeads: (acquisitionLeads.data||[]).filter(x=>x.status==="novo").length, leads: acquisitionLeads.data||[], events: acquisitionEvents.data||[] },
+      acquisition: { total: acquisitionLeads.count || 0, byState, newLeads: (acquisitionLeads.data||[]).filter(x=>x.status==="novo").length, leads: acquisitionLeads.data||[], events: acquisitionEvents.data||[] },
     });
   } catch (error) {
     console.error("Admin dashboard error", error);

@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
       admin.from("payment_orders").select("id,user_id,kind,amount,status,created_at").order("created_at", { ascending: false }).limit(30),
       admin.from("anuncios").select("id,titulo,preco,status,usuario_id,criado_em").order("criado_em", { ascending: false }).limit(30),
       admin.from("ad_boosts").select("id", { count: "exact", head: true }).eq("status", "active"),
-      admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),\n      admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at").order("created_at",{ascending:false}).limit(100),\n      admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at",{ascending:false}).limit(1000),
+      admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
+      admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at").order("created_at",{ascending:false}).limit(100),
+      admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at",{ascending:false}).limit(1000),
     ]);
     const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents].find(x => x.error);
     if (queryError?.error) throw new Error("Não foi possível carregar os dados administrativos.");
@@ -111,7 +113,8 @@ Deno.serve(async (req) => {
         users: users.count || 0, ads: ads.count || 0, pendingAds: pending.count || 0,
         paidRevenue: revenue, activeBoosts: boosts.count || 0, activeStores: stores.count || 0,
       },
-      orders: orders.data || [], listings: latestAds.data || [],\n      acquisition: { total: acquisitionLeads.data?.length || 0, newLeads: (acquisitionLeads.data||[]).filter(x=>x.status==="novo").length, leads: acquisitionLeads.data||[], events: acquisitionEvents.data||[] },
+      orders: orders.data || [], listings: latestAds.data || [],
+      acquisition: { total: acquisitionLeads.data?.length || 0, newLeads: (acquisitionLeads.data||[]).filter(x=>x.status==="novo").length, leads: acquisitionLeads.data||[], events: acquisitionEvents.data||[] },
     });
   } catch (error) {
     console.error("Admin dashboard error", error);

@@ -59,8 +59,8 @@ check("Erro do assistente preserva a mensagem para nova tentativa",
   html.includes("Falha no envio. Confira sua conexão"));
 check("Painel administrativo separado e protegido por papel admin",
   hasId("adminPanel") && hasId("adminOpen") &&
-  html.includes('data?.papel==="admin"') &&
-  admin.includes('profile?.papel !== "admin"'));
+  html.includes('profile?.papel==="admin"') &&
+  admin.includes('role !== "admin"'));
 check("Painel administrativo consulta backend e modera anúncios",
   html.includes('db.functions.invoke("admin-dashboard"') &&
   admin.includes('body?.action === "moderate_listing"') &&

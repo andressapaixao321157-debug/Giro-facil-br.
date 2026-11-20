@@ -328,11 +328,78 @@
 #adminPanel .partner-card{border-radius:14px;padding:16px;box-shadow:0 4px 14px #102b5d08}
 @media(max-width:760px){#adminTotals{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#adminTotals>.panel{padding:13px}#adminPanel h3{font-size:16px}}
 
+
+/* Identidade visual nacional: marketplace claro + central administrativa premium */
+:root{--navy:#071b43;--navy2:#102d63;--orange:#ff8500;--ink:#15243b;--muted:#64748b;--bg:#f2f5fa;--line:#e2e8f0}
+body{background:#f2f5fa;color:#17243a}
+.app-header{background:linear-gradient(105deg,#071b43 0%,#10336e 72%,#092452 100%);padding:16px max(18px,calc((100vw - 1180px)/2));box-shadow:0 5px 22px #071b4324;position:relative}
+.app-header:after{content:"";position:absolute;left:0;bottom:0;width:100%;height:3px;background:linear-gradient(90deg,#ff8500,#ffb04d,transparent)}
+.header-brand .brand{font-size:26px;letter-spacing:-.7px}
+.header-brand .tag{font-size:10px;letter-spacing:1.2px;font-weight:800;color:#d7e4fb}
+.market-main{max-width:1200px;padding:22px 18px 100px}
+.location-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;margin-bottom:14px;background:#fff;border:1px solid #e3eaf4;border-radius:14px;box-shadow:0 4px 16px #0b28530a}
+.search-panel{border:1px solid #e0e7f1;border-radius:18px;box-shadow:0 9px 28px #0b285312;background:#fff;padding:12px}
+.search-panel input{font-size:16px}
+.categories{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:18px 0}
+.categories .cat{background:#fff;border:1px solid #e1e8f2;color:#18345f;border-radius:14px;min-height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 4px 14px #0b28530a;transition:transform .18s,border-color .18s}
+.categories .cat:hover{transform:translateY(-2px);border-color:#ffb15c}
+.categories .cat .emoji{font-size:23px}
+.national-trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.trust-item{display:flex;align-items:center;gap:12px;padding:13px 15px;background:#fff;border:1px solid #e4eaf3;border-radius:14px;min-width:0}
+.trust-item>span{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#fff2e4;color:#e87500;font-size:21px;font-weight:900}
+.trust-item strong,.trust-item small{display:block}
+.trust-item strong{font-size:13px;color:#102b5d}
+.trust-item small{font-size:11px;color:#64748b;margin-top:3px;line-height:1.35}
+.promo-banner{border-radius:20px;overflow:hidden;box-shadow:0 12px 30px #0b28531c;border:1px solid #183a6d}
+.section-head{margin:24px 0 12px}
+.section-head h2{font-size:clamp(19px,3vw,24px);color:#102b5d;letter-spacing:-.4px}
+#listings .panel{border-radius:16px;border:1px dashed #cbd7e7;background:#fff;padding:24px;line-height:1.6}
+#listings .listing-card,#listings .card{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 5px 18px #0b28530d}
+.bottom-nav{box-shadow:0 -7px 26px #0b285312;border-top:1px solid #e5eaf2}
+footer{color:#64748b;padding-bottom:100px}
+
+/* Console administrativa: identidade escura, densa e legível */
+#adminPanel{background:linear-gradient(145deg,#07162f 0%,#0c2144 58%,#102b53 100%);border:1px solid #213e68;border-radius:22px;color:#edf4ff;padding:clamp(16px,3vw,28px);box-shadow:0 18px 48px #07162f38}
+#adminPanel .admin-console-head{padding:4px 2px 18px;border-bottom:1px solid #294568;margin-bottom:18px}
+#adminPanel .admin-console-head h2{color:#fff;font-size:clamp(24px,4vw,32px);letter-spacing:-.8px;margin:0 0 8px}
+#adminPanel .admin-console-head h2:after{content:"PAINEL EMPRESARIAL · OPERAÇÃO NACIONAL";display:block;margin-top:8px;color:#ff9a2f;font-size:10px;letter-spacing:1.5px;font-weight:900}
+#adminPanel .admin-console-head .hint,#adminPanel .hint{color:#b7c8df}
+#adminTotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:18px 0 26px}
+#adminTotals>.panel{margin:0;padding:16px;background:linear-gradient(145deg,#122b50,#0d2242);border:1px solid #29496f;border-radius:15px;box-shadow:0 8px 20px #020b1d42;min-width:0}
+#adminTotals>.panel strong{font-size:11px;color:#a9bed8;text-transform:uppercase;letter-spacing:.7px}
+#adminTotals>.panel div{font-size:clamp(20px,3vw,27px)!important;font-weight:900;color:#fff;overflow-wrap:anywhere}
+#adminPanel h3{margin:27px 0 12px;padding-bottom:10px;border-bottom:1px solid #294568;color:#fff;font-size:17px;letter-spacing:-.2px}
+#adminPanel p{line-height:1.55}
+#adminPanel table{min-width:620px;font-size:13px;border-collapse:separate!important;border-spacing:0;overflow:hidden;border:1px solid #294568;border-radius:12px;background:#0d2140;width:100%}
+#adminPanel th{background:#18375f;color:#dbeafe;text-align:left;padding:12px;white-space:nowrap}
+#adminPanel td{padding:11px 12px;border-bottom:1px solid #223d61;color:#d7e4f5}
+#adminPanel tr:last-child td{border-bottom:0}
+#adminPanel button{border-radius:10px;min-height:40px}
+#adminPanel button.secondary{background:#294568;color:#fff;border:1px solid #456384}
+#adminPanel #adminRefresh{width:100%;margin-top:22px;min-height:48px;background:#ff8500;color:#17243a}
+#adminPanel textarea,#adminPanel input,#adminPanel select{background:#0a1d39;color:#edf4ff;border:1px solid #355274;border-radius:11px}
+#adminPanel textarea::placeholder,#adminPanel input::placeholder{color:#91a7c2}
+#adminPanel .partner-card{background:#10294c;border:1px solid #29496f;border-radius:14px;padding:16px;box-shadow:0 4px 14px #020b1d20;color:#edf4ff}
+#adminPanel .partner-card strong{color:#fff}
+#adminPanel .partner-card small{color:#b7c8df}
+#adminPanel .status{background:#122d51;color:#e5efff;border:1px solid #355274}
+@media(max-width:760px){
+ .market-main{padding:14px 12px 100px}
+ .categories{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .categories .cat{min-height:76px;font-size:12px}
+ .national-trust{grid-template-columns:1fr;gap:8px}
+ .trust-item{padding:10px 12px}
+ #adminTotals{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #adminTotals>.panel{padding:13px}
+ #adminPanel h3{font-size:16px}
+ #adminPanel{padding:14px}
+}
+
 </style>
 </head>
 <body>
 <header class="app-header">
-  <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">Compra, venda e aluguel em todo o Brasil</div></div>
+  <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">MARKETPLACE NACIONAL · COMPRA, VENDA E SERVIÇOS</div></div>
   <div class="header-actions"><button class="icon-action" id="headerMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
 <main class="market-main">
@@ -358,6 +425,11 @@
     <button class="cat" data-cat="Casa e construção"><span class="emoji">🧰</span>Casa e construção</button>
     <button class="cat" data-cat="Agro e pecuária"><span class="emoji">🌾</span>Agro e pecuária</button>
     <button class="cat" data-cat="Esportes e lazer"><span class="emoji">⚽</span>Esportes e lazer</button>
+  </section>
+  <section class="national-trust" aria-label="Recursos do marketplace nacional">
+    <div class="trust-item"><span>🇧🇷</span><div><strong>Todo o Brasil</strong><small>Anuncie e encontre em qualquer estado</small></div></div>
+    <div class="trust-item"><span>⌕</span><div><strong>Busca inteligente</strong><small>Filtre por categoria, estado e cidade</small></div></div>
+    <div class="trust-item"><span>✉</span><div><strong>Conversa pelo app</strong><small>Fale diretamente pelo chat interno</small></div></div>
   </section>
   <section class="promo-banner" aria-label="Espaço patrocinado">
     <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
@@ -515,7 +587,7 @@
     </div>
   </section>
   <section id="adminPanel" class="panel hidden">
-    <div class="admin-console-head"><h2>Painel administrativo — Giro Fácil</h2><p class="hint">Central de operação: acompanhe anúncios, pagamentos, parceiros, captação e indicadores em um só lugar.</p></div>
+    <div class="admin-console-head"><h2>Central de Gestão · Giro Fácil BR</h2><p class="hint">Visão empresarial da operação nacional: indicadores, anúncios, vendedores, pagamentos, parceiros e atendimento.</p></div>
     <div id="adminStatus" class="status hidden"></div>
     <div id="adminTotals" class="form-grid"></div>
     <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>

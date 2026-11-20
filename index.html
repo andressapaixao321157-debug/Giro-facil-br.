@@ -443,6 +443,32 @@ footer{color:#64748b;padding-bottom:100px}
 }
 }
 
+  
+/* Ajustes de legibilidade da tela inicial e ações do anunciante */
+.promo-banner{position:relative;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(90px,.8fr);align-items:center;gap:12px;overflow:hidden}
+.promo-copy{position:relative;z-index:2;min-width:0;max-width:100%;padding:8px 0}
+.promo-label{display:inline-flex;align-items:center;max-width:100%;white-space:normal;line-height:1.25;overflow-wrap:anywhere;margin:0 0 10px}
+.promo-copy h2,.promo-copy p{max-width:100%;overflow-wrap:anywhere;word-break:normal}
+.promo-copy h2{font-size:clamp(18px,4.5vw,28px);line-height:1.18;margin:8px 0 12px}
+.promo-copy p{font-size:clamp(13px,3.2vw,16px);line-height:1.45}
+.promo-art{position:relative;z-index:1;min-width:0;text-align:center;max-width:100%;font-size:clamp(42px,12vw,82px)}
+#listings.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#listings .card{min-width:0;width:100%}
+#listings .card-body{min-width:0}
+#listings .card h3,#listings .meta{overflow-wrap:anywhere}
+.owner-listing-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.owner-listing-actions button{min-width:0;padding:10px 7px;border-radius:10px;font-size:12px;font-weight:800}
+.owner-listing-actions .owner-edit{background:#203c68;color:#fff}
+.owner-listing-actions .owner-boost{background:#ff8500;color:#18243a}
+@media(max-width:520px){
+ .promo-banner{grid-template-columns:minmax(0,1fr) 74px;gap:8px;padding:15px}
+ .promo-copy{max-width:none}
+ .promo-copy h2{font-size:19px}
+ .promo-art{font-size:44px;margin:0}
+ #listings.grid{grid-template-columns:minmax(0,1fr)}
+ #listings .vehicle-img{height:190px}
+}
+
   </style>
 </head>
 <body>
@@ -1060,7 +1086,8 @@ footer{color:#64748b;padding-bottom:100px}
       const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";
       const card=document.createElement("article");card.className="card";
       const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]"),isFav=favs.includes(item.id);
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
+      const ownerActions=currentUser?.id===item.usuario_id?`<div class="owner-listing-actions"><button type="button" class="owner-edit" data-edit-listing="${escapeHtml(item.id)}">Editar anúncio</button><button type="button" class="owner-boost" data-boost-listing="${escapeHtml(item.id)}">Turbinar anúncio</button></div>`:"";
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div>${reachTag}${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
       $("listings").appendChild(card);
     });
   }

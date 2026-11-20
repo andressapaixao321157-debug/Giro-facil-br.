@@ -308,6 +308,7 @@
     /* Publicação profissional em três etapas */
     .publish-wizard{padding:22px;overflow:hidden}.publish-heading h2{font-size:27px;margin:4px 0}.publish-kicker{font-size:11px;font-weight:900;letter-spacing:1.2px;color:#ed790e}.wizard-steps{display:flex;align-items:center;gap:8px;margin:22px 0 26px}.wizard-steps>i{height:3px;background:#dce4f0;flex:1;border-radius:4px}.wizard-step{display:flex;align-items:center;gap:7px;color:#718096;font-size:12px;white-space:nowrap}.wizard-step span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e7ecf4;font-weight:900}.wizard-step.active,.wizard-step.done{color:#102b5d}.wizard-step.active span,.wizard-step.done span{background:#ff7900;color:white}.wizard-title{font-size:19px;margin:0 0 16px;color:#10234a}.wizard-page{animation:wizardIn .18s ease}@keyframes wizardIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}.wizard-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:22px}.wizard-actions button{min-height:48px;flex:1}.photo-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.photo-count{background:#eaf1ff;color:#124a9c;border-radius:20px;padding:6px 11px;font-size:12px;font-weight:900;white-space:nowrap}.photo-picker{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:116px;margin:16px 0;border:2px dashed #9bb9e8;border-radius:16px;background:#f5f8ff;color:#124a9c;cursor:pointer;text-align:center}.photo-picker-icon{font-size:30px;line-height:1}.photo-picker small{font-size:11px;color:#64748b}.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.photo-empty{grid-column:1/-1;border:1px solid #e2e8f0;border-radius:12px;padding:22px;text-align:center;color:#718096;font-size:13px}.photo-item{position:relative;min-width:0;border:1px solid #dbe3ef;border-radius:13px;overflow:hidden;background:#fff}.photo-item img{display:block;width:100%;height:145px;object-fit:cover;background:#edf2f8}.photo-item.cover{border:2px solid #ff7900}.photo-cover-tag{position:absolute;left:7px;top:7px;background:#ff7900;color:white;border-radius:20px;padding:4px 8px;font-size:10px;font-weight:900}.photo-tools{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:7px}.photo-tools button{padding:8px 2px;min-height:35px;font-size:11px;background:#eef3fb;color:#17345f;border-radius:8px}.photo-tools button.remove-photo{background:#fff0f0;color:#b42318}.photo-tools button:disabled{opacity:.35}.photo-guidance{margin-top:12px;padding:12px;border-radius:10px;background:#edf4ff;color:#35527d;font-size:12px;line-height:1.5}.publish-review{border:1px solid #e1e7f0;border-radius:14px;padding:14px;margin-bottom:14px}.review-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:14px}.review-photos img{width:100%;height:82px;object-fit:cover;border-radius:8px}.review-line{padding:9px 0;border-bottom:1px solid #edf1f6;font-size:13px;overflow-wrap:anywhere}.review-line:last-child{border:0}.review-line strong{display:block;color:#64748b;font-size:11px;margin-bottom:2px}
     @media(max-width:480px){.publish-wizard{padding:16px}.wizard-step{gap:5px;font-size:10px}.wizard-step span{width:27px;height:27px}.wizard-steps{gap:5px}.photo-grid{gap:8px}.photo-item img{height:125px}.photo-tools button{font-size:10px;padding:7px 1px}.wizard-actions button{min-width:100%;}}
+.partner-card{border:1px solid #dce4ef;border-radius:12px;padding:12px;margin:8px 0;background:#fff}.partner-card strong{display:block;color:#102b5d}.partner-card small{display:block;color:#64748b;margin:4px 0 10px}.partner-actions{display:flex;gap:8px}.partner-actions button{flex:1}
 </style>
 </head>
 <body>
@@ -450,14 +451,36 @@
     <div id="accountEmail" class="account-email"></div>
     <div class="account-actions">
       <button class="secondary account-action" id="plansOpen" type="button">Planos e pagamentos</button>
+      <button class="secondary account-action" id="partnerOpen" type="button">Seja parceiro / Estoque</button>
       <button class="secondary account-action hidden" id="adminOpen" type="button">Painel administrativo</button>
       <button class="secondary account-action account-logout" id="logoutBtn" type="button">Sair</button>
+    </div>
+  </section>
+  <section id="partnerPanel" class="panel hidden">
+    <h2>Programa de parceiros Giro Fácil</h2>
+    <p class="hint">Lojas, concessionárias, imobiliárias e negócios podem solicitar parceria para cadastrar seus estoques no Giro Fácil.</p>
+    <div id="partnerStatus" class="status hidden"></div>
+    <div id="partnerApplicationForm" class="form-grid">
+      <div class="field full"><label for="partnerBusiness">Nome da empresa *</label><input id="partnerBusiness" maxlength="120" placeholder="Nome da loja ou empresa"></div>
+      <div class="field"><label for="partnerType">Tipo de negócio *</label><select id="partnerType"><option value="concessionaria">Concessionária / revenda</option><option value="imobiliaria">Imobiliária / corretor</option><option value="loja">Loja / comércio</option><option value="agro">Agro / máquinas</option><option value="outro">Outro</option></select></div>
+      <div class="field"><label for="partnerContact">Responsável *</label><input id="partnerContact" maxlength="120" placeholder="Nome do responsável"></div>
+      <div class="field"><label for="partnerPhone">Telefone com DDD *</label><input id="partnerPhone" inputmode="tel" maxlength="18" placeholder="(66) 99999-9999"></div>
+      <div class="field"><label for="partnerCity">Cidade *</label><input id="partnerCity" maxlength="100" placeholder="Sua cidade"></div>
+      <div class="field"><label for="partnerState">Estado *</label><input id="partnerState" maxlength="2" placeholder="MT"></div>
+      <div class="field full"><button id="partnerApplyBtn" type="button">Enviar solicitação de parceria</button></div>
+    </div>
+    <div id="partnerApprovedArea" class="hidden"><h3>Cadastro de estoque em lote</h3>
+      <p class="hint">Uma linha por anúncio, separando os campos com ponto e vírgula: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL da foto. Até 20 anúncios por envio. Não inclua ponto e vírgula dentro dos campos.</p>
+      <textarea id="partnerBulkInput" rows="7" placeholder="Toyota SW4 SRX 2025;Carro;250000;Toyota;SW4 SRX;2025;Rondonópolis;MT;66999999999;Único dono;https://..."></textarea>
+      <button id="partnerBulkSubmit" type="button" style="margin-top:10px">Enviar lote para aprovação</button>
     </div>
   </section>
   <section id="adminPanel" class="panel hidden">
     <h2>Painel administrativo — Giro Fácil</h2>
     <div id="adminStatus" class="status hidden"></div>
     <div id="adminTotals" class="form-grid"></div>
+    <h3>Captação de anúncios em lote</h3><p class="hint">Cadastre até 20 anúncios por vez para a conta administradora. Formato por linha: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL da foto.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
+    <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
     <h3>Pagamentos recentes</h3><div id="adminOrders" style="overflow:auto"></div>
     <h3>Anúncios recentes</h3><div id="adminListings" style="overflow:auto"></div>
     <button id="adminRefresh" style="margin-top:12px">Atualizar painel</button>
@@ -505,9 +528,19 @@
     $("accountEmail").textContent=currentUser?`Conectado: ${currentUser.email}`:"";
     $("adminOpen").classList.add("hidden");
     $("adminPanel").classList.add("hidden");
+    $("partnerPanel").classList.add("hidden");
+    $("partnerOpen").classList.toggle("hidden",!currentUser);
     if(currentUser&&db){
-      const {data}=await db.from("perfis").select("papel").eq("id",currentUser.id).maybeSingle();
-      if(data?.papel==="admin")$("adminOpen").classList.remove("hidden");
+      const [{data:profile},{data:partner}] = await Promise.all([
+        db.from("perfis").select("papel").eq("id",currentUser.id).maybeSingle(),
+        db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle()
+      ]);
+      if(profile?.papel==="admin")$("adminOpen").classList.remove("hidden");
+      const approved=partner?.status==="ativo";
+      $("partnerApplicationForm").classList.toggle("hidden",approved);
+      $("partnerApprovedArea").classList.toggle("hidden",!approved);
+      if(approved)status("partnerStatus","Parceria ativa: "+partner.business_name+". Você pode enviar seu estoque em lotes de até 20 anúncios.","ok");
+      else $("partnerStatus").classList.add("hidden");
     }
   }
   function openAuth(){ $("authPanel").classList.remove("hidden"); $("publishPanel").classList.add("hidden"); $("authPanel").scrollIntoView({behavior:"smooth"}); }
@@ -596,10 +629,12 @@
       const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
       if(error)throw error;if(data.error)throw new Error(data.error);
       const t=data.totals;
-      const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores]];
+      const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores],["Parceiros ativos",t.activePartners],["Solicitações de parceria",t.pendingPartners]];
       $("adminTotals").innerHTML=cards.map(([k,v])=>'<div class="panel"><strong>'+k+'</strong><div style="font-size:22px;margin-top:8px">'+v+'</div></div>').join("");
       $("adminOrders").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>ID</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Data</th></tr>'+data.orders.map(o=>'<tr><td>'+escapeHtml(o.id.slice(0,8))+'</td><td>'+escapeHtml(o.kind)+'</td><td>'+Number(o.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(o.status)+'</td><td>'+new Date(o.created_at).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
       $("adminListings").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>Anúncio</th><th>Preço</th><th>Status</th><th>Data</th><th>Ação</th></tr>'+data.listings.map(a=>'<tr><td>'+escapeHtml(a.titulo)+'</td><td>'+Number(a.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(a.status)+'</td><td>'+new Date(a.criado_em).toLocaleDateString("pt-BR")+'</td><td>'+(a.status==="pendente"?'<button data-moderate="'+a.id+'" data-next-status="ativo">Aprovar</button> <button class="secondary" data-moderate="'+a.id+'" data-next-status="rejeitado">Reprovar</button>':'—')+'</td></tr>').join("")+'</table>';
+      $("adminPartners").innerHTML=(data.partnerApplications||[]).length?(data.partnerApplications||[]).map(p=>'<div class="partner-card"><strong>'+escapeHtml(p.business_name)+'</strong><small>'+escapeHtml(p.business_type)+' · '+escapeHtml(p.contact_name)+' · '+escapeHtml(p.phone)+' · '+escapeHtml(p.city)+'/'+escapeHtml(p.state)+'</small><div class="partner-actions"><button type="button" data-partner-review="'+p.id+'" data-decision="aprovado">Aprovar</button><button type="button" class="secondary" data-partner-review="'+p.id+'" data-decision="rejeitado">Rejeitar</button></div></div>').join(""):'<p class="hint">Nenhuma solicitação pendente de parceria.</p>';
+      $("adminPartners").onclick=async(ev)=>{const btn=ev.target.closest("[data-partner-review]");if(!btn)return;btn.disabled=true;try{const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"review_partner_application",applicationId:btn.dataset.partnerReview,decision:btn.dataset.decision}});if(error)throw error;if(data?.error)throw new Error(data.error);status("adminStatus","Solicitação de "+(data.businessName||"parceria")+" "+(data.decision==="aprovado"?"aprovada.":"rejeitada."),"ok");await loadAdminDashboard();}catch(e){status("adminStatus",e.message||"Não foi possível revisar a parceria.","err");btn.disabled=false;}};
       $("adminListings").onclick=async(ev)=>{const btn=ev.target.closest("[data-moderate]");if(!btn)return;btn.disabled=true;try{const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"moderate_listing",listingId:btn.dataset.moderate,status:btn.dataset.nextStatus}});if(error)throw error;if(data?.error)throw new Error(data.error);await loadAdminDashboard();await loadListings();}catch(e){status("adminStatus",e.message||"Não foi possível atualizar o anúncio.","err");btn.disabled=false;}};
       status("adminStatus","Painel atualizado com dados do servidor.","ok");
     }catch(e){status("adminStatus",e.message||"Não foi possível carregar o painel.","err");}
@@ -619,6 +654,44 @@
     loadAdminDashboard();
   };
   $("adminRefresh").onclick=loadAdminDashboard;
+  $("partnerOpen").onclick=async()=>{
+    if(!currentUser){openAuth();return;}
+    $("partnerPanel").classList.remove("hidden");$("partnerPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    const {data:partner}=await db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle();
+    const approved=partner?.status==="ativo";$("partnerApplicationForm").classList.toggle("hidden",approved);$("partnerApprovedArea").classList.toggle("hidden",!approved);
+    if(approved)status("partnerStatus","Parceria ativa: "+partner.business_name+".","ok");
+    else {const {data:existing}=await db.from("partner_applications").select("status").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(existing?.status==="pendente")status("partnerStatus","Sua solicitação já está em análise. A equipe retornará após a revisão.","ok");}
+  };
+  $("partnerApplyBtn").onclick=async()=>{
+    const payload={user_id:currentUser.id,business_name:$("partnerBusiness").value.trim(),business_type:$("partnerType").value,contact_name:$("partnerContact").value.trim(),phone:$("partnerPhone").value.trim(),city:$("partnerCity").value.trim(),state:$("partnerState").value.trim().toUpperCase(),status:"pendente"};
+    if(!payload.business_name||!payload.contact_name||!payload.phone||!payload.city||payload.state.length!==2){status("partnerStatus","Preencha todos os campos obrigatórios e informe a UF com duas letras.","err");return;}
+    $("partnerApplyBtn").disabled=true;
+    try{const {error}=await db.from("partner_applications").insert(payload);if(error)throw error;status("partnerStatus","Solicitação enviada! Ela ficará pendente até a análise da equipe.","ok");$("partnerApplicationForm").classList.add("hidden");}
+    catch(e){status("partnerStatus",e.message||"Não foi possível enviar a solicitação.","err");}
+    finally{$("partnerApplyBtn").disabled=false;}
+  };
+  function parseBulkListings(raw){
+    return raw.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean).map((line,index)=>{
+      const p=line.split(";").map(v=>v.trim());
+      if(p.length<3)throw new Error("Linha "+(index+1)+": use pelo menos Título;Categoria;Preço.");
+      return {titulo:p[0],categoria:p[1],preco:Number(p[2]),marca:p[3]||"",modelo:p[4]||"",ano:p[5]||null,cidade:p[6]||"",estado:p[7]||"",whatsapp:p[8]||"",descricao:p[9]||"",fotos:p[10]?[p[10]]:[]};
+    });
+  }
+  async function submitBulkListings(inputId,buttonId){
+    const button=$(buttonId);let listings;
+    try{listings=parseBulkListings($(inputId).value);if(listings.length>20)throw new Error("O limite é de 20 anúncios por lote.");}
+    catch(e){status(inputId==="adminBulkInput"?"adminStatus":"partnerStatus",e.message,"err");return;}
+    button.disabled=true;
+    try{const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"bulk_create_listings",listings}});if(error)throw error;if(data?.error)throw new Error(data.error);
+      status(inputId==="adminBulkInput"?"adminStatus":"partnerStatus",data.count+" anúncio(s) cadastrado(s) como pendente(s) para revisão. Nenhum foi publicado automaticamente.","ok");$(inputId).value="";
+      if(inputId==="adminBulkInput")await loadAdminDashboard();
+    }catch(e){status(inputId==="adminBulkInput"?"adminStatus":"partnerStatus",e.message||"Falha ao cadastrar o lote.","err");}
+    finally{button.disabled=false;}
+  }
+  $("adminBulkSubmit").onclick=()=>submitBulkListings("adminBulkInput","adminBulkSubmit");
+  $("partnerBulkSubmit").onclick=()=>submitBulkListings("partnerBulkInput","partnerBulkSubmit");
+  $("assistantLeadOpen").onclick=()=>{$("assistantPanel").classList.remove("hidden");$("assistantPanel").scrollIntoView({behavior:"smooth"});$("assistantInput").value="Sou o administrador do Giro Fácil. Monte um plano prático de captação dos primeiros 500 anúncios reais, com roteiro de abordagem para concessionárias, imobiliárias, lojas e vendedores particulares, metas semanais e checklist de acompanhamento. Não invente contatos nem afirme que já contatou empresas.";$("assistantInput").focus();};
+
 
   let activeConversationId=null, activeConversationTitle="";
   async function openChat(conversationId=null){

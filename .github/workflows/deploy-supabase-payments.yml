@@ -26,21 +26,24 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
           ASAAS_WEBHOOK_TOKEN: ${{ secrets.ASAAS_WEBHOOK_TOKEN }}
         run: |
           set -euo pipefail
           if [[ "$SUPABASE_ACCESS_TOKEN" != sbp_* ]]; then
-            echo "::error::SUPABASE_ACCESS_TOKEN inválido ou ausente. Cadastre um Personal Access Token Supabase que comece com sbp_. Não use a chave anon/publishable nem service_role."
+            echo "::error::SUPABASE_ACCESS_TOKEN inválido ou ausente. Use um Personal Access Token Supabase que comece com sbp_."
             exit 1
           fi
           test -n "$SUPABASE_PROJECT_REF" || { echo "::error::Cadastre SUPABASE_PROJECT_REF nas Actions secrets."; exit 1; }
+          test -n "$SUPABASE_DB_URL" || { echo "::error::Cadastre SUPABASE_DB_URL com a connection string do Supavisor em modo Session (porta 5432)."; exit 1; }
           test -n "$ASAAS_API_KEY" || { echo "::error::Cadastre ASAAS_API_KEY nas Actions secrets."; exit 1; }
           test -n "$ASAAS_WEBHOOK_TOKEN" || { echo "::error::Cadastre ASAAS_WEBHOOK_TOKEN nas Actions secrets."; exit 1; }
       - name: Deploy database and payment functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
           ASAAS_WEBHOOK_TOKEN: ${{ secrets.ASAAS_WEBHOOK_TOKEN }}
           ASAAS_API_URL: ${{ secrets.ASAAS_API_URL }}
@@ -53,7 +56,8 @@ jobs:
             ASAAS_WEBHOOK_TOKEN="$ASAAS_WEBHOOK_TOKEN" \
             ASAAS_SINGLE_AD_PRICE="10.00" \
             ASAAS_MONTHLY_PLAN_PRICE="59.00"
-          supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+          # GitHub-hosted runners are IPv4-only; Supavisor Session mode is IPv4-compatible.
+          supabase db push --db-url "$SUPABASE_DB_URL"
           supabase functions deploy asaas-create-payment --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy asaas-webhook --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy admin-dashboard --project-ref "$SUPABASE_PROJECT_REF"

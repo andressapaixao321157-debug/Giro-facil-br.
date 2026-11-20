@@ -304,7 +304,11 @@
       .bottom-nav button{font-size:9px;padding-left:1px;padding-right:1px}
     }
 
-  </style>
+  
+    /* Publicação profissional em três etapas */
+    .publish-wizard{padding:22px;overflow:hidden}.publish-heading h2{font-size:27px;margin:4px 0}.publish-kicker{font-size:11px;font-weight:900;letter-spacing:1.2px;color:#ed790e}.wizard-steps{display:flex;align-items:center;gap:8px;margin:22px 0 26px}.wizard-steps>i{height:3px;background:#dce4f0;flex:1;border-radius:4px}.wizard-step{display:flex;align-items:center;gap:7px;color:#718096;font-size:12px;white-space:nowrap}.wizard-step span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e7ecf4;font-weight:900}.wizard-step.active,.wizard-step.done{color:#102b5d}.wizard-step.active span,.wizard-step.done span{background:#ff7900;color:white}.wizard-title{font-size:19px;margin:0 0 16px;color:#10234a}.wizard-page{animation:wizardIn .18s ease}@keyframes wizardIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}.wizard-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:22px}.wizard-actions button{min-height:48px;flex:1}.photo-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.photo-count{background:#eaf1ff;color:#124a9c;border-radius:20px;padding:6px 11px;font-size:12px;font-weight:900;white-space:nowrap}.photo-picker{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:116px;margin:16px 0;border:2px dashed #9bb9e8;border-radius:16px;background:#f5f8ff;color:#124a9c;cursor:pointer;text-align:center}.photo-picker-icon{font-size:30px;line-height:1}.photo-picker small{font-size:11px;color:#64748b}.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.photo-empty{grid-column:1/-1;border:1px solid #e2e8f0;border-radius:12px;padding:22px;text-align:center;color:#718096;font-size:13px}.photo-item{position:relative;min-width:0;border:1px solid #dbe3ef;border-radius:13px;overflow:hidden;background:#fff}.photo-item img{display:block;width:100%;height:145px;object-fit:cover;background:#edf2f8}.photo-item.cover{border:2px solid #ff7900}.photo-cover-tag{position:absolute;left:7px;top:7px;background:#ff7900;color:white;border-radius:20px;padding:4px 8px;font-size:10px;font-weight:900}.photo-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:7px}.photo-tools button{padding:8px 2px;min-height:35px;font-size:11px;background:#eef3fb;color:#17345f;border-radius:8px}.photo-tools button.remove-photo{background:#fff0f0;color:#b42318}.photo-tools button:disabled{opacity:.35}.photo-guidance{margin-top:12px;padding:12px;border-radius:10px;background:#edf4ff;color:#35527d;font-size:12px;line-height:1.5}.publish-review{border:1px solid #e1e7f0;border-radius:14px;padding:14px;margin-bottom:14px}.review-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:14px}.review-photos img{width:100%;height:82px;object-fit:cover;border-radius:8px}.review-line{padding:9px 0;border-bottom:1px solid #edf1f6;font-size:13px;overflow-wrap:anywhere}.review-line:last-child{border:0}.review-line strong{display:block;color:#64748b;font-size:11px;margin-bottom:2px}
+    @media(max-width:480px){.publish-wizard{padding:16px}.wizard-step{gap:5px;font-size:10px}.wizard-step span{width:27px;height:27px}.wizard-steps{gap:5px}.photo-grid{gap:8px}.photo-item img{height:125px}.photo-tools button{font-size:10px;padding:7px 1px}.wizard-actions button{min-width:100%;}}
+</style>
 </head>
 <body>
 <header class="app-header">
@@ -355,24 +359,44 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="authSubmit">Entrar</button><button class="secondary" id="toggleSignup">Criar conta</button><button class="ghost" id="forgotPassword" style="color:#334155;border-color:#cbd5e1">Esqueci minha senha</button><button class="ghost" id="closeAuth" style="color:#334155;border-color:#cbd5e1">Fechar</button></div>
   </section>
 
-  <section id="publishPanel" class="panel hidden">
-    <h2>Publicar anúncio</h2>
-    <p class="hint">Anuncie veículos, utilitários, máquinas, embarcações, imóveis, roupas, móveis, eletrônicos, itens para casa, agro e lazer para venda ou aluguel. O anúncio ficará pendente até a aprovação do administrador.</p>
-    <div id="publishStatus" class="status hidden"></div>
-    <div class="form-grid">
-      <div class="field full"><label for="title">Título do anúncio</label><input id="title" placeholder="Ex.: Toyota Corolla XEi 2020"></div>
-      <div class="field"><label for="category">Categoria do anúncio</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select></div>
-      <div class="field"><label for="brand">Marca (se veículo)</label><input id="brand" placeholder="Ex.: Toyota"></div>
-      <div class="field"><label for="model">Modelo / tipo do imóvel</label><input id="model" placeholder="Ex.: Corolla XEi ou casa"></div>
-      <div class="field"><label for="year">Ano (se veículo)</label><input id="year" type="number" min="1950" max="2100" placeholder="2020"></div>
-      <div class="field"><label for="price">Preço em R$</label><input id="price" type="number" min="0" step="0.01" placeholder="85000"></div>
-      <div class="field"><label for="state">Estado</label><select id="state"><option value="">Carregando Estados...</option></select></div>
-      <div class="field"><label for="city">Cidade</label><select id="city" disabled><option value="">Escolha primeiro o Estado</option></select></div>
-      <div class="field"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" placeholder="65999999999"></div>
-      <div class="field"><label for="photos">Fotos (até 5 MB cada)</label><input id="photos" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple><span class="hint">Você pode selecionar várias fotos do veículo ou imóvel.</span></div>
-      <div class="field full"><label for="description">Descrição</label><textarea id="description" rows="4" placeholder="Conte mais sobre o veículo..."></textarea></div>
+  <section id="publishPanel" class="panel hidden publish-wizard">
+    <div class="publish-heading"><div><span class="publish-kicker">GIRO FÁCIL · NOVO ANÚNCIO</span><h2>Vamos anunciar?</h2><p class="hint">Preencha os dados, escolha suas fotos e revise tudo antes de publicar.</p></div></div>
+    <div class="wizard-steps" aria-label="Etapas da publicação">
+      <div class="wizard-step active" data-step-indicator="1"><span>1</span><strong>Detalhes</strong></div><i></i>
+      <div class="wizard-step" data-step-indicator="2"><span>2</span><strong>Fotos</strong></div><i></i>
+      <div class="wizard-step" data-step-indicator="3"><span>3</span><strong>Revisão</strong></div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button id="publishBtn">Enviar anúncio</button><button class="secondary" id="cancelPublish">Cancelar</button></div>
+    <div id="publishStatus" class="status hidden"></div>
+    <div id="publishStep1" class="wizard-page">
+      <h3 class="wizard-title">Dados do anúncio</h3>
+      <div class="form-grid">
+        <div class="field full"><label for="title">Título do anúncio *</label><input id="title" placeholder="Ex.: Toyota SW4 SRX 2025" maxlength="90"></div>
+        <div class="field"><label for="category">Categoria do anúncio *</label><select id="category"><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select></div>
+        <div class="field"><label for="brand">Marca (se veículo)</label><input id="brand" placeholder="Ex.: Toyota"></div>
+        <div class="field"><label for="model">Modelo / tipo do imóvel</label><input id="model" placeholder="Ex.: SW4 SRX ou casa"></div>
+        <div class="field"><label for="year">Ano (se veículo)</label><input id="year" type="number" min="1950" max="2100" placeholder="2025"></div>
+        <div class="field"><label for="price">Preço em R$ *</label><input id="price" type="number" min="0" step="0.01" placeholder="85000"></div>
+        <div class="field"><label for="state">Estado</label><select id="state"><option value="">Carregando Estados...</option></select></div>
+        <div class="field"><label for="city">Cidade</label><select id="city" disabled><option value="">Escolha primeiro o Estado</option></select></div>
+        <div class="field full"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" inputmode="tel" placeholder="65999999999"></div>
+        <div class="field full"><label for="description">Descrição</label><textarea id="description" rows="4" maxlength="3000" placeholder="Conte os detalhes e diferenciais do seu anúncio..."></textarea></div>
+      </div>
+      <div class="wizard-actions"><button type="button" id="toPhotosBtn">Continuar para as fotos →</button><button type="button" class="secondary" id="cancelPublish">Cancelar</button></div>
+    </div>
+    <div id="publishStep2" class="wizard-page hidden">
+      <div class="photo-head"><div><h3 class="wizard-title">Fotos do anúncio</h3><p class="hint">Adicione até 20 fotos. A primeira será a capa do anúncio.</p></div><span id="photoCount" class="photo-count">0 / 20</span></div>
+      <label class="photo-picker" for="photos"><span class="photo-picker-icon">＋</span><strong>Adicionar fotos</strong><small>JPG, PNG ou WEBP · até 5 MB por foto</small></label>
+      <input id="photos" class="hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple>
+      <div id="photoGrid" class="photo-grid"><div class="photo-empty">Suas fotos aparecerão aqui. Escolha imagens nítidas e bem iluminadas.</div></div>
+      <div class="photo-guidance">Dica: mostre a frente, traseira, laterais e interior do produto ou veículo.</div>
+      <div class="wizard-actions"><button type="button" class="secondary" id="backToDetailsBtn">← Voltar</button><button type="button" id="toReviewBtn">Revisar anúncio →</button></div>
+    </div>
+    <div id="publishStep3" class="wizard-page hidden">
+      <h3 class="wizard-title">Confira seu anúncio</h3>
+      <div id="publishReview" class="publish-review"></div>
+      <p class="hint">Seu anúncio será enviado para análise e ficará pendente até a aprovação do administrador.</p>
+      <div class="wizard-actions"><button type="button" class="secondary" id="backToPhotosBtn">← Voltar às fotos</button><button type="button" id="publishBtn">Publicar anúncio</button></div>
+    </div>
   </section>
   <section id="chatPanel" class="panel hidden">
     <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose" type="button">Fechar</button></div>
@@ -803,19 +827,73 @@
   $("locationFilter").onchange=async()=>{favoritesOnly=false;await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
   $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
+  // Estado local das fotos selecionadas e navegação do formulário em etapas.
+  let selectedPhotoFiles=[];
+  let publishStep=1;
+  function showPublishStep(step){
+    publishStep=step;
+    [1,2,3].forEach(n=>{$("publishStep"+n).classList.toggle("hidden",n!==step);const indicator=document.querySelector('[data-step-indicator="'+n+'"]');indicator.classList.toggle("active",n===step);indicator.classList.toggle("done",n<step);});
+    $("publishPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  function validateListingDetails(){
+    const category=$("category").value,isVehicle=["Carro","Moto","Caminhão","Utilitário"].includes(category);
+    const title=$("title").value.trim(),price=Number($("price").value),brand=$("brand").value.trim(),model=$("model").value.trim();
+    if(!title||!Number.isFinite(price)||price<=0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e um preço válido.":"Preencha título e um preço válido.","err");return false;}
+    if($("year").value&&(Number($("year").value)<1950||Number($("year").value)>2100)){status("publishStatus","Informe um ano válido entre 1950 e 2100.","err");return false;}
+    $("publishStatus").classList.add("hidden");return true;
+  }
+  function renderSelectedPhotos(){
+    const grid=$("photoGrid");$("photoCount").textContent=selectedPhotoFiles.length+" / 20";grid.innerHTML="";
+    if(!selectedPhotoFiles.length){grid.innerHTML='<div class="photo-empty">Suas fotos aparecerão aqui. Escolha imagens nítidas e bem iluminadas.</div>';return;}
+    selectedPhotoFiles.forEach((file,index)=>{
+      const url=URL.createObjectURL(file),card=document.createElement("div");card.className="photo-item"+(index===0?" cover":"");
+      const img=document.createElement("img");img.src=url;img.alt="Foto "+(index+1);img.onload=()=>URL.revokeObjectURL(url);card.appendChild(img);
+      if(index===0){const tag=document.createElement("span");tag.className="photo-cover-tag";tag.textContent="★ Foto de capa";card.appendChild(tag);}
+      const tools=document.createElement("div");tools.className="photo-tools";
+      const cover=document.createElement("button");cover.type="button";cover.textContent="Capa";cover.title="Definir como foto de capa";cover.disabled=index===0;cover.onclick=()=>movePhoto(index,0);tools.appendChild(cover);
+      const left=document.createElement("button");left.type="button";left.textContent="←";left.title="Mover para a esquerda";left.disabled=index===0;left.onclick=()=>movePhoto(index,index-1);tools.appendChild(left);
+      const right=document.createElement("button");right.type="button";right.textContent="→";right.title="Mover para a direita";right.disabled=index===selectedPhotoFiles.length-1;right.onclick=()=>movePhoto(index,index+1);tools.appendChild(right);
+      const remove=document.createElement("button");remove.type="button";remove.className="remove-photo";remove.textContent="✕";remove.title="Excluir foto";remove.onclick=()=>{selectedPhotoFiles.splice(index,1);renderSelectedPhotos();};tools.appendChild(remove);
+      card.appendChild(tools);grid.appendChild(card);
+    });
+  }
+  function movePhoto(from,to){if(to<0||to>=selectedPhotoFiles.length)return;const [file]=selectedPhotoFiles.splice(from,1);selectedPhotoFiles.splice(to,0,file);renderSelectedPhotos();}
+  $("photos").addEventListener("change",()=>{
+    const incoming=[...$("photos").files],allowed=["image/jpeg","image/png","image/webp"];
+    for(const file of incoming){
+      if(!allowed.includes(file.type)){status("publishStatus","Formato não aceito. Use JPG, PNG ou WEBP.","err");continue;}
+      if(file.size>5*1024*1024){status("publishStatus","Cada foto deve ter no máximo 5 MB.","err");continue;}
+      if(selectedPhotoFiles.length>=20){status("publishStatus","Você pode adicionar no máximo 20 fotos.","err");break;}
+      selectedPhotoFiles.push(file);
+    }
+    $("photos").value="";renderSelectedPhotos();
+  });
+  $("toPhotosBtn").onclick=()=>{if(validateListingDetails())showPublishStep(2);};
+  $("backToDetailsBtn").onclick=()=>showPublishStep(1);
+  $("toReviewBtn").onclick=()=>{
+    if(!selectedPhotoFiles.length){status("publishStatus","Adicione pelo menos uma foto para continuar.","err");return;}
+    const review=$("publishReview");review.innerHTML="";
+    const photos=document.createElement("div");photos.className="review-photos";
+    selectedPhotoFiles.slice(0,6).forEach((file,i)=>{const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt=i===0?"Foto de capa":"Foto do anúncio";img.onload=()=>URL.revokeObjectURL(img.src);photos.appendChild(img);});review.appendChild(photos);
+    const details=[["Título",$("title").value],["Categoria",$("category").value],["Marca",$("brand").value],["Modelo",$("model").value],["Ano",$("year").value],["Preço",Number($("price").value).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Localização",[$("city").value,$("state").value].filter(Boolean).join(" - ")],["Fotos",selectedPhotoFiles.length+" foto(s) · primeira foto como capa"]];
+    details.forEach(([label,value])=>{if(!value)return;const row=document.createElement("div");row.className="review-line";const strong=document.createElement("strong");strong.textContent=label;const span=document.createElement("span");span.textContent=value;row.append(strong,span);review.appendChild(row);});
+    showPublishStep(3);
+  };
+  $("backToPhotosBtn").onclick=()=>showPublishStep(2);
+  renderSelectedPhotos();
   $("publishBtn").onclick=async()=>{
     if(!db){status("publishStatus","Conexão com o servidor indisponível. Feche e abra o Giro Fácil e tente novamente.","err");return;}
     if(!currentUser){status("publishStatus","Sua sessão expirou. Entre novamente na sua conta antes de enviar o anúncio.","err");openAuth();return;}
     const title=$("title").value.trim(),brand=$("brand").value.trim(),model=$("model").value.trim(),price=Number($("price").value);
     const category=$("category").value;
     const isVehicle=["Carro","Moto","Caminhão","Utilitário"].includes(category);
-    if(!title||!price||price<0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e preço.":"Preencha título e preço do anúncio.","err");return;}
+    if(!title||!price||price<=0||(isVehicle&&(!brand||!model))){status("publishStatus",isVehicle?"Preencha título, marca, modelo e preço válido.":"Preencha título e preço válido do anúncio.","err");showPublishStep(1);return;}
     $("publishBtn").disabled=true;
     status("publishStatus","Preparando seu anúncio...", "ok");
     const uploadedPaths=[];
     let publishStage="preparação";
     try{
-      const urls=[],files=[...$("photos").files];
+      const urls=[],files=[...selectedPhotoFiles];
       for(let index=0;index<files.length;index++){
         const file=files[index];
         if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type))throw new Error("Formato não aceito. Envie fotos JPG, PNG, WEBP ou GIF.");
@@ -857,7 +935,7 @@
       if(!createdListing?.id)throw new Error("O servidor não confirmou o cadastro do anúncio.");
       pendingListingId=createdListing.id;
       status("publishStatus","Anúncio enviado e salvo! Agora escolha o pagamento avulso ou o plano mensal. A aprovação administrativa continua necessária.","ok");
-      $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{if(el.type==="file")el.value="";else el.value="";});
+      $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{el.value="";});selectedPhotoFiles=[];renderSelectedPhotos();showPublishStep(1);
       $("paymentKind").value="single";updatePaymentFields();$("paymentPanel").classList.remove("hidden");await loadOwnListings();$("paymentListingId").value=pendingListingId;$("paymentPanel").scrollIntoView({behavior:"smooth"});
     }catch(e){
       if(uploadedPaths.length){

@@ -1092,6 +1092,42 @@ footer{color:#64748b;padding-bottom:100px}
     });
   }
 
+
+  // Ações do proprietário nos cards da vitrine.
+  document.addEventListener("click",async(event)=>{
+    const edit=event.target.closest("[data-edit-listing]");
+    const boost=event.target.closest("[data-boost-listing]");
+    if(edit){
+      if(!currentUser){openAuth();return;}
+      const id=edit.dataset.editListing;
+      const {data:item,error}=await db.from("anuncios").select("id,titulo,preco,usuario_id").eq("id",id).maybeSingle();
+      if(error||!item||item.usuario_id!==currentUser.id){alert("Não foi possível abrir este anúncio para edição.");return;}
+      const title=prompt("Editar título do anúncio:",item.titulo);
+      if(title===null)return;
+      const priceText=prompt("Editar preço (somente números):",String(item.preco));
+      if(priceText===null)return;
+      const price=Number(priceText.replace(",","."));
+      if(!title.trim()||!Number.isFinite(price)||price<=0){alert("Informe um título e um preço válido.");return;}
+      edit.disabled=true;
+      const {error:updateError}=await db.from("anuncios").update({titulo:title.trim(),preco:price}).eq("id",id).eq("usuario_id",currentUser.id);
+      edit.disabled=false;
+      if(updateError){alert("Não foi possível salvar a edição: "+updateError.message);return;}
+      alert("Anúncio atualizado!");
+      loadListings();
+      return;
+    }
+    if(boost){
+      if(!currentUser){openAuth();return;}
+      $("paymentKind").value="boost";
+      $("paymentPanel").classList.remove("hidden");
+      await loadOwnListings();
+      $("paymentListingId").value=boost.dataset.boostListing;
+      pendingListingId=boost.dataset.boostListing;
+      updatePaymentFields();
+      $("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+  });
+
   // Localidades oficiais do IBGE: Estados e municípios carregados conforme a seleção.
   const IBGE_API="https://servicodados.ibge.gov.br/api/v1/localidades";
   async function fillStates(selectId, placeholder){

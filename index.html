@@ -428,7 +428,20 @@ footer{color:#64748b;padding-bottom:100px}
 #adminPanel .status.err{background:#4a2028;color:#ffd4d4;border-color:#a04b56}
 #adminPanel #adminAcquisitionMetrics>.field{grid-column:1/-1;color:#d6e2f4}
 @media(max-width:850px){#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:480px){#adminPanel{padding:16px;border-radius:18px}#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{gap:8px}#adminPanel #adminTotals>.panel,#adminPanel #adminAcquisitionMetrics>.panel{padding:13px 11px}#adminPanel #adminTotals>.panel strong,#adminPanel #adminAcquisitionMetrics>.panel strong{font-size:9px}#adminPanel #adminTotals>.panel div,#adminPanel #adminAcquisitionMetrics>.panel div{font-size:20px!important}#adminPanel h3{font-size:16px}}
+@media(max-width:480px){#adminPanel{padding:16px;border-radius:18px}#adminPanel #adminTotals,#adminPanel #adminAcquisitionMetrics{gap:8px}#adminPanel #adminTotals>.panel,#adminPanel #adminAcquisitionMetrics>.panel{padding:13px 11px}#adminPanel #adminTotals>.panel strong,#adminPanel #adminAcquisitionMetrics>.panel strong{font-size:9px}#adminPanel #adminTotals>.panel div,#adminPanel #adminAcquisitionMetrics>.panel div{font-size:20px!important}#adminPanel h3{font-size:16px}
+/* Admin tables: fit phone width without hiding the first/last columns */
+#adminPanel [style*="overflow:auto"]{width:100%;max-width:100%;overflow-x:auto!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#adminPanel table{width:100%;min-width:0!important;table-layout:fixed}
+#adminPanel th,#adminPanel td{white-space:normal;overflow-wrap:anywhere;word-break:normal;padding:10px 7px}
+#adminPanel td button{max-width:100%;white-space:normal;padding:10px 12px}
+@media(max-width:520px){
+ #adminPanel table{font-size:11px}
+ #adminPanel th{font-size:9px;letter-spacing:.2px;padding:10px 5px}
+ #adminPanel td{font-size:11px;padding:9px 5px}
+ #adminPanel td button{font-size:11px;min-height:38px}
+ #adminPanel .admin-console-head h2{font-size:25px}
+}
+}
 
   </style>
 </head>

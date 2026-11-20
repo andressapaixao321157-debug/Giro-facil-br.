@@ -554,7 +554,7 @@
   $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
   $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("headerMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
-  $("partnerInfo").onclick=()=>{openAuth();status("authStatus","Entre na sua conta e fale com nossa equipe pelo chat para conhecer os espaços de divulgação.");};
+  $("partnerInfo").onclick=()=>{if(currentUser){$("partnerOpen").click();}else{openAuth();status("authStatus","Entre na sua conta para solicitar parceria e cadastrar seu estoque no Giro Fácil.");}};
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
   $("cancelPublish").onclick=()=>$("publishPanel").classList.add("hidden");
   $("closePayment").onclick=()=>$("paymentPanel").classList.add("hidden");
@@ -660,7 +660,7 @@
     const {data:partner}=await db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle();
     const approved=partner?.status==="ativo";$("partnerApplicationForm").classList.toggle("hidden",approved);$("partnerApprovedArea").classList.toggle("hidden",!approved);
     if(approved)status("partnerStatus","Parceria ativa: "+partner.business_name+".","ok");
-    else {const {data:existing}=await db.from("partner_applications").select("status").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(existing?.status==="pendente")status("partnerStatus","Sua solicitação já está em análise. A equipe retornará após a revisão.","ok");}
+    else {const {data:existing}=await db.from("partner_applications").select("status").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(existing?.status==="pendente"){$("partnerApplicationForm").classList.add("hidden");status("partnerStatus","Sua solicitação já está em análise. A equipe retornará após a revisão.","ok");}else if(existing?.status==="rejeitado")status("partnerStatus","Sua solicitação anterior não foi aprovada. Você pode atualizar os dados e enviar uma nova solicitação.","err");}
   };
   $("partnerApplyBtn").onclick=async()=>{
     const payload={user_id:currentUser.id,business_name:$("partnerBusiness").value.trim(),business_type:$("partnerType").value,contact_name:$("partnerContact").value.trim(),phone:$("partnerPhone").value.trim(),city:$("partnerCity").value.trim(),state:$("partnerState").value.trim().toUpperCase(),status:"pendente"};

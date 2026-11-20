@@ -44,6 +44,14 @@ Deno.serve(async (req) => {
     if (profileError || profile?.papel !== "admin") return reply({ error: "Acesso restrito ao administrador." }, 403);
 
     const body = await req.json().catch(() => ({}));
+    if (body?.action === "update_acquisition_lead") {
+      const leadId=String(body.leadId??"");
+      const next=String(body.status??"");
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(leadId) || !["novo","em_contato","qualificado","convertido","descartado"].includes(next)) return reply({error:"Dados de atualização inválidos."},400);
+      const {data,error}=await admin.from("acquisition_leads").update({status:next,updated_at:new Date().toISOString()}).eq("id",leadId).select("id,status").maybeSingle();
+      if(error)throw error;if(!data)return reply({error:"Interessado não encontrado."},404);
+      return reply({success:true,lead:data});
+    }
     if (body?.action === "moderate_listing") {
       const listingId = String(body.listingId ?? "");
       const nextStatus = String(body.status ?? "");
@@ -85,7 +93,7 @@ Deno.serve(async (req) => {
       return reply({ success: true, listing });
     }
 
-    const [users, ads, pending, paid, orders, latestAds, boosts, stores] = await Promise.all([
+    const [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents] = await Promise.all([
       admin.from("perfis").select("id", { count: "exact", head: true }),
       admin.from("anuncios").select("id", { count: "exact", head: true }),
       admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "pendente"),
@@ -93,9 +101,9 @@ Deno.serve(async (req) => {
       admin.from("payment_orders").select("id,user_id,kind,amount,status,created_at").order("created_at", { ascending: false }).limit(30),
       admin.from("anuncios").select("id,titulo,preco,status,usuario_id,criado_em").order("criado_em", { ascending: false }).limit(30),
       admin.from("ad_boosts").select("id", { count: "exact", head: true }).eq("status", "active"),
-      admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
+      admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),\n      admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at").order("created_at",{ascending:false}).limit(100),\n      admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at",{ascending:false}).limit(1000),
     ]);
-    const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores].find(x => x.error);
+    const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents].find(x => x.error);
     if (queryError?.error) throw new Error("Não foi possível carregar os dados administrativos.");
     const revenue = (paid.data || []).reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
     return reply({
@@ -103,7 +111,7 @@ Deno.serve(async (req) => {
         users: users.count || 0, ads: ads.count || 0, pendingAds: pending.count || 0,
         paidRevenue: revenue, activeBoosts: boosts.count || 0, activeStores: stores.count || 0,
       },
-      orders: orders.data || [], listings: latestAds.data || [],
+      orders: orders.data || [], listings: latestAds.data || [],\n      acquisition: { total: acquisitionLeads.data?.length || 0, newLeads: (acquisitionLeads.data||[]).filter(x=>x.status==="novo").length, leads: acquisitionLeads.data||[], events: acquisitionEvents.data||[] },
     });
   } catch (error) {
     console.error("Admin dashboard error", error);

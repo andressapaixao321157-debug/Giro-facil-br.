@@ -757,6 +757,7 @@ footer{color:#64748b;padding-bottom:100px}
   // COLE AQUI a URL do projeto e a chave anon/public do Supabase.
   // Nunca coloque a chave service_role neste arquivo.
   const SUPABASE_URL = "https://seimeqvtifxlkagudqus.supabase.co";
+  const PUBLIC_SITE_URL = "https://girofacilbr.com.br";
   const SUPABASE_ANON_KEY = "sb_publishable_AkT6XsEKmR45zurwhVTRrQ_H4F7pNgq";
 
   let db = null, currentUser = null, signupMode = false, pendingListingId = null, favoritesOnly = false, ownerListingFilter = "all";
@@ -831,7 +832,7 @@ footer{color:#64748b;padding-bottom:100px}
     try{
       if(signupMode){
         const name=$("fullName").value.trim();if(!name)throw new Error("Informe seu nome.");
-        const {data,error}=await db.auth.signUp({email,password,options:{data:{nome:name}}});if(error)throw error;
+        const {data,error}=await db.auth.signUp({email,password,options:{data:{nome:name},emailRedirectTo:PUBLIC_SITE_URL+"/"}});if(error)throw error;
         if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
           status("authStatus","Este e-mail já possui cadastro. Entre com sua senha ou use “Esqueci minha senha” para recuperar o acesso.","err");
         } else if(data.user && data.session){
@@ -854,7 +855,7 @@ footer{color:#64748b;padding-bottom:100px}
     if(!email){status("authStatus","Digite seu e-mail para receber as instruções de recuperação.","err");$("email").focus();return;}
     $("forgotPassword").disabled=true;
     try{
-      const {error}=await db.auth.resetPasswordForEmail(email);
+      const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:PUBLIC_SITE_URL+"/"});
       if(error)throw error;
       status("authStatus","Se houver uma conta para este endereço, as instruções de recuperação serão enviadas. Confira a caixa de entrada e o spam.","ok");
     }catch(e){status("authStatus",e.message||"Não foi possível solicitar a recuperação da senha.","err");}

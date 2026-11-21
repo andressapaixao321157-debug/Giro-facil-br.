@@ -30,6 +30,7 @@ function hasId(id) {
   "assistantOpen", "assistantClose", "assistantInput", "assistantSend",
   "paymentPanel", "plansOpen", "adminPanel", "adminOpen", "adminRefresh",
   "chatConversationList", "chatMessages", "chatMessageInput", "chatSend",
+  "agentConsole", "adminAgentSelect", "adminAgentInput", "adminAgentSend", "adminAgentOutput",
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
 check("Supabase SDK é carregado de arquivo local empacotado no APK",
@@ -123,6 +124,34 @@ check("Todos os IDs HTML são únicos",
   })());
 check("A interface alerta para não enviar dados secretos",
   html.includes("Não envie senhas, códigos de acesso ou dados completos de cartão"));
+
+check("Central de agentes aparece dentro do painel administrativo",
+  hasId("agentConsole") && hasId("adminAgentSelect") && hasId("adminAgentInput") && hasId("adminAgentSend") && hasId("adminAgentOutput"));
+check("Console envia agente selecionado ao backend existente sem alterar chat público",
+  html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
+  html.includes('$("assistantSend").onclick=sendAssistantMessage'));
+check("Console interno limita opções aos quatro agentes administrativos",
+  html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
+  html.includes('<option value="commercial">') && html.includes('<option value="engineering">'));
+
+// Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
+check("Assistente possui cinco perfis de agente definidos",
+  assistant.includes("const agentProfiles") &&
+  ["customer:", "admin:", "moderation:", "commercial:", "engineering:"].every(role => assistant.includes(role)));
+check("Agentes internos exigem papel admin validado no servidor",
+  assistant.includes('if (agent !== "customer")') &&
+  assistant.includes('profile?.papel !== "admin"') &&
+  assistant.includes('return respond({ error: "Este agente está disponível somente para administradores autorizados." }, 403)'));
+check("Agente padrão mantém compatibilidade com o chat atual",
+  assistant.includes('body?.agent === "string" ? body.agent : "customer"') &&
+  html.includes('db.functions.invoke("giro-assistant"'));
+check("Agentes internos são consultivos e não executam ações administrativas",
+  assistant.includes("Você é o agente de análise de segurança e moderação") &&
+  assistant.includes("nunca aprove, rejeite, oculte, exclua ou publique anúncios") &&
+  assistant.includes("Você não tem acesso para editar repositórios"));
+check("Fallback local mantém resposta específica para cada agente",
+  assistant.includes("function localAgentAnswer") &&
+  assistant.includes('fallback[agent]'));
 
 // Backend do assistente: autenticação, validação, contexto e resposta.
 check("Função giro-assistant existe no repositório", assistant.length > 0);

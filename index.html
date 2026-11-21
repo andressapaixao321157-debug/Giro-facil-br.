@@ -1167,6 +1167,24 @@ footer{color:#64748b;padding-bottom:100px}
       if(data.error)throw new Error(data.error);
       status("paymentStatus",data.freeForAdmin?"Turbinamento gratuito ativado para seu anúncio! Nenhuma cobrança foi gerada.":"Cobrança criada: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Status: "+(data.status||"aguardando pagamento")+".","ok");
       const result=$("paymentResult");
+      if(data.freeForAdmin && data.startsAt && data.endsAt){
+        const start=new Date(data.startsAt),end=new Date(data.endsAt);
+        const dateTime={dateStyle:"short",timeStyle:"short"};
+        const detail=document.createElement("div");
+        detail.className="panel";
+        detail.style.cssText="margin-top:12px;background:#e8f7ee;border:1px solid #9bd7b1;color:#14532d";
+        const heading=document.createElement("strong");heading.textContent="Destaque gratuito ativo";detail.appendChild(heading);
+        const lines=[
+          "Início: "+new Intl.DateTimeFormat("pt-BR",dateTime).format(start),
+          "Término: "+new Intl.DateTimeFormat("pt-BR",dateTime).format(end),
+          "Duração: "+(Number(data.durationDays)||Math.round((end-start)/86400000))+" dias",
+          "Valor cobrado: R$ 0,00"
+        ];
+        lines.forEach(value=>{const line=document.createElement("p");line.style.margin="8px 0 0";line.textContent=value;detail.appendChild(line);});
+        const remaining=document.createElement("p");remaining.style.margin="8px 0 0";
+        const updateRemaining=()=>{const ms=end.getTime()-Date.now();remaining.textContent=ms>0?"Tempo restante: "+Math.ceil(ms/86400000)+" dia(s).":"Destaque encerrado.";};
+        updateRemaining();detail.appendChild(remaining);result.appendChild(detail);
+      }
       if(data.pixEncodedImage){const img=document.createElement("img");img.alt="QR Code PIX";img.src="data:image/png;base64,"+data.pixEncodedImage;img.style="display:block;max-width:220px;margin:12px 0";result.appendChild(img);}
       if(data.pixCopyPaste){const label=document.createElement("p");label.textContent="PIX copia e cola:";result.appendChild(label);const code=document.createElement("textarea");code.readOnly=true;code.value=data.pixCopyPaste;code.rows=3;result.appendChild(code);const copy=document.createElement("button");copy.textContent="Copiar código PIX";copy.style.marginTop="8px";copy.onclick=async()=>{await navigator.clipboard.writeText(data.pixCopyPaste);copy.textContent="Código copiado";};result.appendChild(copy);}
       const url=data.boletoUrl||data.paymentUrl;

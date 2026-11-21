@@ -732,6 +732,19 @@ footer{color:#64748b;padding-bottom:100px}
   <section id="adminPanel" class="panel hidden">
     <div class="admin-console-head"><h2>Central de Gestão · Giro Fácil BR</h2><p class="hint">Visão empresarial da operação nacional: indicadores, anúncios, vendedores, pagamentos, parceiros e atendimento.</p></div>
     <div id="adminStatus" class="status hidden"></div>
+    <section class="panel" id="agentConsole" style="margin:16px 0;padding:16px;border:1px solid #35517d;background:#10264a;color:#edf4ff">
+      <h3 style="margin:0 0 6px;color:#fff">Central de agentes inteligentes</h3>
+      <p class="hint" style="color:#c6d5ec">Quatro agentes internos de apoio. Eles analisam e recomendam; não executam alterações, pagamentos ou moderação.</p>
+      <div class="field"><label for="adminAgentSelect">Escolha o agente</label><select id="adminAgentSelect">
+        <option value="admin">Administração</option>
+        <option value="moderation">Fiscalização de anúncios</option>
+        <option value="commercial">Inteligência comercial</option>
+        <option value="engineering">Engenharia e testes</option>
+      </select></div>
+      <div class="field" style="margin-top:10px"><label for="adminAgentInput">O que deseja analisar?</label><textarea id="adminAgentInput" rows="3" maxlength="4000" placeholder="Descreva sua dúvida ou cole dados não sensíveis para análise..."></textarea></div>
+      <button id="adminAgentSend" type="button" style="margin-top:10px">Consultar agente</button>
+      <div id="adminAgentOutput" class="status hidden" aria-live="polite" style="margin-top:12px;white-space:pre-wrap"></div>
+    </section>
     <div id="adminTotals" class="form-grid"></div>
     <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
@@ -1100,6 +1113,29 @@ footer{color:#64748b;padding-bottom:100px}
       input.focus();
     }
   }
+  async function sendAdminAgentMessage(){
+    const input=$("adminAgentInput"),button=$("adminAgentSend"),output=$("adminAgentOutput");
+    const message=input.value.trim(),agent=$("adminAgentSelect").value;
+    if(!message){output.textContent="Escreva o que deseja analisar.";output.classList.remove("hidden");return;}
+    if(!db||!currentUser){output.textContent="Entre na conta administradora para usar os agentes.";output.classList.remove("hidden");return;}
+    if(button.disabled)return;
+    button.disabled=true;button.textContent="Analisando...";
+    output.textContent="O agente está analisando sua solicitação...";
+    output.classList.remove("hidden");
+    try{
+      const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}});
+      if(error)throw new Error(error.message||"Falha ao chamar o agente.");
+      if(data?.error)throw new Error(data.error);
+      if(typeof data?.answer!=="string"||!data.answer.trim())throw new Error("O agente não retornou uma resposta.");
+      output.textContent=data.answer;
+      input.value="";
+    }catch(err){
+      output.textContent="Não foi possível consultar o agente: "+(err?.message||"erro desconhecido")+". Tente novamente.";
+    }finally{
+      button.disabled=false;button.textContent="Consultar agente";
+    }
+  }
+  $("adminAgentSend").onclick=sendAdminAgentMessage;
   $("assistantSend").onclick=sendAssistantMessage;
   $("assistantInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAssistantMessage();}});
   async function sendChatMessage(){

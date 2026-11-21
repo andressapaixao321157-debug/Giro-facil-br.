@@ -30,6 +30,7 @@ function hasId(id) {
   "assistantOpen", "assistantClose", "assistantInput", "assistantSend",
   "paymentPanel", "plansOpen", "adminPanel", "adminOpen", "adminRefresh",
   "chatConversationList", "chatMessages", "chatMessageInput", "chatSend",
+  "agentConsole", "adminAgentSelect", "adminAgentInput", "adminAgentSend", "adminAgentOutput",
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
 check("Supabase SDK é carregado de arquivo local empacotado no APK",
@@ -123,6 +124,15 @@ check("Todos os IDs HTML são únicos",
   })());
 check("A interface alerta para não enviar dados secretos",
   html.includes("Não envie senhas, códigos de acesso ou dados completos de cartão"));
+
+check("Central de agentes aparece dentro do painel administrativo",
+  hasId("agentConsole") && hasId("adminAgentSelect") && hasId("adminAgentInput") && hasId("adminAgentSend") && hasId("adminAgentOutput"));
+check("Console envia agente selecionado ao backend existente sem alterar chat público",
+  html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
+  html.includes('$("assistantSend").onclick=sendAssistantMessage'));
+check("Console interno limita opções aos quatro agentes administrativos",
+  html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
+  html.includes('<option value="commercial">') && html.includes('<option value="engineering">'));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui cinco perfis de agente definidos",

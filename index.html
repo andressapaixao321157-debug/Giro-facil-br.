@@ -770,6 +770,8 @@ footer{color:#64748b;padding-bottom:100px}
   // Nunca coloque a chave service_role neste arquivo.
   const SUPABASE_URL = "https://seimeqvtifxlkagudqus.supabase.co";
   const PUBLIC_SITE_URL = "https://girofacilbr.com.br";
+  // Entrada direta do painel: exige sessão autenticada e papel admin no banco.
+  const ADMIN_ENTRY_REQUESTED = new URLSearchParams(window.location.search).get("admin") === "1";
   const SUPABASE_ANON_KEY = "sb_publishable_AkT6XsEKmR45zurwhVTRrQ_H4F7pNgq";
 
   let db = null, currentUser = null, signupMode = false, pendingListingId = null, favoritesOnly = false, ownerListingFilter = "all";
@@ -808,7 +810,17 @@ footer{color:#64748b;padding-bottom:100px}
         db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle()
       ]);
       document.body.dataset.isAdmin=profile?.papel==="admin"?"true":"false";
-      if(profile?.papel==="admin")$("adminOpen").classList.remove("hidden");
+      if(profile?.papel==="admin"){
+        $("adminOpen").classList.remove("hidden");
+        if(ADMIN_ENTRY_REQUESTED){
+          $("adminPanel").classList.remove("hidden");
+          $("adminPanel").scrollIntoView({behavior:"smooth",block:"start"});
+          loadAdminDashboard();
+        }
+      } else if(ADMIN_ENTRY_REQUESTED){
+        status("authStatus","Esta conta não tem permissão de administrador. Entre com a conta administrativa do Giro Fácil BR.","err");
+        $("authPanel").classList.remove("hidden");
+      }
       const approved=partner?.status==="ativo";
       $("partnerApplicationForm").classList.toggle("hidden",approved);
       $("partnerApprovedArea").classList.toggle("hidden",!approved);

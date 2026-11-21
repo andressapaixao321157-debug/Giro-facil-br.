@@ -1,0 +1,29 @@
+name: Validate intelligent agents
+on:
+  push:
+    branches: [feature/giro-agentes-inteligentes]
+    paths:
+      - "supabase/functions/giro-assistant/**"
+      - "scripts/smoke-test.js"
+      - "package.json"
+      - ".github/workflows/agent-validation.yml"
+  workflow_dispatch:
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Validate assistant source structure
+        run: |
+          test -s supabase/functions/giro-assistant/index.ts
+          grep -q 'const agentProfiles' supabase/functions/giro-assistant/index.ts
+          grep -q 'profile?.papel !== "admin"' supabase/functions/giro-assistant/index.ts
+      - name: Run marketplace regression and agent tests
+        run: npm test

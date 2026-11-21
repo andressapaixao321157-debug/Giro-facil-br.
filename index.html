@@ -618,7 +618,6 @@ footer{color:#64748b;padding-bottom:100px}
         <div class="field"><label for="price">Preço em R$ *</label><input id="price" type="number" min="0" step="0.01" placeholder="85000"></div>
         <div class="field"><label for="state">Estado</label><select id="state"><option value="">Carregando Estados...</option></select></div>
         <div class="field"><label for="city">Cidade</label><select id="city" disabled><option value="">Escolha primeiro o Estado</option></select></div>
-        <div class="field full"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" inputmode="tel" placeholder="65999999999"></div>
         <div class="field full"><label for="description">Descrição</label><textarea id="description" rows="4" maxlength="3000" placeholder="Conte os detalhes e diferenciais do seu anúncio..."></textarea></div>
       </div>
       <div class="wizard-actions"><button type="button" id="toPhotosBtn">Continuar para as fotos →</button><button type="button" class="secondary" id="cancelPublish">Cancelar</button></div>
@@ -1288,7 +1287,7 @@ footer{color:#64748b;padding-bottom:100px}
       const overlay=document.createElement("div");overlay.className="listing-detail-overlay";
       const photoMarkup=photos.map((url,index)=>'<img src="'+escapeHtml(url)+'" alt="Foto '+(index+1)+' de '+escapeHtml(item.titulo)+'">').join("");
       const location=[item.cidade,item.estado].filter(Boolean).map(escapeHtml).join(" / ");
-      const rows=[["Categoria",item.categoria],["Marca",item.marca],["Modelo",item.modelo],["Ano",item.ano],["Localização",location],["WhatsApp",item.whatsapp]].filter(pair=>pair[1]);
+      const rows=[["Categoria",item.categoria],["Marca",item.marca],["Modelo",item.modelo],["Ano",item.ano],["Localização",location]].filter(pair=>pair[1]);
       const published=formatListingDate(item.criado_em||item.created_at);
       overlay.innerHTML='<section class="listing-detail-sheet" role="dialog" aria-modal="true" aria-label="Detalhes do anúncio"><button class="detail-close" type="button" aria-label="Fechar">✕</button><div class="detail-gallery">'+(photoMarkup||'<div class="detail-no-photo">Sem fotos disponíveis</div>')+'</div><div class="detail-content"><h2>'+escapeHtml(item.titulo)+'</h2><div class="detail-price">'+Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</div><div class="detail-location">📍 '+(location||"Localização não informada")+'</div><div class="detail-location">Publicado em '+escapeHtml(published)+'</div><h3>Descrição</h3><p class="detail-description">'+escapeHtml(item.descricao||"O anunciante não informou uma descrição.")+'</p><div class="detail-facts">'+rows.map(([k,v])=>'<div><strong>'+escapeHtml(k)+'</strong><span>'+escapeHtml(v)+'</span></div>').join("")+'</div><button class="detail-contact" type="button" data-listing-id="'+escapeHtml(item.id)+'" data-listing-title="'+escapeHtml(item.titulo)+'" data-seller-id="'+escapeHtml(item.usuario_id)+'">Enviar mensagem</button></div></section>';
       document.body.appendChild(overlay);document.body.style.overflow="hidden";
@@ -1504,7 +1503,7 @@ footer{color:#64748b;padding-bottom:100px}
       }
       publishStage="gravação do anúncio no banco de dados";
       status("publishStatus","Fotos enviadas. Salvando o anúncio no servidor...", "ok");
-      const payload={usuario_id:currentUser.id,titulo:title,categoria:category,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,whatsapp:$("whatsapp").value.replace(/\D/g,"")||null,status:"pendente"};
+      const payload={usuario_id:currentUser.id,titulo:title,categoria:category,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,status:"pendente"};
       let insertResult;
       try{insertResult=await db.from("anuncios").insert(payload).select("id").single();}
       catch(networkError){throw new Error("Falha de conexão ao salvar os dados do anúncio. Suas fotos foram enviadas, mas o cadastro não foi confirmado. Tente novamente.");}

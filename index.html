@@ -786,7 +786,7 @@ footer{color:#64748b;padding-bottom:100px}
   }
   if(configured() && window.supabase){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); loadListings();});
+    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
     db.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAccount();});
   } else if(!window.supabase) {
     status("listingStatus","Não foi possível carregar o serviço de conexão. Verifique a internet do celular, feche e abra o Giro Fácil novamente. Se persistir, atualize o aplicativo.");

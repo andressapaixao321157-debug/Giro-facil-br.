@@ -35,7 +35,7 @@ function hasId(id) {
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
 check("Supabase SDK é carregado de arquivo local empacotado no APK",
-  html.includes('src="./vendor/supabase.js"') &&
+  /src="\.\/vendor\/supabase\.js(?:\?[^"]*)?"/.test(html) &&
   !html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js@2"));
 check("Build copia SDK UMD local para os assets do app",
   fs.readFileSync("package.json", "utf8").includes("dist/umd/supabase.js") &&

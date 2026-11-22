@@ -31,6 +31,7 @@ function hasId(id) {
   "paymentPanel", "plansOpen", "adminPanel", "adminOpen", "adminRefresh",
   "chatConversationList", "chatMessages", "chatMessageInput", "chatSend",
   "agentConsole", "adminAgentSelect", "adminAgentInput", "adminAgentSend", "adminAgentOutput",
+  "ownerDashboard", "ownerDashboardTitle",
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
 check("Supabase SDK é carregado de arquivo local empacotado no APK",
@@ -58,6 +59,10 @@ check("Assistente desabilita botão durante envio e restaura ao finalizar",
 check("Erro do assistente preserva a mensagem para nova tentativa",
   html.includes('input.value=message;') &&
   html.includes("Falha no envio. Confira sua conexão"));
+check("Painel do proprietário tem área dedicada e atalhos para as seções operacionais",
+  hasId("ownerDashboard") && hasId("ownerDashboardTitle") &&
+  html.includes('href="#adminTotals"') && html.includes('href="#adminOrders"') &&
+  html.includes("Proteção da conta") && html.includes('profile?.papel==="admin"'));
 check("Painel administrativo separado e protegido por papel admin",
   hasId("adminPanel") && hasId("adminOpen") &&
   html.includes('profile?.papel==="admin"') &&

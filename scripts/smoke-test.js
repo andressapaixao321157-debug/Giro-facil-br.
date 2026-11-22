@@ -79,10 +79,16 @@ check("Planos e pagamentos têm botão e painel separados",
   html.includes('$("paymentPanel").classList.remove("hidden")'));
 check("Backend concede turbinamento gratuito somente a administradores", payment.includes('const freeAdminBoost = kind === "boost" && isAdmin') && payment.includes('freeForAdmin: true') && payment.includes('status: "active"'));
 check("Interface informa e confirma turbinamento gratuito do administrador", html.includes('id="adminBoostNotice"') && html.includes('data.freeForAdmin?') && html.includes('document.body.dataset.isAdmin==="true"'));
-check("Pagamento usa função Asaas e limita tipos de cobrança",
+check("Pagamento usa checkout hospedado Asaas sem CPF no cadastro Giro Fácil",
   html.includes('db.functions.invoke("asaas-create-payment"') &&
-  payment.includes('["single", "monthly", "boost", "store"]') &&
-  payment.includes('["PIX", "BOLETO"]'));
+  html.includes('O Giro Fácil não pede CPF') &&
+  payment.includes('/checkouts') &&
+  payment.includes('asaas_checkout_id') &&
+  payment.includes('billingType !== "CREDIT_CARD"') &&
+  payment.includes('billingType !== "PIX"'));
+check("Checkout e recorrência são sincronizados por webhook Asaas",
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('payload.event === "CHECKOUT_PAID"') &&
+  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('payload.event === "SUBSCRIPTION_CREATED"'));
 check("Chat de anúncios envia mensagem como usuário autenticado",
   html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
 check("Chat desabilita envio quando não existe conversa",

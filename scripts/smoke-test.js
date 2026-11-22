@@ -257,6 +257,27 @@ check("Remetente vê confirmação dupla quando a mensagem é visualizada", html
 check("Atualização automática de recibos usa um único polling de 5 segundos", html.includes('window.giroChatReadReceiptPolling=setInterval') && html.includes('},5000);') && !html.includes('setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000)'));
 check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
 
+check("Central de mensagens usa cabeçalho profissional e assistente compacto",
+  html.includes('class="messages-heading"') &&
+  html.includes('class="assistant-entry"') &&
+  html.includes('GIRO FÁCIL BR · CENTRAL DE ATENDIMENTO'));
+check("Lista de conversas oferece busca sem alterar os registros",
+  hasId("chatSearch") &&
+  html.includes('$("chatSearch").addEventListener("input"') &&
+  html.includes('item.textContent.toLocaleLowerCase("pt-BR").includes(query)'));
+check("Conversa abre em tela cheia no celular e oferece retorno à lista",
+  hasId("chatBackToList") &&
+  html.includes('$("messagesMain").classList.toggle("conversation-open",Boolean(selectId))') &&
+  html.includes('$("chatBackToList").onclick=') &&
+  html.includes('.messages-page.conversation-open .chat-list{display:none}') &&
+  html.includes('.messages-page.conversation-open .chat-thread{display:flex'));
+check("Selecionar conversa mantém confirmação de leitura e envio existentes",
+  html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"') &&
+  html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
+check("Lista de conversas e conversa aberta têm layout responsivo dedicado",
+  html.includes(".conversation-search{") &&
+  html.includes(".chat-thread-heading{") &&
+  html.includes("@media(max-width:700px)"));
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

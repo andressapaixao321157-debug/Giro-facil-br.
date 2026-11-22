@@ -126,6 +126,18 @@
     .bottom-nav .nav-publish .nav-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#ff7900;color:#fff;font-size:32px;box-shadow:0 4px 12px #ff790055}
     .bottom-nav .nav-publish{color:#172746}
     .bottom-nav button.active{color:#ef790e;background:#fff5eb}
+    .owner-dashboard{margin:12px 0 22px;padding:22px;border-radius:20px;background:linear-gradient(120deg,#071b43,#183b70);color:#fff;box-shadow:0 12px 28px #071b4326}
+    .owner-dashboard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+    .owner-eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:900;color:#ffb66f}
+    .owner-dashboard h2{margin:7px 0 5px!important;border:0!important;padding:0!important;color:#fff!important;font-size:clamp(24px,4vw,32px)!important}
+    .owner-dashboard h2:after{display:none!important}.owner-dashboard p{margin:0;color:#d9e5f8;font-size:14px}
+    .owner-role{padding:8px 11px;border:1px solid #7891b8;border-radius:30px;color:#e6efff;font-size:11px;font-weight:800}
+    .owner-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:20px}
+    .owner-shortcuts a{display:block;padding:12px;border:1px solid #56729c;border-radius:11px;color:#fff;text-decoration:none;font-size:13px;font-weight:800;background:#ffffff0d}
+    .owner-shortcuts a:hover{background:#ffffff20}
+    .owner-security-note{display:flex;flex-direction:column;gap:4px;margin-top:16px;padding:12px 14px;border-radius:11px;background:#ffffff12;border:1px solid #ffffff26}
+    .owner-security-note strong{font-size:12px;color:#fff}.owner-security-note span{font-size:12px;line-height:1.5;color:#d9e5f8}
+    @media(max-width:620px){.owner-dashboard{padding:17px}.owner-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.owner-role{font-size:10px}}
     .owner-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
     .owner-metric{padding:15px;border:1px solid #dbe4f1;border-radius:14px;background:linear-gradient(145deg,#fff,#f3f7fd)}
     .owner-metric strong{display:block;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
@@ -746,8 +758,18 @@ footer{color:#64748b;padding-bottom:100px}
     </div>
   </section>
   <section id="adminPanel" class="panel hidden">
-    <div class="admin-console-head"><h2>Central de Gestão · Giro Fácil BR</h2><p class="hint">Visão empresarial da operação nacional: indicadores, anúncios, vendedores, pagamentos, parceiros e atendimento.</p></div>
+    <div class="admin-console-head"><h2>Gestão operacional</h2><p class="hint">Indicadores, anúncios, vendedores, pagamentos, parceiros e atendimento.</p></div>
     <div id="adminStatus" class="status hidden"></div>
+    <section id="ownerDashboard" class="owner-dashboard" aria-labelledby="ownerDashboardTitle">
+      <div class="owner-dashboard-top">
+        <div><span class="owner-eyebrow">ÁREA RESTRITA</span><h2 id="ownerDashboardTitle">Painel do Proprietário</h2><p>Central de controle do Giro Fácil BR em um só lugar.</p></div>
+        <span class="owner-role">● Conta administradora</span>
+      </div>
+      <div class="owner-shortcuts" aria-label="Atalhos do proprietário">
+        <a href="#adminTotals">Visão geral</a><a href="#adminListings">Anúncios</a><a href="#adminOrders">Financeiro</a><a href="#adminPartners">Parceiros</a><a href="#adminAcquisitionLeads">Captação nacional</a><a href="#agentConsole">Agentes inteligentes</a>
+      </div>
+      <div class="owner-security-note"><strong>Proteção da conta</strong><span>Este painel só é exibido após autenticação e verificação do papel administrativo no Supabase. Ações privilegiadas continuam validadas no servidor.</span></div>
+    </section>
     <section class="panel" id="agentConsole" style="margin:16px 0;padding:16px;border:1px solid #35517d;background:#10264a;color:#edf4ff">
       <h3 style="margin:0 0 6px;color:#fff">Central de agentes inteligentes</h3>
       <p class="hint" style="color:#c6d5ec">Quatro agentes internos de apoio. Eles analisam e recomendam; não executam alterações, pagamentos ou moderação.</p>

@@ -447,8 +447,7 @@ footer{color:#64748b;padding-bottom:100px}
 #adminPanel{position:relative;isolation:isolate;overflow:hidden;color:#edf3ff;background:radial-gradient(ellipse at 90% 0%,#203d70 0%,transparent 38%),linear-gradient(145deg,#07152f 0%,#0b2045 55%,#102b58 100%);border:1px solid #294574;border-radius:24px;padding:clamp(18px,3vw,32px);box-shadow:0 22px 55px #06132c38}
 #adminPanel:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#ff7900,#ffb14b,#ff7900);z-index:-1}
 #adminPanel .admin-console-head{padding:8px 2px 22px;border-bottom:1px solid #ffffff20;margin-bottom:20px}
-#adminPanel .admin-console-head h2{color:#fff;font-size:clamp(25px,4vw,36px);letter-spacing:-.8px;margin:0}
-#adminPanel .admin-console-head h2:after{content:"PAINEL ADMINISTRATIVO NACIONAL";display:block;margin-top:9px;color:#ff9a32;font-size:10px;letter-spacing:2px;font-weight:900}
+#adminPanel .admin-console-head h2{color:#fff;font-size:clamp(25px,4vw,36px);letter-spacing:-.8px;margin:0}#adminPanel .admin-console-head h2:after{content:"PAINEL ADMINISTRATIVO NACIONAL";display:block;margin-top:9px;color:#ff9a32;font-size:10px;letter-spacing:2px;font-weight:900}
 #adminPanel .admin-console-head .hint,#adminPanel .hint{color:#bdcbe2}
 #adminPanel h3{color:#fff;border:0;border-bottom:1px solid #ffffff20;padding:0 0 12px;margin:30px 0 14px;font-size:18px}
 #adminPanel .section-head{margin-top:28px}#adminPanel .section-head h3{margin:0;border:0;padding:0}
@@ -620,6 +619,12 @@ footer{color:#64748b;padding-bottom:100px}
   <section id="authPanel" class="panel hidden">
     <h2 id="authTitle">Entrar no Giro Fácil</h2>
     <div id="authStatus" class="status hidden"></div>
+    <div id="passwordRecoveryFields" class="hidden" style="margin:14px 0">
+      <p class="hint">Crie uma nova senha para sua conta do Giro Fácil BR.</p>
+      <div class="field"><label for="newPassword">Nova senha</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres"></div>
+      <div class="field" style="margin-top:10px"><label for="confirmNewPassword">Confirmar nova senha</label><input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Digite a nova senha novamente"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="saveNewPassword" type="button">Salvar nova senha</button><button id="cancelPasswordRecovery" class="secondary" type="button">Voltar ao login</button></div>
+    </div>
     <div class="form-grid">
       <div class="field full hidden" id="nameField"><label for="fullName">Nome completo</label><input id="fullName" autocomplete="name" placeholder="Seu nome"></div>
       <div class="field full"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="voce@email.com"></div>
@@ -826,7 +831,22 @@ footer{color:#64748b;padding-bottom:100px}
   if(configured() && window.supabase){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
-    db.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAccount();});
+    db.auth.onAuthStateChange((event,session)=>{
+      currentUser=session?.user||null;
+      if(event==="PASSWORD_RECOVERY"){
+        $("authPanel").classList.remove("hidden");
+        $("passwordRecoveryFields").classList.remove("hidden");
+        $("authTitle").textContent="Criar nova senha";
+        $("authStatus").classList.add("hidden");
+        document.querySelector("#authPanel .form-grid").classList.add("hidden");
+        $("authSubmit").classList.add("hidden");
+        $("toggleSignup").classList.add("hidden");
+        $("forgotPassword").classList.add("hidden");
+        $("closeAuth").classList.add("hidden");
+        $("authPanel").scrollIntoView({behavior:"smooth",block:"center"});
+      }
+      updateAccount();
+    });
   } else if(!window.supabase) {
     status("listingStatus","Não foi possível carregar o serviço de conexão. Verifique a internet do celular, feche e abra o Giro Fácil novamente. Se persistir, atualize o aplicativo.");
     console.error("Supabase JS SDK indisponível: os CDNs principal e alternativo não carregaram.");
@@ -897,8 +917,7 @@ footer{color:#64748b;padding-bottom:100px}
         const name=$("fullName").value.trim();if(!name)throw new Error("Informe seu nome.");
         const {data,error}=await db.auth.signUp({email,password,options:{data:{nome:name},emailRedirectTo:PUBLIC_SITE_URL+"/"}});if(error)throw error;
         if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
-          status("authStatus","Este e-mail já possui cadastro. Entre com sua senha ou use “Esqueci minha senha” para recuperar o acesso.","err");
-        } else if(data.user && data.session){
+          status("authStatus","Este e-mail já possui cadastro. Entre com sua senha ou use “Esqueci minha senha” para recuperar o acesso.","err");        } else if(data.user && data.session){
           await db.from("perfis").upsert({id:data.user.id,nome:name});
           await trackAcqEvent("signup");
           status("authStatus","Conta criada e acesso liberado! Você já pode anunciar.","ok");
@@ -923,6 +942,42 @@ footer{color:#64748b;padding-bottom:100px}
       status("authStatus","Se houver uma conta para este endereço, as instruções de recuperação serão enviadas. Confira a caixa de entrada e o spam.","ok");
     }catch(e){status("authStatus",e.message||"Não foi possível solicitar a recuperação da senha.","err");}
     finally{$("forgotPassword").disabled=false;}
+  };
+  $("saveNewPassword").onclick=async()=>{
+    const password=$("newPassword").value;
+    const confirmation=$("confirmNewPassword").value;
+    if(password.length<8){status("authStatus","A nova senha precisa ter pelo menos 8 caracteres.","err");return;}
+    if(password!==confirmation){status("authStatus","As senhas não conferem. Digite novamente.","err");return;}
+    $("saveNewPassword").disabled=true;
+    try{
+      const {error}=await db.auth.updateUser({password});
+      if(error)throw error;
+      $("passwordRecoveryFields").classList.add("hidden");
+      $("authPanel").querySelector(".form-grid").classList.remove("hidden");
+      $("authSubmit").classList.remove("hidden");
+      $("toggleSignup").classList.remove("hidden");
+      $("forgotPassword").classList.remove("hidden");
+      $("closeAuth").classList.remove("hidden");
+      $("authTitle").textContent="Entrar no Giro Fácil";
+      $("password").value="";
+      $("newPassword").value="";
+      $("confirmNewPassword").value="";
+      status("authStatus","Senha alterada com sucesso! Entre com sua nova senha.","ok");
+      await db.auth.signOut();
+    }catch(error){
+      status("authStatus",error.message||"Não foi possível atualizar a senha. Solicite um novo link e tente novamente.","err");
+    }finally{$("saveNewPassword").disabled=false;}
+  };
+  $("cancelPasswordRecovery").onclick=async()=>{
+    await db.auth.signOut();
+    $("passwordRecoveryFields").classList.add("hidden");
+    $("authPanel").querySelector(".form-grid").classList.remove("hidden");
+    $("authSubmit").classList.remove("hidden");
+    $("toggleSignup").classList.remove("hidden");
+    $("forgotPassword").classList.remove("hidden");
+    $("closeAuth").classList.remove("hidden");
+    $("authTitle").textContent="Entrar no Giro Fácil";
+    status("authStatus","Você voltou à tela de login.","ok");
   };
   function updatePaymentFields(){
     const kind=$("paymentKind").value, boost=kind==="boost", store=kind==="store";
@@ -1347,8 +1402,7 @@ footer{color:#64748b;padding-bottom:100px}
     });
     $("listingStatus").classList.add("hidden");$("listings").innerHTML="";
     if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados disponíveis. Os anúncios enviados passam por revisão e confirmação das condições de publicação antes de aparecerem aqui. Volte em breve para conferir as novidades.</div>';return;}
-    data.forEach(item=>{
-      const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
+    data.forEach(item=>{      const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
       const reach=reachByListing.get(item.id)||1;
       const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";

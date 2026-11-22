@@ -1096,6 +1096,14 @@ footer{color:#64748b;padding-bottom:100px}
     if(!data?.length){const empty=document.createElement("div");empty.className="hint";empty.textContent="Inicie a conversa enviando uma mensagem.";box.appendChild(empty);}
     box.scrollTop=box.scrollHeight;
   }
+  // Atualiza mensagens e recibos enquanto a conversa está aberta.
+  if(!window.giroChatReadReceiptPolling){
+    window.giroChatReadReceiptPolling=setInterval(()=>{
+      if(currentUser&&activeConversationId&&!$("chatPanel").classList.contains("hidden")){
+        loadMessages();
+      }
+    },5000);
+  }
   async function startListingChat(listingId,title,sellerId){
     if(!currentUser){openAuth();status("authStatus","Entre ou crie uma conta para conversar com o anunciante.");return;}
     if(sellerId===currentUser.id){status("chatStatus","Este é seu próprio anúncio. As mensagens recebidas aparecem na sua caixa de entrada.");await openChat();return;}

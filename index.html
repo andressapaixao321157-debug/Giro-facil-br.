@@ -984,9 +984,10 @@ footer{color:#64748b;padding-bottom:100px}
   }
   if(configured() && window.supabase){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
+    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); syncChatInboxRealtime(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
     db.auth.onAuthStateChange((event,session)=>{
       currentUser=session?.user||null;
+      syncChatInboxRealtime();
       if(event==="PASSWORD_RECOVERY"){
         $("authPanel").classList.remove("hidden");
         $("passwordRecoveryFields").classList.remove("hidden");
@@ -1284,23 +1285,66 @@ footer{color:#64748b;padding-bottom:100px}
   $("assistantLeadOpen").onclick=()=>{$("assistantPanel").classList.remove("hidden");$("assistantPanel").scrollIntoView({behavior:"smooth"});$("assistantInput").value="Sou o administrador do Giro Fácil. Monte um plano prático de captação dos primeiros 500 anúncios reais, com roteiro de abordagem para concessionárias, imobiliárias, lojas e vendedores particulares, metas semanais e checklist de acompanhamento. Não invente contatos nem afirme que já contatou empresas.";$("assistantInput").focus();};
 
 
-  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null;
+  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null, chatInboxRealtimeChannel=null, chatInboxRefreshTimer=null;
   function renderPeerPresence(isOnline){
     const title=$("chatThreadTitle");let el=$("chatPeerPresence");
     if(!el){el=document.createElement("span");el.id="chatPeerPresence";el.style.cssText="display:inline-flex;align-items:center;gap:7px;margin-left:10px;font-size:12px;font-weight:600;color:#536174";title.appendChild(el);}
     el.innerHTML="";const dot=document.createElement("i");dot.style.cssText="width:9px;height:9px;border-radius:50%;display:inline-block;background:"+(isOnline?"#16a34a":"#9ca3af");
     el.appendChild(dot);el.appendChild(document.createTextNode(isOnline?"Online":"Offline"));
   }
+  async function stopChatPresence(){
+    if(chatPresenceChannel&&db){const channel=chatPresenceChannel;chatPresenceChannel=null;await db.removeChannel(channel);}
+    const el=$("chatPeerPresence");if(el)el.remove();
+  }
   async function watchConversationPresence(conv){
-    if(chatPresenceChannel){await db.removeChannel(chatPresenceChannel);chatPresenceChannel=null;}
+    await stopChatPresence();
+    if(!currentUser||!conv)return;
     const peerId=conv.comprador_id===currentUser.id?conv.vendedor_id:conv.comprador_id;
     renderPeerPresence(false);
-    chatPresenceChannel=db.channel("giro-chat-presence-"+conv.id,{config:{presence:{key:currentUser.id}}});
-    const refresh=()=>{const state=chatPresenceChannel.presenceState();renderPeerPresence(Boolean(state[peerId]&&state[peerId].length));};
-    chatPresenceChannel.on("presence",{event:"sync"},refresh).on("presence",{event:"join"},refresh).on("presence",{event:"leave"},refresh)
-      .subscribe(async statusValue=>{if(statusValue==="SUBSCRIBED"){await chatPresenceChannel.track({user_id:currentUser.id,online:true,at:new Date().toISOString()});refresh();}});
+    const channel=db.channel("giro-chat-presence-"+conv.id,{config:{presence:{key:currentUser.id}}});
+    chatPresenceChannel=channel;
+    const refresh=()=>{const state=channel.presenceState();renderPeerPresence(Boolean(state[peerId]&&state[peerId].length));};
+    channel.on("presence",{event:"sync"},refresh).on("presence",{event:"join"},refresh).on("presence",{event:"leave"},refresh)
+      .subscribe(async statusValue=>{
+        if(statusValue==="SUBSCRIBED"){
+          await channel.track({user_id:currentUser.id,online:true,at:new Date().toISOString()});refresh();
+        }else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(statusValue)){
+          renderPeerPresence(false);
+        }
+      });
+  }
+  async function stopChatInboxRealtime(){
+    if(chatInboxRefreshTimer){clearTimeout(chatInboxRefreshTimer);chatInboxRefreshTimer=null;}
+    if(chatInboxRealtimeChannel&&db){const channel=chatInboxRealtimeChannel;chatInboxRealtimeChannel=null;await db.removeChannel(channel);}
+  }
+  function scheduleChatInboxRefresh(){
+    if(chatInboxRefreshTimer)clearTimeout(chatInboxRefreshTimer);
+    chatInboxRefreshTimer=setTimeout(async()=>{
+      chatInboxRefreshTimer=null;
+      if(!db||!currentUser)return;
+      const mobile=window.matchMedia("(max-width:700px)").matches;
+      const pageVisible=!$("messagesMain").classList.contains("hidden")&&!$("chatPanel").classList.contains("hidden");
+      const threadVisible=pageVisible&&(!mobile||$("messagesMain").classList.contains("conversation-open"));
+      await loadConversations(threadVisible?activeConversationId:null);
+    },180);
+  }
+  async function syncChatInboxRealtime(){
+    if(!db||!currentUser){await stopChatInboxRealtime();await stopChatPresence();return;}
+    if(chatInboxRealtimeChannel?.topic==="realtime:giro-inbox-"+currentUser.id)return;
+    await stopChatInboxRealtime();
+    const userId=currentUser.id;
+    const channel=db.channel("giro-inbox-"+userId);
+    channel.on("postgres_changes",{event:"INSERT",schema:"public",table:"mensagens"},scheduleChatInboxRefresh)
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"mensagens"},scheduleChatInboxRefresh)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"conversas"},scheduleChatInboxRefresh)
+      .subscribe(statusValue=>{
+        if(statusValue==="SUBSCRIBED")scheduleChatInboxRefresh();
+        else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(statusValue))status("chatStatus","A conexão em tempo real foi interrompida. Confira sua internet para receber novas mensagens.","err");
+      });
+    chatInboxRealtimeChannel=channel;
   }
   function showMessagesPage(view="chat"){
+    if(view!=="chat")stopChatPresence();
     $("marketMain").classList.add("hidden");
     $("messagesMain").classList.remove("hidden");
     $("messagesMain").classList.remove("conversation-open");
@@ -1314,6 +1358,7 @@ footer{color:#64748b;padding-bottom:100px}
     $("marketMain").classList.remove("hidden");
     $("chatPanel").classList.remove("hidden");
     $("assistantPanel").classList.add("hidden");
+    stopChatPresence();
   }
   async function openChat(conversationId=null){
     if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
@@ -1391,7 +1436,10 @@ footer{color:#64748b;padding-bottom:100px}
     $("chatThreadTitle").textContent=activeConversationTitle;
     $("chatThreadSubtitle").textContent=chosen.comprador_id===currentUser.id?"Você está negociando com o vendedor":"Você está atendendo o comprador";
     $("messagesMain").classList.toggle("conversation-open",Boolean(selectId));
-    await watchConversationPresence(chosen);
+    const mobile=window.matchMedia("(max-width:700px)").matches;
+    const pageVisible=!$("messagesMain").classList.contains("hidden")&&!$("chatPanel").classList.contains("hidden");
+    const threadVisible=pageVisible&&(!mobile||$("messagesMain").classList.contains("conversation-open"));
+    if(threadVisible)await watchConversationPresence(chosen);else await stopChatPresence();
     [...list.children].forEach((b,i)=>b.classList.toggle("selected",data[i].id===activeConversationId));
     updateConversationUnreadTotal();
     await loadMessages();
@@ -1413,13 +1461,16 @@ footer{color:#64748b;padding-bottom:100px}
     $("messagesMain").classList.remove("conversation-open");
     $("chatSearch").value="";
     [...$("chatConversationList").children].forEach(item=>item.hidden=false);
+    stopChatPresence();
   };
   async function loadMessages(){
     if(!activeConversationId)return;
     const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em,lida_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);
     if(error){status("chatStatus","Não foi possível carregar mensagens: "+error.message,"err");return;}
-    const isMobileInbox=window.matchMedia("(max-width:700px)").matches&&!$("messagesMain").classList.contains("conversation-open");
-    const unreadIncoming=isMobileInbox?[]:(data||[]).filter(m=>m.remetente_id!==currentUser.id&&!m.lida_em).map(m=>m.id);
+    const mobile=window.matchMedia("(max-width:700px)").matches;
+    const inboxVisible=!$("messagesMain").classList.contains("hidden")&&!$("chatPanel").classList.contains("hidden");
+    const threadVisible=inboxVisible&&(!mobile||$("messagesMain").classList.contains("conversation-open"));
+    const unreadIncoming=threadVisible?(data||[]).filter(m=>m.remetente_id!==currentUser.id&&!m.lida_em).map(m=>m.id):[];
     if(unreadIncoming.length){
       const readAt=new Date().toISOString();
       const {error:readError}=await db.from("mensagens").update({lida_em:readAt}).in("id",unreadIncoming);
@@ -1440,14 +1491,7 @@ footer{color:#64748b;padding-bottom:100px}
     if(!data?.length){const empty=document.createElement("div");empty.className="hint";empty.textContent="Inicie a conversa enviando uma mensagem.";box.appendChild(empty);}
     box.scrollTop=box.scrollHeight;
   }
-  // Atualiza mensagens e recibos enquanto a conversa está aberta.
-  if(!window.giroChatReadReceiptPolling){
-    window.giroChatReadReceiptPolling=setInterval(()=>{
-      if(currentUser&&activeConversationId&&!$("chatPanel").classList.contains("hidden")){
-        loadMessages();
-      }
-    },5000);
-  }
+  // Mensagens e confirmações de leitura são atualizadas pelo Supabase Realtime; sem polling.
   async function startListingChat(listingId,title,sellerId){
     if(!currentUser){openAuth();status("authStatus","Entre ou crie uma conta para conversar com o anunciante.");return;}
     if(sellerId===currentUser.id){status("chatStatus","Este é seu próprio anúncio. As mensagens recebidas aparecem na sua caixa de entrada.");await openChat();return;}

@@ -285,7 +285,7 @@ check("Conversa abre em tela cheia no celular e oferece retorno à lista",
   html.includes('.messages-page.conversation-open .chat-list{display:none}') &&
   html.includes('.messages-page.conversation-open .chat-thread{display:flex'));
 check("Selecionar conversa mantém confirmação de leitura e envio existentes",
-  html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"') &&
+  html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"') &&
   html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
 check("Lista de conversas e conversa aberta têm layout responsivo dedicado",
   html.includes(".conversation-search{") &&

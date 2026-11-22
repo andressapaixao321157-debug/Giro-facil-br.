@@ -196,6 +196,10 @@ Deno.serve(async (req) => {
     } catch (webhookError) {
       console.error("Asaas Checkout webhook configuration check failed", webhookError);
     }
+    if (!checkoutWebhookReady) {
+      await admin.from("payment_orders").update({ status: "FAILED" }).eq("id", order.id);
+      return json({ error: "O checkout foi preparado, mas o webhook do Asaas ainda não confirmou os eventos de pagamento. Nenhuma cobrança foi liberada. Verifique a configuração do webhook no Asaas e tente novamente." }, 503);
+    }
     const checkoutBase = apiUrl.includes("sandbox") ? "https://sandbox.asaas.com" : "https://asaas.com";
     const checkoutUrl = checkout.link || `${checkoutBase}/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`;
     const { error: checkoutOrderError } = await admin.from("payment_orders").update({

@@ -278,6 +278,15 @@ check("Lista de conversas e conversa aberta têm layout responsivo dedicado",
   html.includes(".conversation-search{") &&
   html.includes(".chat-thread-heading{") &&
   html.includes("@media(max-width:700px)"));
+check("Botão Fechar da central de mensagens não quebra o texto no Android",
+  html.includes('.messages-page .messages-close{') &&
+  html.includes('white-space:nowrap!important') &&
+  html.includes('min-width:88px!important'));
+check("Caixa de entrada não reserva altura vazia no celular",
+  html.includes('.messages-page:not(.conversation-open) #chatPanel{min-height:0}') &&
+  html.includes('.messages-page:not(.conversation-open) .chat-list{min-height:0;max-height:min(54dvh,520px)}'));
+check("Chat continua ocupando a tela quando uma conversa é aberta",
+  html.includes('.messages-page.conversation-open .chat-thread{min-height:calc(100dvh - 245px);height:calc(100dvh - 245px)}'));
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

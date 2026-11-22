@@ -635,6 +635,33 @@ footer{color:#64748b;padding-bottom:100px}
     .conversation-item-title{display:block;font-size:13px;font-weight:800;color:#172b4d}
     .conversation-item-meta{display:block;margin-top:4px;font-size:11px;color:#8793a5}
     .conversation-items>button.selected .conversation-item-title{color:#123d82}
+
+    /* Ajustes finos identificados no teste real em Android */
+    .messages-heading>div{min-width:0;flex:1}
+    .messages-page .messages-close{
+      flex:0 0 auto!important;width:auto!important;min-width:88px!important;
+      min-height:46px;padding:0 16px!important;white-space:nowrap!important;
+      word-break:keep-all!important;overflow-wrap:normal!important;line-height:1.2;
+      display:inline-flex;align-items:center;justify-content:center;
+    }
+    .messages-page:not(.conversation-open) #chatPanel{min-height:0}
+    .messages-page:not(.conversation-open) .chat-shell{min-height:0}
+    .messages-page:not(.conversation-open) .chat-list{min-height:0;max-height:min(54dvh,520px)}
+    .messages-page:not(.conversation-open) .conversation-items{min-height:0}
+    .messages-page:not(.conversation-open) .conversation-items>button{min-height:76px}
+    @media(max-width:700px){
+      .messages-page{padding:10px 9px 98px}
+      .messages-page #chatPanel{min-height:0;padding:17px 14px}
+      .messages-heading{align-items:center;gap:10px;margin-bottom:16px}
+      .messages-heading h2{font-size:clamp(23px,6vw,27px);line-height:1.15}
+      .messages-eyebrow{display:block;max-width:100%;line-height:1.55;letter-spacing:1px}
+      .messages-page .messages-close{min-width:84px!important;padding:0 13px!important}
+      .messages-page:not(.conversation-open) .chat-list{min-height:0;max-height:52dvh}
+      .messages-page:not(.conversation-open) .chat-thread{display:none}
+      .messages-page:not(.conversation-open) .chat-shell{min-height:0}
+      .messages-page.conversation-open #chatPanel{min-height:calc(100dvh - 118px);padding:10px}
+      .messages-page.conversation-open .chat-thread{min-height:calc(100dvh - 245px);height:calc(100dvh - 245px)}
+    }
 </style>
 </head>
 <body>

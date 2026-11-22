@@ -1054,7 +1054,7 @@ footer{color:#64748b;padding-bottom:100px}
   $("assistantLeadOpen").onclick=()=>{$("assistantPanel").classList.remove("hidden");$("assistantPanel").scrollIntoView({behavior:"smooth"});$("assistantInput").value="Sou o administrador do Giro Fácil. Monte um plano prático de captação dos primeiros 500 anúncios reais, com roteiro de abordagem para concessionárias, imobiliárias, lojas e vendedores particulares, metas semanais e checklist de acompanhamento. Não invente contatos nem afirme que já contatou empresas.";$("assistantInput").focus();};
 
 
-  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null, chatLastSeenTimer=null, chatTypingTimer=null, peerTypingTimer=null;
+  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null, chatLastSeenTimer=null, chatTypingTimer=null, peerTypingTimer=null, chatNotificationCount=0;
   function renderPeerPresence(isOnline,lastSeen=null){
     const title=$("chatThreadTitle");let el=$("chatPeerPresence");
     if(!el){el=document.createElement("span");el.id="chatPeerPresence";el.style.cssText="display:inline-flex;align-items:center;gap:7px;margin-left:10px;font-size:12px;font-weight:600;color:#536174";title.appendChild(el);}

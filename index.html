@@ -1073,10 +1073,26 @@ footer{color:#64748b;padding-bottom:100px}
   }
   async function loadMessages(){
     if(!activeConversationId)return;
-    const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);
+    const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em,lida_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);
     if(error){status("chatStatus","Não foi possível carregar mensagens: "+error.message,"err");return;}
+    const unreadIncoming=(data||[]).filter(m=>m.remetente_id!==currentUser.id&&!m.lida_em).map(m=>m.id);
+    if(unreadIncoming.length){
+      const readAt=new Date().toISOString();
+      const {error:readError}=await db.from("mensagens").update({lida_em:readAt}).in("id",unreadIncoming);
+      if(!readError)(data||[]).forEach(m=>{if(unreadIncoming.includes(m.id))m.lida_em=readAt;});
+      else status("chatStatus","Mensagens abertas, mas não foi possível confirmar a leitura. Aplique a atualização de leitura no Supabase.","err");
+    }
     const box=$("chatMessages");box.innerHTML="";
-    (data||[]).forEach(m=>{const bubble=document.createElement("div");bubble.className="chat-bubble"+(m.remetente_id===currentUser.id?" mine":"");bubble.textContent=m.conteudo;box.appendChild(bubble);});
+    (data||[]).forEach(m=>{
+      const mine=m.remetente_id===currentUser.id;
+      const wrap=document.createElement("div");wrap.style.display="flex";wrap.style.flexDirection="column";wrap.style.maxWidth="100%";wrap.style.alignItems=mine?"flex-end":"flex-start";
+      const bubble=document.createElement("div");bubble.className="chat-bubble"+(mine?" mine":"");bubble.textContent=m.conteudo;wrap.appendChild(bubble);
+      if(mine){
+        const receipt=document.createElement("small");receipt.className="chat-read-receipt";receipt.textContent=m.lida_em?"✓✓ Visualizada":"Enviada";receipt.style.cssText="font-size:11px;color:#667085;margin:3px 7px 0";
+        wrap.appendChild(receipt);
+      }
+      box.appendChild(wrap);
+    });
     if(!data?.length){const empty=document.createElement("div");empty.className="hint";empty.textContent="Inicie a conversa enviando uma mensagem.";box.appendChild(empty);}
     box.scrollTop=box.scrollHeight;
   }

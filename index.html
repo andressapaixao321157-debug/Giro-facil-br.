@@ -1396,7 +1396,8 @@ footer{color:#64748b;padding-bottom:100px}
     updateConversationUnreadTotal();
     await loadMessages();
     const selected=list.querySelector("button.selected");
-    if(selected&&activeConversationId){
+    const conversationIsVisible=!window.matchMedia("(max-width:700px)").matches||$("messagesMain").classList.contains("conversation-open");
+    if(selected&&activeConversationId&&conversationIsVisible){
       selected.dataset.unread="0";
       const unread=selected.querySelector(".conversation-unread");if(unread)unread.hidden=true;
       updateConversationUnreadTotal();
@@ -1417,7 +1418,8 @@ footer{color:#64748b;padding-bottom:100px}
     if(!activeConversationId)return;
     const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em,lida_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);
     if(error){status("chatStatus","Não foi possível carregar mensagens: "+error.message,"err");return;}
-    const unreadIncoming=(data||[]).filter(m=>m.remetente_id!==currentUser.id&&!m.lida_em).map(m=>m.id);
+    const isMobileInbox=window.matchMedia("(max-width:700px)").matches&&!$("messagesMain").classList.contains("conversation-open");
+    const unreadIncoming=isMobileInbox?[]:(data||[]).filter(m=>m.remetente_id!==currentUser.id&&!m.lida_em).map(m=>m.id);
     if(unreadIncoming.length){
       const readAt=new Date().toISOString();
       const {error:readError}=await db.from("mensagens").update({lida_em:readAt}).in("id",unreadIncoming);

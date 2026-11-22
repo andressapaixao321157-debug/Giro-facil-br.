@@ -254,7 +254,7 @@ check("Migration de captação nacional está versionada", fs.existsSync("supaba
 check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em")'));
 check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));
 check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"'));
-check("Atualização automática de recibos usa um único polling de 5 segundos", html.includes('window.giroChatReadReceiptPolling=setInterval') && html.includes('},5000);') && !html.includes('setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000)'));
+check("Atualização automática de recibos usa eventos Realtime de UPDATE", html.includes('event:"UPDATE",schema:"public",table:"mensagens"') && html.includes("scheduleChatInboxRefresh"));
 check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
 
 check("Central de mensagens usa cabeçalho profissional e assistente compacto",
@@ -302,9 +302,10 @@ check("Mensagens não lidas aparecem na conversa e no menu inferior",
   html.includes('className="conversation-unread"') &&
   hasId("navMessagesBadge") &&
   html.includes('function updateConversationUnreadTotal()'));
-check("Abrir conversa no celular marca como lida; apenas visualizar a lista não marca",
-  html.includes('const isMobileInbox=window.matchMedia("(max-width:700px)").matches&&!$("messagesMain").classList.contains("conversation-open")') &&
-  html.includes('const conversationIsVisible=!window.matchMedia("(max-width:700px)").matches||$("messagesMain").classList.contains("conversation-open")'));
+check("Abrir conversa marca como lida; lista fechada ou página oculta não marca",
+  html.includes('const inboxVisible=!$("messagesMain").classList.contains("hidden")&&!$("chatPanel").classList.contains("hidden")') &&
+  html.includes('const threadVisible=inboxVisible&&(!mobile||$("messagesMain").classList.contains("conversation-open"))') &&
+  html.includes("const unreadIncoming=threadVisible?"));
 check("Chat recebe mensagens novas e recibos de leitura pelo Supabase Realtime",
   html.includes('db.channel("giro-inbox-"+userId)') &&
   html.includes('table:"mensagens"') &&

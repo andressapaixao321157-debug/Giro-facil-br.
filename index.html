@@ -662,6 +662,27 @@ footer{color:#64748b;padding-bottom:100px}
       .messages-page.conversation-open #chatPanel{min-height:calc(100dvh - 118px);padding:10px}
       .messages-page.conversation-open .chat-thread{min-height:calc(100dvh - 245px);height:calc(100dvh - 245px)}
     }
+
+    /* Conversas enriquecidas: foto do anúncio, prévia e contador de não lidas */
+    .conversation-items>button{display:flex;align-items:center;gap:12px;min-height:82px;padding:11px 10px}
+    .conversation-avatar{width:54px;height:54px;flex:0 0 54px;display:grid;place-items:center;overflow:hidden;border-radius:13px;background:#edf2fa;color:#31527f;font-size:22px}
+    .conversation-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .conversation-content{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+    .conversation-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+    .conversation-item-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .conversation-time{flex:none;font-size:10px;color:#8b96a6}
+    .conversation-preview{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#738198}
+    .conversation-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .conversation-item-meta{margin:0;font-size:10px;color:#8a96a8}
+    .conversation-unread{flex:none;min-width:19px;height:19px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:20px;background:#e87512;color:#fff;font-size:10px;font-weight:900}
+    .conversation-unread[hidden]{display:none}
+    #navMessages{position:relative}
+    .nav-unread-badge{position:absolute;top:4px;right:calc(50% - 26px);min-width:17px;height:17px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;border:2px solid #fff;border-radius:20px;background:#e87512;color:#fff;font-size:9px;font-weight:900}
+    .nav-unread-badge.hidden{display:none}
+    @media(max-width:700px){
+      .conversation-avatar{width:50px;height:50px;flex-basis:50px}
+      .conversation-items>button{min-height:76px}
+    }
 </style>
 </head>
 <body>
@@ -937,7 +958,7 @@ footer{color:#64748b;padding-bottom:100px}
   <button type="button" id="navSearch"><span class="nav-icon">⌕</span>Buscar</button>
   <button type="button" id="navAnnounce" class="nav-publish"><span class="nav-icon">＋</span>Anunciar</button>
   <button type="button" id="navFavorites"><span class="nav-icon">♡</span>Favoritos</button>
-  <button type="button" id="navMessages"><span class="nav-icon">✉</span>Mensagens</button>
+  <button type="button" id="navMessages"><span class="nav-icon">✉</span><span class="nav-label">Mensagens</span><span id="navMessagesBadge" class="nav-unread-badge hidden" aria-label="Mensagens não lidas">0</span></button>
   <button type="button" id="navAccount"><span class="nav-icon">♙</span>Minha conta</button>
 </nav>
 <footer>© <span id="yearNow"></span> Giro Fácil BR · Marketplace de produtos em todo o Brasil</footer>
@@ -1300,8 +1321,21 @@ footer{color:#64748b;padding-bottom:100px}
     showMessagesPage("chat");
     await loadConversations(conversationId);
   }
+  function formatConversationTime(value){
+    if(!value)return "";
+    const date=new Date(value);if(Number.isNaN(date.getTime()))return "";
+    const now=new Date(),sameDay=date.toDateString()===now.toDateString();
+    return sameDay?date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+  }
+  function updateConversationUnreadTotal(){
+    const total=[...$("chatConversationList").children].reduce((sum,item)=>sum+Number(item.dataset.unread||0),0);
+    const badge=$("navMessagesBadge");
+    badge.textContent=total>99?"99+":String(total);
+    badge.classList.toggle("hidden",total===0);
+    badge.setAttribute("aria-label",total+" mensagens não lidas");
+  }
   async function loadConversations(selectId=null){
-    const {data,error}=await db.from("conversas").select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo)").or("comprador_id.eq."+currentUser.id+",vendedor_id.eq."+currentUser.id).order("ultima_mensagem_em",{ascending:false}).limit(50);
+    const {data,error}=await db.from("conversas").select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo,fotos)").or("comprador_id.eq."+currentUser.id+",vendedor_id.eq."+currentUser.id).order("ultima_mensagem_em",{ascending:false}).limit(50);
     if(error){status("chatStatus","Não foi possível carregar conversas: "+error.message,"err");return;}
     const list=$("chatConversationList");list.innerHTML="";
     if(!data?.length){
@@ -1310,26 +1344,63 @@ footer{color:#64748b;padding-bottom:100px}
       $("chatThreadTitle").textContent="Nenhuma conversa selecionada";
       $("chatThreadSubtitle").textContent="Aguardando novas mensagens";
       $("chatMessages").innerHTML='<div class="chat-empty-state"><span>✉</span><strong>Suas conversas em um só lugar</strong><p>Escolha uma conversa para continuar o atendimento.</p></div>';
-      $("chatMessageInput").disabled=true;$("chatSend").disabled=true;return;
+      $("chatMessageInput").disabled=true;$("chatSend").disabled=true;updateConversationUnreadTotal();return;
     }
+    const conversationIds=data.map(conv=>conv.id);
+    const {data:messageRows,error:messageError}=await db.from("mensagens")
+      .select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em")
+      .in("conversa_id",conversationIds).order("criada_em",{ascending:false}).limit(5000);
+    if(messageError)status("chatStatus","As conversas abriram, mas não foi possível carregar as prévias das mensagens.","err");
+    const latestByConversation=new Map(),unreadByConversation=new Map();
+    (messageRows||[]).forEach(message=>{
+      if(!latestByConversation.has(message.conversa_id))latestByConversation.set(message.conversa_id,message);
+      if(message.remetente_id!==currentUser.id&&!message.lida_em){
+        unreadByConversation.set(message.conversa_id,(unreadByConversation.get(message.conversa_id)||0)+1);
+      }
+    });
     data.forEach(conv=>{
-      const b=document.createElement("button");b.type="button";
+      const latest=latestByConversation.get(conv.id);
+      const unread=unreadByConversation.get(conv.id)||0;
+      const isBuyer=conv.comprador_id===currentUser.id;
+      const counterpartRole=isBuyer?"Vendedor":"Comprador";
+      const b=document.createElement("button");b.type="button";b.dataset.unread=String(unread);
+      const avatar=document.createElement("span");avatar.className="conversation-avatar";
+      const photo=Array.isArray(conv.anuncios?.fotos)?conv.anuncios.fotos[0]:"";
+      if(photo){
+        const img=document.createElement("img");img.loading="lazy";img.alt="Foto do anúncio";
+        try{const url=new URL(photo,window.location.origin);if(url.protocol==="https:"||url.protocol==="http:"){img.src=url.href;avatar.appendChild(img);}else avatar.textContent="▧";}catch{avatar.textContent="▧";}
+      }else avatar.textContent="▧";
+      const content=document.createElement("span");content.className="conversation-content";
+      const titleRow=document.createElement("span");titleRow.className="conversation-title-row";
       const title=document.createElement("strong");title.className="conversation-item-title";title.textContent=conv.anuncios?.titulo||"Anúncio";
-      const meta=document.createElement("small");meta.className="conversation-item-meta";meta.textContent=conv.comprador_id===currentUser.id?"Você é comprador":"Você é vendedor";
-      b.append(title,meta);
+      const time=document.createElement("small");time.className="conversation-time";time.textContent=formatConversationTime(latest?.criada_em||conv.ultima_mensagem_em);
+      titleRow.append(title,time);
+      const preview=document.createElement("small");preview.className="conversation-preview";
+      preview.textContent=latest?(latest.remetente_id===currentUser.id?"Você: ":"")+latest.conteudo:"Comece uma conversa";
+      const metaRow=document.createElement("span");metaRow.className="conversation-meta-row";
+      const meta=document.createElement("small");meta.className="conversation-item-meta";meta.textContent=counterpartRole;
+      const unreadBadge=document.createElement("span");unreadBadge.className="conversation-unread";unreadBadge.textContent=unread>99?"99+":String(unread);unreadBadge.hidden=unread===0;unreadBadge.setAttribute("aria-label",unread+" mensagens não lidas");
+      metaRow.append(meta,unreadBadge);content.append(titleRow,preview,metaRow);b.append(avatar,content);
       b.classList.toggle("selected",conv.id===(selectId||activeConversationId));
-      b.setAttribute("aria-label",(conv.anuncios?.titulo||"Anúncio")+" · "+meta.textContent);
+      b.setAttribute("aria-label",(conv.anuncios?.titulo||"Anúncio")+" · "+counterpartRole+(unread?" · "+unread+" não lidas":""));
       b.onclick=()=>loadConversations(conv.id);list.appendChild(b);
     });
     const chosen=data.find(x=>x.id===(selectId||activeConversationId))||data[0];
     activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";
     $("chatMessageInput").disabled=false;$("chatSend").disabled=false;
     $("chatThreadTitle").textContent=activeConversationTitle;
-    $("chatThreadSubtitle").textContent=chosen.comprador_id===currentUser.id?"Você está negociando como comprador":"Você está atendendo como vendedor";
+    $("chatThreadSubtitle").textContent=chosen.comprador_id===currentUser.id?"Você está negociando com o vendedor":"Você está atendendo o comprador";
     $("messagesMain").classList.toggle("conversation-open",Boolean(selectId));
     await watchConversationPresence(chosen);
     [...list.children].forEach((b,i)=>b.classList.toggle("selected",data[i].id===activeConversationId));
+    updateConversationUnreadTotal();
     await loadMessages();
+    const selected=list.querySelector("button.selected");
+    if(selected&&activeConversationId){
+      selected.dataset.unread="0";
+      const unread=selected.querySelector(".conversation-unread");if(unread)unread.hidden=true;
+      updateConversationUnreadTotal();
+    }
   }
   $("chatSearch").addEventListener("input",()=>{
     const query=$("chatSearch").value.trim().toLocaleLowerCase("pt-BR");

@@ -1,7 +1,7 @@
 name: Validate Giro Fácil BR chat improvements
 on:
   push:
-    branches: [feature/chat-professional-tools]
+    branches: [feature/chat-professional-tools, feature/chat-delivery-receipts]
     paths:
       - "index.html"
       - "scripts/smoke-test.js"

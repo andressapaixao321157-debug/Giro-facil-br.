@@ -548,6 +548,24 @@ footer{color:#64748b;padding-bottom:100px}
 .market-filters button{height:42px;padding:8px 16px;border:0;border-radius:9px;background:#ff8500;color:#17243a;font-weight:900}
 @media(max-width:520px){.market-filters{grid-template-columns:1fr 1fr;gap:8px;padding:12px}.market-filters .filter-title{grid-column:1/-1}.market-filters label:last-of-type{grid-column:1/-1}.market-filters button{grid-column:1/-1;width:100%}}
 
+
+
+    /* Central de mensagens em página própria, fora da vitrine inicial */
+    .messages-page{max-width:1180px;min-height:calc(100vh - 145px);margin:0 auto;padding:20px 18px 112px;background:var(--bg)}
+    .messages-page-inner{width:100%;max-width:1040px;margin:0 auto}
+    .messages-page .panel{margin:0 0 14px;border-radius:18px;box-shadow:0 8px 26px rgba(10,25,50,.08)}
+    .messages-page .section-head{margin:0 0 18px}
+    .messages-page #assistantOpen{border-radius:13px;font-weight:800}
+    .messages-page .chat-shell{min-height:440px}
+    .messages-page .chat-thread{min-width:0}
+    @media(max-width:620px){
+      .messages-page{padding:14px 12px 105px;min-height:calc(100vh - 135px)}
+      .messages-page .panel{padding:16px;border-radius:16px}
+      .messages-page .chat-shell{grid-template-columns:1fr;min-height:0}
+      .messages-page .chat-list{max-height:260px;overflow:auto}
+      .messages-page .chat-thread{min-height:390px}
+      .messages-page .chat-messages{height:260px;min-height:200px}
+    }
 </style>
 </head>
 <body>
@@ -555,7 +573,7 @@ footer{color:#64748b;padding-bottom:100px}
   <div class="header-brand"><div class="brand">GIRO <span>FÁCIL</span> BR</div><div class="tag">MARKETPLACE NACIONAL · COMPRA, VENDA E SERVIÇOS</div></div>
   <div class="header-actions"><button class="icon-action" id="headerMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
-<main class="market-main">
+<main id="marketMain" class="market-main">
   <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select></div>
   <section class="search-panel">
     <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
@@ -675,29 +693,6 @@ footer{color:#64748b;padding-bottom:100px}
       <div class="wizard-actions"><button type="button" class="secondary" id="backToPhotosBtn">← Voltar às fotos</button><button type="button" id="publishBtn">Publicar anúncio</button></div>
     </div>
   </section>
-  <section id="chatPanel" class="panel hidden">
-    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose" type="button">Fechar</button></div>
-    <button id="assistantOpen" type="button" style="display:block;width:100%;min-height:54px;margin:0 0 14px;background:#ff7900;color:#172033">Conversar com o assistente virtual do Giro Fácil</button>
-    <div id="chatStatus" class="status hidden"></div>
-    <div class="chat-shell">
-      <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
-      <div class="chat-thread">
-        <strong id="chatThreadTitle">Selecione uma conversa</strong>
-        <div id="chatMessages" class="chat-messages"><div class="hint">Suas conversas com compradores e vendedores aparecerão aqui.</div></div>
-        <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
-      </div>
-    </div>
-  </section>
-  <section id="assistantPanel" class="panel hidden">
-    <div class="section-head"><h2>Assistente virtual Giro Fácil</h2><button class="secondary" id="assistantClose" type="button">Fechar</button></div>
-    <p class="hint">Tire dúvidas sobre cadastro, anúncios, compras, vendas e uso da plataforma. Para acessar, entre na sua conta.</p>
-    <div id="assistantStatus" class="status hidden"></div>
-    <div id="assistantMessages" class="chat-messages" aria-live="polite" style="height:320px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff">
-      <div class="chat-bubble">Olá! Sou o assistente virtual do Giro Fácil BR. Como posso ajudar?</div>
-    </div>
-    <div class="chat-compose"><textarea id="assistantInput" rows="2" maxlength="4000" placeholder="Digite sua dúvida..." aria-label="Mensagem para o assistente"></textarea><button id="assistantSend" type="button">Enviar</button></div>
-    <p class="hint">Não envie senhas, códigos de acesso ou dados completos de cartão.</p>
-  </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
     <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal R$ 59,00 · Turbinamento e lojas com pagamento confirmado pelo Asaas.</p>
@@ -803,6 +798,33 @@ footer{color:#64748b;padding-bottom:100px}
     <button id="adminRefresh" style="margin-top:12px">Atualizar painel</button>
   </section>
 </main>
+<main id="messagesMain" class="messages-page hidden" aria-label="Central de mensagens">
+  <div class="messages-page-inner">
+  <section id="chatPanel" class="panel hidden">
+    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose" type="button">Fechar</button></div>
+    <button id="assistantOpen" type="button" style="display:block;width:100%;min-height:54px;margin:0 0 14px;background:#ff7900;color:#172033">Conversar com o assistente virtual do Giro Fácil</button>
+    <div id="chatStatus" class="status hidden"></div>
+    <div class="chat-shell">
+      <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
+      <div class="chat-thread">
+        <strong id="chatThreadTitle">Selecione uma conversa</strong>
+        <div id="chatMessages" class="chat-messages"><div class="hint">Suas conversas com compradores e vendedores aparecerão aqui.</div></div>
+        <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
+      </div>
+    </div>
+  </section>
+  <section id="assistantPanel" class="panel hidden">
+    <div class="section-head"><h2>Assistente virtual Giro Fácil</h2><button class="secondary" id="assistantClose" type="button">Fechar</button></div>
+    <p class="hint">Tire dúvidas sobre cadastro, anúncios, compras, vendas e uso da plataforma. Para acessar, entre na sua conta.</p>
+    <div id="assistantStatus" class="status hidden"></div>
+    <div id="assistantMessages" class="chat-messages" aria-live="polite" style="height:320px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff">
+      <div class="chat-bubble">Olá! Sou o assistente virtual do Giro Fácil BR. Como posso ajudar?</div>
+    </div>
+    <div class="chat-compose"><textarea id="assistantInput" rows="2" maxlength="4000" placeholder="Digite sua dúvida..." aria-label="Mensagem para o assistente"></textarea><button id="assistantSend" type="button">Enviar</button></div>
+    <p class="hint">Não envie senhas, códigos de acesso ou dados completos de cartão.</p>
+  </section>
+  </div>
+</main>
 <nav class="bottom-nav" aria-label="Navegação principal">
   <button type="button" class="active" id="navHome"><span class="nav-icon">⌂</span>Início</button>
   <button type="button" id="navSearch"><span class="nav-icon">⌕</span>Buscar</button>
@@ -898,9 +920,9 @@ footer{color:#64748b;padding-bottom:100px}
     $("publishPanel").classList.remove("hidden");$("publishPanel").scrollIntoView({behavior:"smooth"});
   }
   $("loginOpen").onclick=openAuth;$("announceTop").onclick=openPublish;
-  $("navHome").onclick=()=>{favoritesOnly=false;loadListings();window.scrollTo({top:0,behavior:"smooth"});};
-  $("navSearch").onclick=()=>{$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
-  $("navAnnounce").onclick=openPublish;$("navFavorites").onclick=()=>{favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("headerMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
+  $("navHome").onclick=()=>{hideMessagesPage();favoritesOnly=false;loadListings();window.scrollTo({top:0,behavior:"smooth"});};
+  $("navSearch").onclick=()=>{hideMessagesPage();$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
+  $("navAnnounce").onclick=()=>{hideMessagesPage();openPublish();};$("navFavorites").onclick=()=>{hideMessagesPage();favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("headerMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{hideMessagesPage();if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
   $("partnerInfo").onclick=()=>{if(currentUser){$("partnerOpen").click();}else{openAuth();status("authStatus","Entre na sua conta para solicitar parceria e cadastrar seu estoque no Giro Fácil.");}};
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
@@ -1150,12 +1172,23 @@ footer{color:#64748b;padding-bottom:100px}
     chatPresenceChannel.on("presence",{event:"sync"},refresh).on("presence",{event:"join"},refresh).on("presence",{event:"leave"},refresh)
       .subscribe(async statusValue=>{if(statusValue==="SUBSCRIBED"){await chatPresenceChannel.track({user_id:currentUser.id,online:true,at:new Date().toISOString()});refresh();}});
   }
+  function showMessagesPage(view="chat"){
+    $("marketMain").classList.add("hidden");
+    $("messagesMain").classList.remove("hidden");
+    $("chatPanel").classList.toggle("hidden",view!=="chat");
+    $("assistantPanel").classList.toggle("hidden",view!=="assistant");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  function hideMessagesPage(){
+    $("messagesMain").classList.add("hidden");
+    $("marketMain").classList.remove("hidden");
+    $("chatPanel").classList.remove("hidden");
+    $("assistantPanel").classList.add("hidden");
+  }
   async function openChat(conversationId=null){
     if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar as mensagens.");return;}
-    document.querySelector("main").classList.add("chat-view");
-    $("assistantPanel").classList.add("hidden");
-    $("chatPanel").classList.remove("hidden");$("chatPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    showMessagesPage("chat");
     await loadConversations(conversationId);
   }
   async function loadConversations(selectId=null){
@@ -1218,7 +1251,7 @@ footer{color:#64748b;padding-bottom:100px}
     await openChat(id);
     $("chatMessageInput").focus();
   }
-  $("chatClose").onclick=()=>{$("chatPanel").classList.add("hidden");$("assistantPanel").classList.add("hidden");document.querySelector("main").classList.remove("chat-view");};
+  $("chatClose").onclick=hideMessagesPage;
   let assistantHistory=[];
   function addAssistantBubble(content, mine=false){
     const bubble=document.createElement("div");
@@ -1229,13 +1262,10 @@ footer{color:#64748b;padding-bottom:100px}
   }
   $("assistantOpen").onclick=()=>{
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para conversar com o assistente virtual.");return;}
-    document.querySelector("main").classList.add("chat-view");
-    $("chatPanel").classList.add("hidden");
-    $("assistantPanel").classList.remove("hidden");
-    $("assistantPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    showMessagesPage("assistant");
     $("assistantInput").focus();
   };
-  $("assistantClose").onclick=()=>$("assistantPanel").classList.add("hidden");
+  $("assistantClose").onclick=()=>showMessagesPage("chat");
   async function sendAssistantMessage(){
     const input=$("assistantInput");
     const sendButton=$("assistantSend");

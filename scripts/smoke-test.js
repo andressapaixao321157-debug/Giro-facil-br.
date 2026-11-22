@@ -263,9 +263,9 @@ check("Migration permite confirmar entrega somente para o destinatário",
   fs.readFileSync("supabase/migrations/20261122170000_message_delivery_receipts.sql","utf8").includes("grant update (entregue_em)") &&
   fs.readFileSync("supabase/migrations/20261122170000_message_delivery_receipts.sql","utf8").includes("remetente_id <> (select auth.uid())"));
 
-check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em")'));
+check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em,entregue_em")'));
 check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));
-check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"'));
+check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
 check("Atualização automática de recibos usa eventos Realtime de UPDATE", html.includes('event:"UPDATE",schema:"public",table:"mensagens"') && html.includes("scheduleChatInboxRefresh"));
 check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
 

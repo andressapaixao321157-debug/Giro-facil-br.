@@ -932,16 +932,20 @@ footer{color:#64748b;padding-bottom:100px}
     finally{$("authSubmit").disabled=false;}
   };
   $("forgotPassword").onclick=async()=>{
-    if(!db)return;
     const email=$("email").value.trim();
     if(!email){status("authStatus","Digite seu e-mail para receber as instruções de recuperação.","err");$("email").focus();return;}
-    $("forgotPassword").disabled=true;
+    if(!db){status("authStatus","A conexão de recuperação não carregou. Atualize a página e tente novamente; se persistir, a equipe técnica precisa revisar a conexão.","err");$("authStatus").scrollIntoView({behavior:"smooth",block:"center"});return;}
+    const button=$("forgotPassword");
+    button.disabled=true;
+    button.textContent="Enviando...";
+    status("authStatus","Solicitando o link de recuperação para o e-mail informado...");
+    $("authStatus").scrollIntoView({behavior:"smooth",block:"center"});
     try{
       const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:PUBLIC_SITE_URL+"/"});
       if(error)throw error;
-      status("authStatus","Se houver uma conta para este endereço, as instruções de recuperação serão enviadas. Confira a caixa de entrada e o spam.","ok");
-    }catch(e){status("authStatus",e.message||"Não foi possível solicitar a recuperação da senha.","err");}
-    finally{$("forgotPassword").disabled=false;}
+      status("authStatus","Solicitação enviada. Confira a caixa de entrada e o spam desse e-mail. Se não chegar, aguarde alguns minutos e tente novamente.","ok");
+    }catch(e){status("authStatus","Não foi possível enviar o link: "+(e.message||"erro desconhecido")+". Confira a conexão e tente novamente.","err");}
+    finally{button.disabled=false;button.textContent="Esqueci minha senha";}
   };
   $("saveNewPassword").onclick=async()=>{
     const password=$("newPassword").value;

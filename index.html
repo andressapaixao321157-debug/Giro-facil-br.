@@ -344,6 +344,9 @@
     .bottom-nav{z-index:40;padding-bottom:calc(8px + env(safe-area-inset-bottom));grid-template-columns:repeat(6,minmax(0,1fr));}
     .bottom-nav button{min-width:0;overflow:hidden}
     #paymentPanel,#adminPanel,#assistantPanel,#chatPanel{scroll-margin-bottom:120px}
+    main.chat-view > :not(#chatPanel):not(#assistantPanel){display:none!important}
+    main.chat-view{min-height:calc(100vh - 150px);padding-top:14px}
+    main.chat-view #chatPanel,main.chat-view #assistantPanel{margin-top:0;min-height:calc(100vh - 190px)}
     @media(max-width:620px){
       .account-actions{grid-template-columns:1fr}
       .account-actions .account-logout{width:100%}
@@ -1150,7 +1153,9 @@ footer{color:#64748b;padding-bottom:100px}
   async function openChat(conversationId=null){
     if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar as mensagens.");return;}
-    $("chatPanel").classList.remove("hidden");$("chatPanel").scrollIntoView({behavior:"smooth"});
+    document.querySelector("main").classList.add("chat-view");
+    $("assistantPanel").classList.add("hidden");
+    $("chatPanel").classList.remove("hidden");$("chatPanel").scrollIntoView({behavior:"smooth",block:"start"});
     await loadConversations(conversationId);
   }
   async function loadConversations(selectId=null){
@@ -1213,7 +1218,7 @@ footer{color:#64748b;padding-bottom:100px}
     await openChat(id);
     $("chatMessageInput").focus();
   }
-  $("chatClose").onclick=()=>$("chatPanel").classList.add("hidden");
+  $("chatClose").onclick=()=>{$("chatPanel").classList.add("hidden");$("assistantPanel").classList.add("hidden");document.querySelector("main").classList.remove("chat-view");};
   let assistantHistory=[];
   function addAssistantBubble(content, mine=false){
     const bubble=document.createElement("div");
@@ -1224,8 +1229,10 @@ footer{color:#64748b;padding-bottom:100px}
   }
   $("assistantOpen").onclick=()=>{
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para conversar com o assistente virtual.");return;}
+    document.querySelector("main").classList.add("chat-view");
+    $("chatPanel").classList.add("hidden");
     $("assistantPanel").classList.remove("hidden");
-    $("assistantPanel").scrollIntoView({behavior:"smooth"});
+    $("assistantPanel").scrollIntoView({behavior:"smooth",block:"start"});
     $("assistantInput").focus();
   };
   $("assistantClose").onclick=()=>$("assistantPanel").classList.add("hidden");

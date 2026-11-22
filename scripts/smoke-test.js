@@ -260,9 +260,9 @@ check("Destinatário confirma entrega ao receber mensagens com a caixa aberta",
   html.includes('filter(m=>m.remetente_id!==currentUser.id&&!m.entregue_em)') &&
   html.includes('update({entregue_em:deliveredAt}).in("id",undeliveredIncoming)'));
 check("Migration permite confirmar entrega somente para o destinatário",
-  fs.existsSync("supabase/migrations/20261122170000_message_delivery_receipts.sql") &&
-  fs.readFileSync("supabase/migrations/20261122170000_message_delivery_receipts.sql","utf8").includes("grant update (entregue_em)") &&
-  fs.readFileSync("supabase/migrations/20261122170000_message_delivery_receipts.sql","utf8").includes("remetente_id <> (select auth.uid())"));
+  fs.existsSync("supabase/migrations/20261122160827_message_delivery_receipts.sql") &&
+  fs.readFileSync("supabase/migrations/20261122160827_message_delivery_receipts.sql","utf8").includes("grant update (entregue_em)") &&
+  fs.readFileSync("supabase/migrations/20261122160827_message_delivery_receipts.sql","utf8").includes("remetente_id <> (select auth.uid())"));
 
 check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em,entregue_em")'));
 check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));

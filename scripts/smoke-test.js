@@ -253,6 +253,7 @@ check("Admin API devolve total exato e distribuição por estado", admin.include
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 
 // Recibos de leitura do chat: leitura apenas ao abrir a conversa, segurança e atualização.
+check("Recibo Entregue só aparece antes da confirmação Visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
 check("Chat consulta a confirmação de entrega e a confirmação de leitura separadamente",
   html.includes('lida_em,entregue_em') && html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
 check("Destinatário confirma entrega ao receber mensagens com a caixa aberta",

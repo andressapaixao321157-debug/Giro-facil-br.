@@ -305,6 +305,30 @@ check("Mensagens não lidas aparecem na conversa e no menu inferior",
 check("Abrir conversa no celular marca como lida; apenas visualizar a lista não marca",
   html.includes('const isMobileInbox=window.matchMedia("(max-width:700px)").matches&&!$("messagesMain").classList.contains("conversation-open")') &&
   html.includes('const conversationIsVisible=!window.matchMedia("(max-width:700px)").matches||$("messagesMain").classList.contains("conversation-open")'));
+check("Chat recebe mensagens novas e recibos de leitura pelo Supabase Realtime",
+  html.includes('db.channel("giro-inbox-"+userId)') &&
+  html.includes('table:"mensagens"') &&
+  html.includes('event:"INSERT"') &&
+  html.includes('event:"UPDATE"') &&
+  html.includes('function scheduleChatInboxRefresh()'));
+check("Novas conversas atualizam a caixa de entrada em tempo real",
+  html.includes('table:"conversas"') &&
+  html.includes('function syncChatInboxRealtime()'));
+check("Chat não depende mais de polling a cada cinco segundos",
+  !html.includes("giroChatReadReceiptPolling") &&
+  !html.includes("setInterval(()=>{") &&
+  html.includes("sem polling"));
+check("Confirmação de leitura só ocorre quando a conversa está visível",
+  html.includes('const inboxVisible=!$("messagesMain").classList.contains("hidden")&&!$("chatPanel").classList.contains("hidden")') &&
+  html.includes('const threadVisible=inboxVisible&&(!mobile||$("messagesMain").classList.contains("conversation-open"))'));
+check("Presença online é encerrada ao sair da conversa e ao fazer logout",
+  html.includes("async function stopChatPresence()") &&
+  html.includes('stopChatPresence();') &&
+  html.includes('if(!db||!currentUser){await stopChatInboxRealtime();await stopChatPresence();return;}'));
+check("Migração habilita somente conversas e mensagens na publicação Realtime",
+  fs.existsSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql") &&
+  fs.readFileSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql","utf8").includes("alter publication supabase_realtime add table public.mensagens") &&
+  fs.readFileSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql","utf8").includes("alter publication supabase_realtime add table public.conversas"));
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

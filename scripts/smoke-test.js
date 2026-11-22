@@ -34,9 +34,10 @@ function hasId(id) {
   "ownerDashboard", "ownerDashboardTitle",
 ].forEach(id => check("Elemento obrigatório único: " + id, hasId(id)));
 
-check("Supabase SDK é carregado de arquivo local empacotado no APK",
+check("Supabase SDK é carregado localmente com fallback CDN",
   /src="\.\/vendor\/supabase\.js(?:\?[^"]*)?"/.test(html) &&
-  !html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js@2"));
+  html.includes("if(!window.supabase){document.write") &&
+  html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js@2"));
 check("Build copia SDK UMD local para os assets do app",
   fs.readFileSync("package.json", "utf8").includes("dist/umd/supabase.js") &&
   fs.readFileSync(".github/workflows/android-apk.yml", "utf8").includes("npm run build"));

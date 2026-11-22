@@ -49,10 +49,12 @@ check("Central de mensagens é uma página independente da vitrine inicial",
   html.indexOf('<main id="messagesMain"') > html.indexOf('</main>', html.indexOf('<main id="marketMain"')) &&
   html.indexOf('id="chatPanel"') > html.indexOf('<main id="messagesMain"') &&
   html.indexOf('id="chatPanel"') < html.indexOf('</main>', html.indexOf('<main id="messagesMain"')));
-check("Abrir e fechar mensagens alterna páginas sem sobrepor a home",
+check("Abrir e fechar mensagens alterna páginas sem sobrepor a home e atualiza o menu",
   html.includes('function showMessagesPage(view="chat")') &&
   html.includes('function hideMessagesPage()') &&
   html.includes('$("chatClose").onclick=hideMessagesPage') &&
+  html.includes('setActiveBottomNav("navMessages")') &&
+  html.includes('setActiveBottomNav("navHome")') &&
   html.includes('$("navHome").onclick=()=>{hideMessagesPage();'));
 check("Assistente virtual é uma tela própria dentro da central de mensagens",
   html.includes('showMessagesPage("assistant")') &&

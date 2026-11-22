@@ -287,6 +287,24 @@ check("Caixa de entrada não reserva altura vazia no celular",
   html.includes('.messages-page:not(.conversation-open) .chat-list{min-height:0;max-height:min(54dvh,520px)}'));
 check("Chat continua ocupando a tela quando uma conversa é aberta",
   html.includes('.messages-page.conversation-open .chat-thread{min-height:calc(100dvh - 245px);height:calc(100dvh - 245px)}'));
+check("Inbox carrega foto do anúncio, título e dados da conversa",
+  html.includes('anuncios(titulo,fotos)') &&
+  html.includes('className="conversation-avatar"') &&
+  html.includes('img.alt="Foto do anúncio"'));
+check("Lista de conversas exibe prévia da última mensagem e horário",
+  html.includes('className="conversation-preview"') &&
+  html.includes('formatConversationTime(latest?.criada_em||conv.ultima_mensagem_em)') &&
+  html.includes('latest.remetente_id===currentUser.id?"Você: ":""'));
+check("Inbox identifica a outra parte como comprador ou vendedor",
+  html.includes('const counterpartRole=isBuyer?"Vendedor":"Comprador"') &&
+  html.includes('Você está atendendo o comprador'));
+check("Mensagens não lidas aparecem na conversa e no menu inferior",
+  html.includes('className="conversation-unread"') &&
+  hasId("navMessagesBadge") &&
+  html.includes('function updateConversationUnreadTotal()'));
+check("Abrir conversa no celular marca como lida; apenas visualizar a lista não marca",
+  html.includes('const isMobileInbox=window.matchMedia("(max-width:700px)").matches&&!$("messagesMain").classList.contains("conversation-open")') &&
+  html.includes('const conversationIsVisible=!window.matchMedia("(max-width:700px)").matches||$("messagesMain").classList.contains("conversation-open")'));
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

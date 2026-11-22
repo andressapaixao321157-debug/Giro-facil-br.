@@ -44,6 +44,88 @@ Deno.serve(async (req) => {
       // o processamento idempotente em vez de descartá-lo.
     }
 
+    const checkout = payload.checkout;
+    if (checkout?.id && String(payload.event || "").startsWith("CHECKOUT_")) {
+      let { data: checkoutOrder, error: checkoutLookupError } = await admin.from("payment_orders")
+        .select("*").eq("asaas_checkout_id", checkout.id).maybeSingle();
+      if (checkoutLookupError) throw checkoutLookupError;
+      if (!checkoutOrder && checkout.externalReference) {
+        const fallback = await admin.from("payment_orders").select("*").eq("id", checkout.externalReference).maybeSingle();
+        checkoutOrder = fallback.data;
+        if (fallback.error) throw fallback.error;
+      }
+      if (checkoutOrder) {
+        const checkoutStatus = payload.event === "CHECKOUT_PAID" ? "PAID"
+          : payload.event === "CHECKOUT_CANCELED" ? "CANCELED"
+          : payload.event === "CHECKOUT_EXPIRED" ? "EXPIRED"
+          : checkoutOrder.status;
+        const { error: checkoutUpdateError } = await admin.from("payment_orders").update({
+          status: checkoutStatus, asaas_checkout_id: checkout.id, updated_at: new Date().toISOString(),
+        }).eq("id", checkoutOrder.id);
+        if (checkoutUpdateError) throw checkoutUpdateError;
+
+        if (payload.event === "CHECKOUT_PAID") {
+          if (checkoutOrder.kind === "single" && checkoutOrder.listing_id) {
+            await admin.from("anuncios").update({ pagamento_status: "pago" })
+              .eq("id", checkoutOrder.listing_id).eq("usuario_id", checkoutOrder.user_id);
+          }
+          if (checkoutOrder.kind === "monthly") {
+            await admin.from("perfis").update({ plano_status: "ativo" }).eq("id", checkoutOrder.user_id);
+            await admin.from("anuncios").update({ pagamento_status: "plano" })
+              .eq("usuario_id", checkoutOrder.user_id).eq("status", "pendente");
+          }
+          if (checkoutOrder.kind === "boost") {
+            const { data: boost, error: boostLookupError } = await admin.from("ad_boosts")
+              .select("id,duration_days,status").eq("order_id", checkoutOrder.id).maybeSingle();
+            if (boostLookupError) throw boostLookupError;
+            if (boost && boost.status === "awaiting_payment") {
+              const starts = new Date();
+              const ends = new Date(starts.getTime() + Number(boost.duration_days) * 86400000);
+              const { error: boostUpdateError } = await admin.from("ad_boosts").update({
+                status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+              }).eq("id", boost.id);
+              if (boostUpdateError) throw boostUpdateError;
+            }
+          }
+          if (checkoutOrder.kind === "store") {
+            const { data: storePlan, error: storeLookupError } = await admin.from("store_plans")
+              .select("id,status").eq("order_id", checkoutOrder.id).maybeSingle();
+            if (storeLookupError) throw storeLookupError;
+            if (storePlan && storePlan.status === "awaiting_payment") {
+              const starts = new Date();
+              const ends = new Date(starts); ends.setUTCMonth(ends.getUTCMonth() + 1);
+              const { error: storeUpdateError } = await admin.from("store_plans").update({
+                status: "active", starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+              }).eq("id", storePlan.id).eq("status", "awaiting_payment");
+              if (storeUpdateError) throw storeUpdateError;
+            }
+          }
+        }
+      }
+    }
+
+    const subscription = payload.subscription;
+    if (subscription?.id && payload.event === "SUBSCRIPTION_CREATED" && subscription.externalReference) {
+      const { data: subscriptionOrder, error: subscriptionLookupError } = await admin.from("payment_orders")
+        .select("id,user_id,kind").eq("id", subscription.externalReference).maybeSingle();
+      if (subscriptionLookupError) throw subscriptionLookupError;
+      if (subscriptionOrder) {
+        const { error: subscriptionUpdateError } = await admin.from("payment_orders").update({
+          asaas_subscription_id: subscription.id, asaas_customer_id: subscription.customer || null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", subscriptionOrder.id);
+        if (subscriptionUpdateError) throw subscriptionUpdateError;
+        if (subscriptionOrder.kind === "monthly") {
+          await admin.from("perfis").update({ plano_asaas_subscription_id: subscription.id })
+            .eq("id", subscriptionOrder.user_id);
+        }
+      }
+    }
+    if (subscription?.id && ["SUBSCRIPTION_INACTIVATED", "SUBSCRIPTION_DELETED"].includes(payload.event)) {
+      await admin.from("perfis").update({ plano_status: "pendente" })
+        .eq("plano_asaas_subscription_id", subscription.id);
+    }
+
     const payment = payload.payment;
     if (payment?.id) {
       const externalReference = payment.externalReference;

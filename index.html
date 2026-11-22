@@ -82,6 +82,10 @@
     .chat-compose{display:flex;gap:9px;align-items:flex-end;margin-top:12px;padding-top:10px;border-top:1px solid #edf0f4}
     .chat-compose textarea{flex:1;min-width:0;resize:vertical;border-radius:18px;padding:12px 15px;background:#f7f9fc;border:1px solid #e1e7ee}
     .chat-compose button{min-height:44px;border-radius:22px;padding:0 20px}
+    #chatTyping{display:block;min-height:18px;padding:3px 3px 0;color:#ed7414;font-size:12px;font-weight:700}
+    .chat-photo-button{min-width:46px;padding:0 12px!important;background:#eef2f7!important;color:#25334a!important}
+    .chat-photo{display:block;max-width:min(100%,320px);max-height:280px;object-fit:contain;border-radius:12px}
+    .chat-photo-name{display:block;margin-top:5px;font-size:11px;color:#667085}
 
     @media(max-width:620px){.chat-shell{grid-template-columns:1fr}.chat-list{max-height:170px;overflow:auto}.chat-messages{height:230px}}
   
@@ -662,8 +666,10 @@ footer{color:#64748b;padding-bottom:100px}
       <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
       <div class="chat-thread">
         <strong id="chatThreadTitle">Selecione uma conversa</strong>
+        <small id="chatTyping" aria-live="polite"></small>
         <div id="chatMessages" class="chat-messages"><div class="hint">Suas conversas com compradores e vendedores aparecerão aqui.</div></div>
-        <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
+        <input id="chatPhotoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+        <div class="chat-compose"><button id="chatPhotoButton" class="chat-photo-button" type="button" aria-label="Enviar foto" title="Enviar foto">📷</button><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
       </div>
     </div>
   </section>
@@ -1048,21 +1054,60 @@ footer{color:#64748b;padding-bottom:100px}
   $("assistantLeadOpen").onclick=()=>{$("assistantPanel").classList.remove("hidden");$("assistantPanel").scrollIntoView({behavior:"smooth"});$("assistantInput").value="Sou o administrador do Giro Fácil. Monte um plano prático de captação dos primeiros 500 anúncios reais, com roteiro de abordagem para concessionárias, imobiliárias, lojas e vendedores particulares, metas semanais e checklist de acompanhamento. Não invente contatos nem afirme que já contatou empresas.";$("assistantInput").focus();};
 
 
-  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null;
-  function renderPeerPresence(isOnline){
+  let activeConversationId=null, activeConversationTitle="", chatPresenceChannel=null, chatLastSeenTimer=null, chatTypingTimer=null, peerTypingTimer=null, chatNotificationCount=0;
+  function renderPeerPresence(isOnline,lastSeen=null){
     const title=$("chatThreadTitle");let el=$("chatPeerPresence");
     if(!el){el=document.createElement("span");el.id="chatPeerPresence";el.style.cssText="display:inline-flex;align-items:center;gap:7px;margin-left:10px;font-size:12px;font-weight:600;color:#536174";title.appendChild(el);}
     el.innerHTML="";const dot=document.createElement("i");dot.style.cssText="width:9px;height:9px;border-radius:50%;display:inline-block;background:"+(isOnline?"#16a34a":"#9ca3af");
-    el.appendChild(dot);el.appendChild(document.createTextNode(isOnline?"Online":"Offline"));
+    el.appendChild(dot);
+    const label=isOnline?"Online":(lastSeen?"Visto por último "+new Date(lastSeen).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}):"Offline");
+    el.appendChild(document.createTextNode(label));
+  }
+  async function updateMyLastSeen(){
+    if(!db||!currentUser)return;
+    const {error}=await db.from("chat_presencas").upsert({user_id:currentUser.id,last_seen_at:new Date().toISOString()},{onConflict:"user_id"});
+    if(error)console.warn("Não foi possível atualizar último acesso do chat:",error.message);
   }
   async function watchConversationPresence(conv){
+    if(chatLastSeenTimer){clearInterval(chatLastSeenTimer);chatLastSeenTimer=null;}
+    if(peerTypingTimer){clearTimeout(peerTypingTimer);peerTypingTimer=null;}
     if(chatPresenceChannel){await db.removeChannel(chatPresenceChannel);chatPresenceChannel=null;}
     const peerId=conv.comprador_id===currentUser.id?conv.vendedor_id:conv.comprador_id;
-    renderPeerPresence(false);
+    $("chatTyping").textContent="";renderPeerPresence(false);
     chatPresenceChannel=db.channel("giro-chat-presence-"+conv.id,{config:{presence:{key:currentUser.id}}});
-    const refresh=()=>{const state=chatPresenceChannel.presenceState();renderPeerPresence(Boolean(state[peerId]&&state[peerId].length));};
-    chatPresenceChannel.on("presence",{event:"sync"},refresh).on("presence",{event:"join"},refresh).on("presence",{event:"leave"},refresh)
-      .subscribe(async statusValue=>{if(statusValue==="SUBSCRIBED"){await chatPresenceChannel.track({user_id:currentUser.id,online:true,at:new Date().toISOString()});refresh();}});
+    const refresh=async()=>{
+      const state=chatPresenceChannel.presenceState(),online=Boolean(state[peerId]&&state[peerId].length);
+      if(online){renderPeerPresence(true);return;}
+      const {data}=await db.from("chat_presencas").select("last_seen_at").eq("user_id",peerId).maybeSingle();
+      renderPeerPresence(false,data?.last_seen_at||null);
+    };
+    chatPresenceChannel
+      .on("presence",{event:"sync"},refresh).on("presence",{event:"join"},refresh).on("presence",{event:"leave"},refresh)
+      .on("broadcast",{event:"typing"},({payload})=>{
+        if(payload?.user_id===peerId){
+          $("chatTyping").textContent=payload.typing?"Digitando...":"";
+          if(peerTypingTimer)clearTimeout(peerTypingTimer);
+          if(payload.typing)peerTypingTimer=setTimeout(()=>$("chatTyping").textContent="",2500);
+        }
+      })
+      .on("broadcast",{event:"message"},()=>{
+        loadMessages();
+        if("Notification" in window&&Notification.permission==="granted"&&document.hidden){
+          new Notification("Nova mensagem · Giro Fácil BR",{body:"Você recebeu uma mensagem no chat."});
+        }else if(document.hidden){chatNotificationCount++;document.title="("+chatNotificationCount+") Giro Fácil BR";}
+      })
+      .subscribe(async statusValue=>{
+        if(statusValue==="SUBSCRIBED"){
+          await chatPresenceChannel.track({user_id:currentUser.id,online:true,at:new Date().toISOString()});
+          await updateMyLastSeen();refresh();chatLastSeenTimer=setInterval(updateMyLastSeen,60000);
+        }
+      });
+  }
+  async function sendChatTyping(){
+    if(!chatPresenceChannel||!currentUser)return;
+    await chatPresenceChannel.send({type:"broadcast",event:"typing",payload:{user_id:currentUser.id,typing:Boolean($("chatMessageInput").value.trim())}});
+    if(chatTypingTimer)clearTimeout(chatTypingTimer);
+    chatTypingTimer=setTimeout(()=>chatPresenceChannel?.send({type:"broadcast",event:"typing",payload:{user_id:currentUser.id,typing:false}}),1200);
   }
   async function openChat(conversationId=null){
     if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
@@ -1099,16 +1144,27 @@ footer{color:#64748b;padding-bottom:100px}
       else status("chatStatus","Mensagens abertas, mas não foi possível confirmar a leitura. Aplique a atualização de leitura no Supabase.","err");
     }
     const box=$("chatMessages");box.innerHTML="";
-    (data||[]).forEach(m=>{
+    for(const m of (data||[])){
       const mine=m.remetente_id===currentUser.id;
       const wrap=document.createElement("div");wrap.style.display="flex";wrap.style.flexDirection="column";wrap.style.maxWidth="100%";wrap.style.alignItems=mine?"flex-end":"flex-start";
-      const bubble=document.createElement("div");bubble.className="chat-bubble"+(mine?" mine":"");bubble.textContent=m.conteudo;wrap.appendChild(bubble);
+      const bubble=document.createElement("div");bubble.className="chat-bubble"+(mine?" mine":"");
+      if(m.conteudo.startsWith("[[GIRO_CHAT_IMAGE]]")){
+        try{
+          const attachment=JSON.parse(m.conteudo.slice("[[GIRO_CHAT_IMAGE]]".length));
+          const {data:signed,error:signedError}=await db.storage.from("chat-anexos").createSignedUrl(attachment.path,3600);
+          if(!signedError&&signed?.signedUrl){
+            const img=document.createElement("img");img.className="chat-photo";img.src=signed.signedUrl;img.alt="Foto enviada na conversa";img.loading="lazy";bubble.appendChild(img);
+            const name=document.createElement("small");name.className="chat-photo-name";name.textContent=attachment.name||"Foto";bubble.appendChild(name);
+          }else bubble.textContent="Foto indisponível para visualização.";
+        }catch(_){bubble.textContent="Anexo de imagem inválido.";}
+      }else bubble.textContent=m.conteudo;
+      wrap.appendChild(bubble);
       if(mine){
         const receipt=document.createElement("small");receipt.className="chat-read-receipt";receipt.textContent=m.lida_em?"✓✓ Visualizada":"Enviada";receipt.style.cssText="font-size:11px;color:#667085;margin:3px 7px 0";
         wrap.appendChild(receipt);
       }
       box.appendChild(wrap);
-    });
+    }
     if(!data?.length){const empty=document.createElement("div");empty.className="hint";empty.textContent="Inicie a conversa enviando uma mensagem.";box.appendChild(empty);}
     box.scrollTop=box.scrollHeight;
   }
@@ -1130,7 +1186,7 @@ footer{color:#64748b;padding-bottom:100px}
     await openChat(id);
     $("chatMessageInput").focus();
   }
-  $("chatClose").onclick=()=>$("chatPanel").classList.add("hidden");
+  $("chatClose").onclick=()=>{$("chatPanel").classList.add("hidden");chatNotificationCount=0;document.title="Giro Fácil BR";};
   let assistantHistory=[];
   function addAssistantBubble(content, mine=false){
     const bubble=document.createElement("div");
@@ -1216,11 +1272,39 @@ footer{color:#64748b;padding-bottom:100px}
       const {error}=await db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content});
       if(error)throw error;
       input.value="";status("chatStatus","Mensagem enviada.","ok");
-      await loadMessages();await loadConversations(activeConversationId);
+      if(chatPresenceChannel)await chatPresenceChannel.send({type:"broadcast",event:"message",payload:{user_id:currentUser.id}});
+      await loadMessages();
     }catch(err){status("chatStatus","Não foi possível enviar: "+(err?.message||"erro inesperado"),"err");}
     finally{button.disabled=false;button.textContent="Enviar";input.focus();}
   }
+  async function sendChatPhoto(file){
+    if(!file||!activeConversationId)return;
+    if(!db||!currentUser){status("chatStatus","Entre na sua conta para enviar fotos.","err");return;}
+    if(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)){status("chatStatus","Escolha uma imagem JPG, PNG, WEBP ou GIF.","err");return;}
+    if(file.size>5*1024*1024){status("chatStatus","A foto deve ter no máximo 5 MB.","err");return;}
+    const button=$("chatPhotoButton");button.disabled=true;button.textContent="...";
+    const safeName=(file.name||"foto").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-80);
+    const randomId=window.crypto?.randomUUID?window.crypto.randomUUID():Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
+    const path=activeConversationId+"/"+currentUser.id+"/"+randomId+"-"+safeName;
+    let uploaded=false;
+    try{
+      status("chatStatus","Enviando foto...");
+      const {error:uploadError}=await db.storage.from("chat-anexos").upload(path,file,{contentType:file.type,upsert:false});
+      if(uploadError)throw uploadError;uploaded=true;
+      const payload="[[GIRO_CHAT_IMAGE]]"+JSON.stringify({path,name:safeName});
+      const {error}=await db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:payload});
+      if(error)throw error;
+      if(chatPresenceChannel)await chatPresenceChannel.send({type:"broadcast",event:"message",payload:{user_id:currentUser.id}});
+      status("chatStatus","Foto enviada.","ok");await loadMessages();
+    }catch(err){
+      if(uploaded)await db.storage.from("chat-anexos").remove([path]);
+      status("chatStatus","Não foi possível enviar a foto: "+(err?.message||"erro inesperado"),"err");
+    }finally{button.disabled=false;button.textContent="📷";}
+  }
   $("chatSend").onclick=sendChatMessage;
+  $("chatPhotoButton").onclick=()=>{if(!activeConversationId){status("chatStatus","Selecione uma conversa antes de enviar uma foto.","err");return;}$("chatPhotoInput").click();};
+  $("chatPhotoInput").addEventListener("change",e=>{const file=e.target.files?.[0];if(file)sendChatPhoto(file);e.target.value="";});
+  $("chatMessageInput").addEventListener("input",sendChatTyping);
   $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
   document.addEventListener("click",e=>{
     const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("listing_view",b.dataset.listingId);trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}

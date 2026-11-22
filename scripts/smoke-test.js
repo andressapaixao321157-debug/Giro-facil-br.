@@ -216,6 +216,20 @@ check("Captação grava eventos e parâmetros de campanha/indicação", html.inc
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 
+// Chat profissional: presença, mensagens instantâneas, último acesso e anexos privados.
+const chatMigrationPath = "supabase/migrations/20261121240000_chat_professional_features.sql";
+const chatMigration = fs.existsSync(chatMigrationPath) ? fs.readFileSync(chatMigrationPath, "utf8") : "";
+check("Chat mostra indicador de digitação e botão para anexar foto", hasId("chatTyping") && hasId("chatPhotoButton") && hasId("chatPhotoInput"));
+check("Chat envia eventos de digitação em tempo real por broadcast", html.includes('on("broadcast",{event:"typing"}') && html.includes('event:"typing",payload'));
+check("Chat envia aviso instantâneo de nova mensagem", html.includes('on("broadcast",{event:"message"}') && html.includes('event:"message",payload'));
+check("Chat mostra notificação do navegador somente se já autorizada", html.includes('Notification.permission==="granted"') && html.includes('new Notification("Nova mensagem'));
+check("Chat registra e consulta o último acesso com política por participante", html.includes('db.from("chat_presencas").upsert') && html.includes('db.from("chat_presencas").select("last_seen_at")') && chatMigration.includes("chat_presencas_select_participantes"));
+check("Fotos do chat aceitam somente imagens e limite de 5 MB", html.includes('image/jpeg","image/png","image/webp","image/gif') && html.includes("file.size>5*1024*1024"));
+check("Anexos do chat usam bucket privado e URLs assinadas", html.includes('storage.from("chat-anexos").upload') && html.includes('createSignedUrl(attachment.path,3600)') && chatMigration.includes("values ('chat-anexos', 'chat-anexos', false"));
+check("Storage do chat limita envio ao participante e leitura à conversa", chatMigration.includes("chat_anexos_insert_proprio") && chatMigration.includes("chat_anexos_select_participantes") && chatMigration.includes("(storage.foldername(name))[2]"));
+check("Falha ao salvar a mensagem remove o anexo enviado", html.includes('if(uploaded)await db.storage.from("chat-anexos").remove([path])'));
+check("Migration de recursos profissionais do chat está versionada", chatMigration.length > 0);
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

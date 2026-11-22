@@ -138,6 +138,10 @@ check("Console envia agente selecionado ao backend existente sem alterar chat p�
 check("Console interno limita opções aos quatro agentes administrativos",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">'));
+check("Apelidos da equipe aparecem na central sem alterar os identificadores internos",
+  html.includes("Chefe — Administração") && html.includes("Léo — Fiscalização de anúncios") &&
+  html.includes("Pri — Inteligência comercial") && html.includes("Téo — Engenharia e testes") &&
+  html.includes("Sam será o especialista de atendimento"));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui cinco perfis de agente definidos",

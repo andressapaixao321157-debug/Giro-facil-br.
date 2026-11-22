@@ -1226,7 +1226,6 @@ footer{color:#64748b;padding-bottom:100px}
     const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("listing_view",b.dataset.listingId);trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
     const fav=e.target.closest(".favorite-toggle");if(fav){const id=fav.dataset.favoriteId;let ids=JSON.parse(localStorage.getItem("giro_favorites")||"[]");ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];localStorage.setItem("giro_favorites",JSON.stringify(ids));fav.textContent=ids.includes(id)?"♥":"♡";if(favoritesOnly)loadListings();}
   });
-  setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000);
 
 
   // Captação orgânica nacional: origem, campanha e indicação.

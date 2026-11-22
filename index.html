@@ -566,6 +566,75 @@ footer{color:#64748b;padding-bottom:100px}
       .messages-page .chat-thread{min-height:390px}
       .messages-page .chat-messages{height:260px;min-height:200px}
     }
+
+    /* Central de mensagens premium: inbox + conversa em tela cheia no mobile */
+    .messages-page{max-width:none;width:100%;min-height:calc(100dvh - 150px);padding:24px 20px 112px;background:linear-gradient(180deg,#f5f7fb 0%,#edf2f8 100%)}
+    .messages-page-inner{max-width:1160px;margin:0 auto}
+    .messages-page #chatPanel{padding:24px;border:1px solid #dfe6f0;border-radius:24px;background:#fff;box-shadow:0 18px 55px rgba(13,35,70,.09)}
+    .messages-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+    .messages-eyebrow{font-size:10px;letter-spacing:1.4px;font-weight:900;color:#e87512}
+    .messages-heading h2{font-size:clamp(24px,4vw,32px);letter-spacing:-.7px;color:#10264b;margin:5px 0}
+    .messages-heading p{margin:0;color:#718096;font-size:14px}
+    .messages-close{border-radius:12px;min-height:42px}
+    .assistant-entry{width:100%;display:flex;align-items:center;gap:13px;text-align:left;margin:0 0 18px;padding:13px 16px;border:1px solid #dce7fa;border-radius:16px;background:linear-gradient(100deg,#f0f5ff,#f8faff);color:#132c56}
+    .assistant-entry-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#123d82;color:#fff;font-size:22px;flex:none}
+    .assistant-entry-copy{display:flex;flex-direction:column;gap:3px;flex:1}
+    .assistant-entry-copy strong{font-size:14px}.assistant-entry-copy small{font-size:12px;color:#718096}
+    .assistant-entry-arrow{font-size:27px;color:#e87512}
+    .chat-shell{display:grid;grid-template-columns:minmax(280px,.78fr) minmax(0,1.55fr);gap:16px;min-height:560px}
+    .messages-page .chat-list,.messages-page .chat-thread{min-width:0;border:1px solid #e3e9f2;border-radius:18px;background:#fff;padding:17px;box-shadow:0 5px 20px rgba(16,38,75,.045)}
+    .chat-list{display:flex;flex-direction:column;max-height:650px;overflow:hidden}
+    .chat-list-heading{display:flex;flex-direction:column;gap:3px;margin:0 0 13px}
+    .chat-list-heading strong{font-size:17px;color:#14294d}
+    .chat-list-caption{font-size:11px;color:#8793a5}
+    .conversation-search{display:flex;align-items:center;gap:9px;min-height:43px;padding:0 12px;border:1px solid #e0e7f0;border-radius:12px;background:#f7f9fc;color:#8290a4}
+    .conversation-search span{font-size:22px}.conversation-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#182b4b;font:inherit;font-size:13px}
+    .conversation-items{overflow:auto;min-height:0;margin-top:10px}
+    .conversation-items>button{width:100%;display:block;margin:0;padding:14px 12px;border:0;border-bottom:1px solid #edf1f6;border-radius:0;background:#fff;color:#192b49;text-align:left;line-height:1.4;white-space:normal}
+    .conversation-items>button:hover{background:#f7f9fd}
+    .conversation-items>button.selected{background:#f0f5ff;box-shadow:inset 3px 0 #ed821b}
+    .chat-thread{display:flex;flex-direction:column;min-height:560px}
+    .chat-thread-heading{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid #edf1f6}
+    .chat-back-button{display:none;width:38px;height:38px;border:1px solid #e0e7f0;border-radius:12px;background:#f7f9fc;color:#18325d;font-size:28px;line-height:1}
+    .chat-thread-heading-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+    #chatThreadTitle{font-size:16px;color:#14294d;overflow-wrap:anywhere}
+    #chatThreadSubtitle{font-size:11px;color:#8793a5}
+    .messages-page .chat-messages{flex:1;min-height:300px;height:auto;margin:14px 0;padding:18px;background:#f7f9fc;border:1px solid #edf1f6;border-radius:15px;gap:12px}
+    .messages-page .chat-bubble{max-width:min(82%,540px);padding:12px 15px;border-radius:17px 17px 17px 5px;background:#e8edf5;color:#172b4d;font-size:14px;line-height:1.5;box-shadow:none}
+    .messages-page .chat-bubble.mine{background:#123d82;color:#fff;border-radius:17px 17px 5px 17px}
+    .messages-page .chat-read-receipt{color:#718096!important}
+    .messages-page .chat-compose{align-items:center;margin:0;padding:10px 0 0;border-top:1px solid #edf1f6}
+    .messages-page .chat-compose textarea{min-height:46px;max-height:120px;resize:vertical;border-radius:14px;background:#f7f9fc;border-color:#e0e7f0;padding:12px 14px;font-size:14px}
+    .messages-page .chat-compose button{min-height:46px;border-radius:13px;background:#e87512;color:#fff;font-weight:800}
+    .chat-security-note{margin:8px 0 0;text-align:center;color:#97a2b2;font-size:10px}
+    .chat-empty-state{margin:auto;text-align:center;color:#718096;max-width:280px}
+    .chat-empty-state span{display:inline-grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#eaf0fa;color:#17417e;font-size:25px}
+    .chat-empty-state strong{display:block;margin:12px 0 5px;color:#243958}
+    .chat-empty-state p{font-size:12px;line-height:1.5}
+    .messages-page.conversation-open .messages-heading,.messages-page.conversation-open .assistant-entry,.messages-page.conversation-open .chat-list{display:none}
+    .messages-page.conversation-open .chat-shell{display:block;min-height:0}
+    .messages-page.conversation-open .chat-thread{min-height:calc(100dvh - 260px)}
+    .messages-page.conversation-open .chat-back-button{display:block}
+    @media(max-width:700px){
+      .messages-page{padding:12px 10px 100px;min-height:calc(100dvh - 130px)}
+      .messages-page #chatPanel{padding:15px;border-radius:18px;min-height:calc(100dvh - 145px)}
+      .messages-page .chat-shell{display:flex;flex-direction:column;min-height:0}
+      .messages-page .chat-list{max-height:none;min-height:340px;padding:14px}
+      .messages-page .chat-thread{display:none;min-height:calc(100dvh - 245px);padding:13px}
+      .messages-page.conversation-open #chatPanel{padding:10px;border-radius:0;border:0;box-shadow:none;min-height:calc(100dvh - 120px)}
+      .messages-page.conversation-open .chat-thread{display:flex;min-height:calc(100dvh - 245px);height:calc(100dvh - 245px)}
+      .messages-page.conversation-open .chat-messages{min-height:0}
+      .messages-page.conversation-open .messages-page-inner{max-width:none}
+      .messages-page.conversation-open .chat-compose textarea{min-height:44px}
+      .messages-page .messages-heading h2{font-size:25px}
+      .messages-page .messages-heading p{font-size:12px}
+      .messages-page .assistant-entry{padding:11px 12px}
+      .messages-page .chat-bubble{max-width:88%}
+    }
+
+    .conversation-item-title{display:block;font-size:13px;font-weight:800;color:#172b4d}
+    .conversation-item-meta{display:block;margin-top:4px;font-size:11px;color:#8793a5}
+    .conversation-items>button.selected .conversation-item-title{color:#123d82}
 </style>
 </head>
 <body>
@@ -801,16 +870,27 @@ footer{color:#64748b;padding-bottom:100px}
 <main id="messagesMain" class="messages-page hidden" aria-label="Central de mensagens">
   <div class="messages-page-inner">
   <section id="chatPanel" class="panel hidden">
-    <div class="section-head"><h2>Mensagens do Giro Fácil</h2><button class="secondary" id="chatClose" type="button">Fechar</button></div>
-    <button id="assistantOpen" type="button" style="display:block;width:100%;min-height:54px;margin:0 0 14px;background:#ff7900;color:#172033">Conversar com o assistente virtual do Giro Fácil</button>
+    <div class="messages-heading">
+      <div><span class="messages-eyebrow">GIRO FÁCIL BR · CENTRAL DE ATENDIMENTO</span><h2>Suas mensagens</h2><p>Negocie com segurança, direto pela plataforma.</p></div>
+      <button class="secondary messages-close" id="chatClose" type="button" aria-label="Fechar mensagens">Fechar</button>
+    </div>
+    <button id="assistantOpen" class="assistant-entry" type="button"><span class="assistant-entry-icon">✦</span><span class="assistant-entry-copy"><strong>Assistente Giro Fácil</strong><small>Ajuda com anúncios, compras e sua conta</small></span><span class="assistant-entry-arrow">›</span></button>
     <div id="chatStatus" class="status hidden"></div>
     <div class="chat-shell">
-      <div class="chat-list"><strong>Conversas</strong><div id="chatConversationList" class="hint" style="margin-top:10px">Carregando conversas...</div></div>
-      <div class="chat-thread">
-        <strong id="chatThreadTitle">Selecione uma conversa</strong>
-        <div id="chatMessages" class="chat-messages"><div class="hint">Suas conversas com compradores e vendedores aparecerão aqui.</div></div>
-        <div class="chat-compose"><textarea id="chatMessageInput" rows="2" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend">Enviar</button></div>
-      </div>
+      <aside class="chat-list">
+        <div class="chat-list-heading"><strong>Conversas</strong><span class="chat-list-caption">Suas negociações</span></div>
+        <label class="conversation-search"><span aria-hidden="true">⌕</span><input id="chatSearch" type="search" placeholder="Buscar conversa..." aria-label="Buscar conversa"></label>
+        <div id="chatConversationList" class="conversation-items"><div class="hint">Carregando conversas...</div></div>
+      </aside>
+      <section class="chat-thread" aria-label="Conversa selecionada">
+        <div class="chat-thread-heading">
+          <button id="chatBackToList" class="chat-back-button" type="button" aria-label="Voltar para conversas">‹</button>
+          <div class="chat-thread-heading-copy"><strong id="chatThreadTitle">Selecione uma conversa</strong><small id="chatThreadSubtitle">Suas mensagens aparecem aqui</small></div>
+        </div>
+        <div id="chatMessages" class="chat-messages"><div class="chat-empty-state"><span>✉</span><strong>Suas conversas em um só lugar</strong><p>Escolha uma conversa para continuar o atendimento.</p></div></div>
+        <div class="chat-compose"><textarea id="chatMessageInput" rows="1" maxlength="4000" placeholder="Escreva sua mensagem..." aria-label="Mensagem"></textarea><button id="chatSend" type="button" aria-label="Enviar mensagem">Enviar</button></div>
+        <p class="chat-security-note">Mantenha seus pagamentos e negociações pelos canais seguros da plataforma.</p>
+      </section>
     </div>
   </section>
   <section id="assistantPanel" class="panel hidden">
@@ -1175,12 +1255,14 @@ footer{color:#64748b;padding-bottom:100px}
   function showMessagesPage(view="chat"){
     $("marketMain").classList.add("hidden");
     $("messagesMain").classList.remove("hidden");
+    $("messagesMain").classList.remove("conversation-open");
     $("chatPanel").classList.toggle("hidden",view!=="chat");
     $("assistantPanel").classList.toggle("hidden",view!=="assistant");
     window.scrollTo({top:0,behavior:"smooth"});
   }
   function hideMessagesPage(){
     $("messagesMain").classList.add("hidden");
+    $("messagesMain").classList.remove("conversation-open");
     $("marketMain").classList.remove("hidden");
     $("chatPanel").classList.remove("hidden");
     $("assistantPanel").classList.add("hidden");
@@ -1195,19 +1277,44 @@ footer{color:#64748b;padding-bottom:100px}
     const {data,error}=await db.from("conversas").select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo)").or("comprador_id.eq."+currentUser.id+",vendedor_id.eq."+currentUser.id).order("ultima_mensagem_em",{ascending:false}).limit(50);
     if(error){status("chatStatus","Não foi possível carregar conversas: "+error.message,"err");return;}
     const list=$("chatConversationList");list.innerHTML="";
-    if(!data?.length){list.textContent="Você ainda não tem conversas com compradores ou vendedores. Para falar com a equipe virtual, use o botão laranja acima.";activeConversationId=null;$("chatThreadTitle").textContent="Nenhuma conversa selecionada";$("chatMessages").innerHTML='<div class="hint">As mensagens de anúncios aparecerão aqui quando alguém iniciar uma conversa.</div>';$("chatMessageInput").disabled=true;$("chatSend").disabled=true;return;}
+    if(!data?.length){
+      list.innerHTML='<div class="chat-empty-state"><span>✉</span><strong>Nenhuma conversa por enquanto</strong><p>Quando alguém entrar em contato sobre um anúncio, a conversa aparecerá aqui.</p></div>';
+      activeConversationId=null;$("messagesMain").classList.remove("conversation-open");
+      $("chatThreadTitle").textContent="Nenhuma conversa selecionada";
+      $("chatThreadSubtitle").textContent="Aguardando novas mensagens";
+      $("chatMessages").innerHTML='<div class="chat-empty-state"><span>✉</span><strong>Suas conversas em um só lugar</strong><p>Escolha uma conversa para continuar o atendimento.</p></div>';
+      $("chatMessageInput").disabled=true;$("chatSend").disabled=true;return;
+    }
     data.forEach(conv=>{
-      const b=document.createElement("button");b.type="button";b.textContent=(conv.anuncios?.titulo||"Anúncio")+" · "+(conv.comprador_id===currentUser.id?"Você é comprador":"Você é vendedor");
+      const b=document.createElement("button");b.type="button";
+      const title=document.createElement("strong");title.className="conversation-item-title";title.textContent=conv.anuncios?.titulo||"Anúncio";
+      const meta=document.createElement("small");meta.className="conversation-item-meta";meta.textContent=conv.comprador_id===currentUser.id?"Você é comprador":"Você é vendedor";
+      b.append(title,meta);
       b.classList.toggle("selected",conv.id===(selectId||activeConversationId));
+      b.setAttribute("aria-label",(conv.anuncios?.titulo||"Anúncio")+" · "+meta.textContent);
       b.onclick=()=>loadConversations(conv.id);list.appendChild(b);
     });
     const chosen=data.find(x=>x.id===(selectId||activeConversationId))||data[0];
-    activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";$("chatMessageInput").disabled=false;$("chatSend").disabled=false;
+    activeConversationId=chosen.id;activeConversationTitle=chosen.anuncios?.titulo||"Conversa";
+    $("chatMessageInput").disabled=false;$("chatSend").disabled=false;
     $("chatThreadTitle").textContent=activeConversationTitle;
+    $("chatThreadSubtitle").textContent=chosen.comprador_id===currentUser.id?"Você está negociando como comprador":"Você está atendendo como vendedor";
+    $("messagesMain").classList.toggle("conversation-open",Boolean(selectId));
     await watchConversationPresence(chosen);
     [...list.children].forEach((b,i)=>b.classList.toggle("selected",data[i].id===activeConversationId));
     await loadMessages();
   }
+  $("chatSearch").addEventListener("input",()=>{
+    const query=$("chatSearch").value.trim().toLocaleLowerCase("pt-BR");
+    [...$("chatConversationList").children].forEach(item=>{
+      item.hidden=!item.textContent.toLocaleLowerCase("pt-BR").includes(query);
+    });
+  });
+  $("chatBackToList").onclick=()=>{
+    $("messagesMain").classList.remove("conversation-open");
+    $("chatSearch").value="";
+    [...$("chatConversationList").children].forEach(item=>item.hidden=false);
+  };
   async function loadMessages(){
     if(!activeConversationId)return;
     const {data,error}=await db.from("mensagens").select("id,remetente_id,conteudo,criada_em,lida_em").eq("conversa_id",activeConversationId).order("criada_em",{ascending:true}).limit(200);

@@ -44,6 +44,24 @@ check("Build copia SDK UMD local para os assets do app",
 check("Falha de SDK é diagnosticada sem acusar configuração ausente",
   html.includes("Supabase JS SDK indisponível") &&
   html.includes("Configuração do Supabase ausente ou inválida"));
+check("Central de mensagens é uma página independente da vitrine inicial",
+  hasId("marketMain") && hasId("messagesMain") &&
+  html.indexOf('<main id="messagesMain"') > html.indexOf('</main>', html.indexOf('<main id="marketMain"')) &&
+  html.indexOf('id="chatPanel"') > html.indexOf('<main id="messagesMain"') &&
+  html.indexOf('id="chatPanel"') < html.indexOf('</main>', html.indexOf('<main id="messagesMain"')));
+check("Abrir e fechar mensagens alterna páginas sem sobrepor a home",
+  html.includes('function showMessagesPage(view="chat")') &&
+  html.includes('function hideMessagesPage()') &&
+  html.includes('$("chatClose").onclick=hideMessagesPage') &&
+  html.includes('$("navHome").onclick=()=>{hideMessagesPage();'));
+check("Assistente virtual é uma tela própria dentro da central de mensagens",
+  html.includes('showMessagesPage("assistant")') &&
+  html.includes('$("assistantClose").onclick=()=>showMessagesPage("chat")') &&
+  html.includes('id="assistantPanel"'));
+check("Central de mensagens tem layout responsivo independente",
+  html.includes(".messages-page{") &&
+  html.includes("@media(max-width:620px)") &&
+  html.includes(".messages-page .chat-shell"));
 check("Navegação inferior e cabeçalho abrem mensagens",
   html.includes('$("navMessages").onclick=()=>openChat()') &&
   html.includes('$("headerMessages").onclick=()=>openChat()'));

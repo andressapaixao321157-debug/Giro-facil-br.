@@ -216,6 +216,13 @@ check("Captação grava eventos e parâmetros de campanha/indicação", html.inc
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 
+// Recibos de leitura do chat: leitura apenas ao abrir a conversa, segurança e atualização.
+check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em")'));
+check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));
+check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"'));
+check("Atualização automática de recibos usa um único polling de 5 segundos", html.includes('window.giroChatReadReceiptPolling=setInterval') && html.includes('},5000);') && !html.includes('setInterval(()=>{if(activeConversationId&&!$("chatPanel").classList.contains("hidden"))loadMessages();},8000)'));
+check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

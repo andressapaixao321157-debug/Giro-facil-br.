@@ -253,9 +253,20 @@ check("Admin API devolve total exato e distribuição por estado", admin.include
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 
 // Recibos de leitura do chat: leitura apenas ao abrir a conversa, segurança e atualização.
-check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em")'));
+check("Recibo Entregue só aparece antes da confirmação Visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
+check("Chat consulta a confirmação de entrega e a confirmação de leitura separadamente",
+  html.includes('lida_em,entregue_em') && html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
+check("Destinatário confirma entrega ao receber mensagens com a caixa aberta",
+  html.includes('filter(m=>m.remetente_id!==currentUser.id&&!m.entregue_em)') &&
+  html.includes('update({entregue_em:deliveredAt}).in("id",undeliveredIncoming)'));
+check("Migration permite confirmar entrega somente para o destinatário",
+  fs.existsSync("supabase/migrations/20261122160827_message_delivery_receipts.sql") &&
+  fs.readFileSync("supabase/migrations/20261122160827_message_delivery_receipts.sql","utf8").includes("grant update (entregue_em)") &&
+  fs.readFileSync("supabase/migrations/20261122160827_message_delivery_receipts.sql","utf8").includes("remetente_id <> (select auth.uid())"));
+
+check("Chat consulta o campo lida_em para renderizar recibos", html.includes('select("id,remetente_id,conteudo,criada_em,lida_em,entregue_em")'));
 check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));
-check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"'));
+check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
 check("Atualização automática de recibos usa eventos Realtime de UPDATE", html.includes('event:"UPDATE",schema:"public",table:"mensagens"') && html.includes("scheduleChatInboxRefresh"));
 check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
 
@@ -274,7 +285,7 @@ check("Conversa abre em tela cheia no celular e oferece retorno à lista",
   html.includes('.messages-page.conversation-open .chat-list{display:none}') &&
   html.includes('.messages-page.conversation-open .chat-thread{display:flex'));
 check("Selecionar conversa mantém confirmação de leitura e envio existentes",
-  html.includes('m.lida_em?"✓✓ Visualizada":"Enviada"') &&
+  html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"') &&
   html.includes('db.from("mensagens").insert({conversa_id:activeConversationId,remetente_id:currentUser.id,conteudo:content})'));
 check("Lista de conversas e conversa aberta têm layout responsivo dedicado",
   html.includes(".conversation-search{") &&

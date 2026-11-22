@@ -71,7 +71,13 @@ Deno.serve(async (req) => {
     const storeName = String(body.storeName || "").trim();
 
     if (!["single", "monthly", "boost", "store"].includes(kind)) return json({ error: "Tipo de cobrança inválido." }, 400);
-    if (!["PIX", "BOLETO"].includes(billingType)) return json({ error: "Escolha PIX ou boleto." }, 400);
+    const recurring = kind === "monthly" || kind === "store";
+    if (recurring && billingType !== "CREDIT_CARD") {
+      return json({ error: "Para plano mensal e loja, escolha cartão de crédito no checkout seguro do Asaas. O Giro Fácil não solicita CPF." }, 400);
+    }
+    if (!recurring && billingType !== "PIX") {
+      return json({ error: "Para esta cobrança, a opção disponível sem cadastro de CPF no Giro Fácil é PIX." }, 400);
+    }
 
     let amount = kind === "single" ? singlePrice : kind === "monthly" ? monthlyPrice : 0;
     let durationDays = 0;
@@ -125,110 +131,100 @@ Deno.serve(async (req) => {
       return json({ orderId: freeOrder.id, kind, billingType, amount: 0, status: "ACTIVE", freeForAdmin: true, startsAt: now.toISOString(), endsAt: endsAt.toISOString() });
     }
 
-    const { data: profile } = await admin.from("perfis").select("nome,asaas_customer_id").eq("id", user.id).maybeSingle();
-    let customerId = profile?.asaas_customer_id as string | null;
-    const headers = { access_token: apiKey, "Content-Type": "application/json", Accept: "application/json", "User-Agent": "GiroFacilBR/1.0" };
-    if (!customerId) {
-      const customerResponse = await fetch(`${apiUrl}/customers`, {
-        method: "POST", headers,
-        body: JSON.stringify({ name: profile?.nome || user.user_metadata?.nome || user.email?.split("@")[0] || "Cliente Giro Fácil", email: user.email, externalReference: user.id }),
-      });
-      const customer = await customerResponse.json();
-      if (!customerResponse.ok) throw new Error(customer.errors?.[0]?.description || "Não foi possível cadastrar o pagador no Asaas.");
-      customerId = customer.id;
-      const { error } = await admin.from("perfis").upsert({ id: user.id, nome: profile?.nome || user.user_metadata?.nome || "Usuário", asaas_customer_id: customerId });
-      if (error) throw new Error("Não foi possível salvar o cadastro de pagamento.");
-    }
-
-    const orderKind = kind === "boost" ? "boost" : kind === "store" ? "store" : kind;
     const { data: order, error: orderError } = await admin.from("payment_orders").insert({
       user_id: user.id, listing_id: listingId, kind: orderKind, billing_type: billingType,
-      amount, status: "CREATING", asaas_customer_id: customerId,
+      amount, status: "CREATING", asaas_customer_id: null,
     }).select("id").single();
-    if (orderError) throw new Error("Não foi possível registrar o pedido de pagamento.");
+    if (orderError || !order) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
-    if (kind === "monthly" || kind === "store") {
-      const subscriptionResponse = await fetch(`${apiUrl}/subscriptions`, {
-        method: "POST", headers,
-        body: JSON.stringify({
-          customer: customerId, billingType, value: amount, nextDueDate: datePlusDays(3),
-          cycle: "MONTHLY", description: kind === "monthly" ? "Giro Fácil - plano mensal" : `Giro Fácil - assinatura mensal da loja ${storeName} (${planCode})`, externalReference: order.id,
-        }),
-      });
-      const subscription = await subscriptionResponse.json();
-      if (!subscriptionResponse.ok) throw new Error(subscription.errors?.[0]?.description || "O Asaas não conseguiu criar a assinatura.");
-      if (kind === "store") {
-        const { error: storeError } = await admin.from("store_plans").insert({
-          order_id: order.id, user_id: user.id, store_name: storeName, plan_code: planCode,
-          amount, status: "awaiting_payment",
-        });
-        if (storeError) throw new Error("Assinatura criada, mas não foi possível registrar o plano da loja.");
-      }
-      const { error: subscriptionOrderError } = await admin.from("payment_orders").update({
-        asaas_subscription_id: subscription.id, status: "AWAITING_FIRST_PAYMENT",
-      }).eq("id", order.id);
-      if (subscriptionOrderError) throw new Error("Assinatura criada, mas não foi possível atualizar o pedido.");
-      const listResponse = await fetch(`${apiUrl}/subscriptions/${subscription.id}/payments`, { headers });
-      let firstPayment: any = null;
-      if (listResponse.ok) { const list = await listResponse.json(); firstPayment = list.data?.[0] || null; }
-      if (!firstPayment) return json({ orderId: order.id, kind, billingType, amount, subscriptionId: subscription.id, status: "AWAITING_FIRST_PAYMENT", message: "Assinatura criada. A primeira cobrança será disponibilizada pelo Asaas." });
-      let firstPix: any = null;
-      if (billingType === "PIX") {
-        const pixResponse = await fetch(`${apiUrl}/payments/${firstPayment.id}/pixQrCode`, { headers });
-        if (pixResponse.ok) firstPix = await pixResponse.json();
-      }
-      await admin.from("payment_orders").update({
-        asaas_payment_id: firstPayment.id, payment_url: firstPayment.invoiceUrl || null,
-        boleto_url: firstPayment.bankSlipUrl || null, pix_copy_paste: firstPix?.payload || null,
-        pix_encoded_image: firstPix?.encodedImage || null,
-      }).eq("id", order.id);
-      return json({
-        orderId: order.id, kind, billingType, amount, subscriptionId: subscription.id,
-        status: firstPayment.status, paymentUrl: firstPayment.invoiceUrl || null,
-        boletoUrl: firstPayment.bankSlipUrl || null, pixCopyPaste: firstPix?.payload || null,
-        pixEncodedImage: firstPix?.encodedImage || null,
-      });
+    const itemName = kind === "single" ? "Anúncio avulso Giro Fácil BR"
+      : kind === "monthly" ? "Plano mensal Giro Fácil BR"
+      : kind === "boost" ? "Turbinamento Giro Fácil BR"
+      : `Plano de loja Giro Fácil BR - ${storeName}`;
+    const itemDescription = kind === "single" ? `Publicação do anúncio ${listingId}`
+      : kind === "monthly" ? "Acesso ao plano mensal do marketplace"
+      : kind === "boost" ? `Destaque ${planCode} por ${durationDays} dia(s)`
+      : `Assinatura mensal da loja ${storeName} (${planCode})`;
+
+    const checkoutPayload: Record<string, unknown> = {
+      billingTypes: [billingType],
+      chargeTypes: [recurring ? "RECURRENT" : "DETACHED"],
+      minutesToExpire: 60,
+      externalReference: order.id,
+      callback: {
+        successUrl: "https://girofacilbr.com.br/?pagamento=retorno",
+        cancelUrl: "https://girofacilbr.com.br/?pagamento=cancelado",
+        expiredUrl: "https://girofacilbr.com.br/?pagamento=expirado",
+      },
+      items: [{ name: itemName, description: itemDescription, quantity: 1, value: amount }],
+    };
+    if (recurring) {
+      checkoutPayload.subscription = { cycle: "MONTHLY", nextDueDate: `${datePlusDays(3)} 12:00:00` };
     }
 
-    const response = await fetch(`${apiUrl}/payments`, {
-      method: "POST", headers,
-      body: JSON.stringify({
-        customer: customerId, billingType, value: amount, dueDate: datePlusDays(3),
-        description: kind === "single" ? `Giro Fácil - anúncio #${listingId}` :
-          kind === "boost" ? `Giro Fácil - turbinamento ${planCode}` :
-          kind === "store" ? `Giro Fácil - plano de loja ${planCode} - ${storeName}` : "Giro Fácil - plano mensal",
-        externalReference: order.id,
-      }),
+    const checkoutResponse = await fetch(`${apiUrl}/checkouts`, {
+      method: "POST", headers, body: JSON.stringify(checkoutPayload),
     });
-    const payment = await response.json();
-    if (!response.ok) {
+    const checkout = await checkoutResponse.json();
+    if (!checkoutResponse.ok || !checkout.id) {
       await admin.from("payment_orders").update({ status: "FAILED" }).eq("id", order.id);
-      throw new Error(payment.errors?.[0]?.description || "O Asaas não conseguiu criar a cobrança.");
+      const reason = checkout.errors?.[0]?.description || checkout.message || "O Asaas não conseguiu abrir o checkout.";
+      throw new Error(reason);
     }
-    let pix: any = null;
-    if (billingType === "PIX") {
-      const pixResponse = await fetch(`${apiUrl}/payments/${payment.id}/pixQrCode`, { headers });
-      if (pixResponse.ok) pix = await pixResponse.json();
+
+    // Atualiza de forma aditiva o webhook já cadastrado para receber Checkout e assinatura.
+    let checkoutWebhookReady = false;
+    try {
+      const webhookUrl = `${supabaseUrl}/functions/v1/asaas-webhook`;
+      const webhooksResponse = await fetch(`${apiUrl}/webhooks`, { headers });
+      if (webhooksResponse.ok) {
+        const webhooksBody = await webhooksResponse.json();
+        const currentWebhook = (webhooksBody.data || []).find((item: any) => item.url === webhookUrl);
+        if (currentWebhook?.id) {
+          const events = [...new Set([
+            ...(currentWebhook.events || []),
+            "CHECKOUT_CREATED", "CHECKOUT_PAID", "CHECKOUT_CANCELED", "CHECKOUT_EXPIRED",
+            "SUBSCRIPTION_CREATED", "SUBSCRIPTION_UPDATED", "SUBSCRIPTION_INACTIVATED", "SUBSCRIPTION_DELETED",
+          ])];
+          const updateWebhookResponse = await fetch(`${apiUrl}/webhooks/${currentWebhook.id}`, {
+            method: "PUT", headers, body: JSON.stringify({ events }),
+          });
+          checkoutWebhookReady = updateWebhookResponse.ok;
+          if (!updateWebhookResponse.ok) console.error("Could not add Checkout events to existing Asaas webhook", await updateWebhookResponse.text());
+        }
+      }
+    } catch (webhookError) {
+      console.error("Asaas Checkout webhook configuration check failed", webhookError);
     }
-    const { error: updateError } = await admin.from("payment_orders").update({
-      asaas_payment_id: payment.id, status: payment.status || "PENDING",
-      payment_url: payment.invoiceUrl || null, boleto_url: payment.bankSlipUrl || null,
-      pix_copy_paste: pix?.payload || null, pix_encoded_image: pix?.encodedImage || null,
+    const checkoutBase = apiUrl.includes("sandbox") ? "https://sandbox.asaas.com" : "https://asaas.com";
+    const checkoutUrl = checkout.link || `${checkoutBase}/checkoutSession/show?id=${encodeURIComponent(checkout.id)}`;
+    const { error: checkoutOrderError } = await admin.from("payment_orders").update({
+      asaas_checkout_id: checkout.id, payment_url: checkoutUrl, status: "AWAITING_PAYMENT",
+      updated_at: new Date().toISOString(),
     }).eq("id", order.id);
-    if (updateError) throw new Error("Cobrança criada, mas não foi possível salvar os dados do pedido.");
+    if (checkoutOrderError) throw new Error("Checkout criado, mas não foi possível salvar o link do pedido.");
 
     if (kind === "boost") {
       const { error } = await admin.from("ad_boosts").insert({
         order_id: order.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
         duration_days: durationDays, amount, reach_multiplier: reachMultiplierForAmount(amount), status: "awaiting_payment",
       });
-      if (error) throw new Error("Cobrança criada, mas não foi possível registrar o turbinamento.");
+      if (error) throw new Error("Checkout criado, mas não foi possível registrar o turbinamento.");
+    }
+    if (kind === "store") {
+      const { error: storeError } = await admin.from("store_plans").insert({
+        order_id: order.id, user_id: user.id, store_name: storeName, plan_code: planCode,
+        amount, status: "awaiting_payment",
+      });
+      if (storeError) throw new Error("Checkout criado, mas não foi possível registrar o plano da loja.");
     }
 
     return json({
-      orderId: order.id, kind, billingType, amount, status: payment.status,
-      paymentUrl: payment.invoiceUrl || null, boletoUrl: payment.bankSlipUrl || null,
-      pixCopyPaste: pix?.payload || null, pixEncodedImage: pix?.encodedImage || null,
+      orderId: order.id, checkoutId: checkout.id, checkoutUrl, paymentUrl: checkoutUrl,
+      kind, billingType, amount, status: "AWAITING_PAYMENT",
+      recurring, checkoutWebhookReady, message: recurring
+        ? "Checkout seguro aberto. A assinatura mensal será criada pelo Asaas após a conclusão do pagamento."
+        : "Checkout PIX criado. O pagamento será confirmado pelo webhook do Asaas.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro inesperado ao criar pagamento.";

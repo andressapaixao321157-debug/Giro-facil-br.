@@ -730,6 +730,14 @@ footer{color:#64748b;padding-bottom:100px}
     <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
     <div class="promo-art" aria-hidden="true">🚙</div>
   </section>
+  <section id="founderCampaign" class="panel" style="border:1px solid #d6b56d;background:linear-gradient(135deg,#101827,#20344b);color:#fff">
+    <span style="display:inline-block;padding:6px 10px;border-radius:20px;background:#d6b56d;color:#172033;font-weight:800;font-size:12px">CAMPANHA DE LANÇAMENTO</span>
+    <h2 style="color:#fff;margin:12px 0 6px">Meta de 500 Parceiros Fundadores Giro Fácil BR</h2>
+    <p style="color:#e5edf7;margin:0 0 14px">Plano especial de R$ 39 por mês para os parceiros aprovados, com 7 dias de turbo promocional em um anúncio e kit digital profissional após a primeira mensalidade confirmada.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px"><span>✓ Selo Parceiro Fundador</span><span>✓ Kit digital</span><span>✓ 7 dias de turbo</span><span>✓ Cadastro de loja</span></div>
+    <p style="color:#cbd5e1;font-size:12px">Meta de 500 lojistas parceiros. Benefícios disponíveis a todos que cumprirem os critérios durante a vigência da campanha, sujeitos à aprovação. Mensalidade recorrente de R$ 39 enquanto a assinatura permanecer ativa. <a href="./campanha-parceiros-fundadores.html" target="_blank" rel="noopener" style="color:#f3d58f">Consulte as condições completas.</a></p>
+    <button id="founderJoinBtn" type="button" style="background:#d6b56d;color:#172033">Quero ser parceiro fundador ›</button>
+  </section>
   <div class="section-head"><h2>🔥 Destaques da semana</h2><button type="button" class="secondary" id="seeAllListings">Ver todos ›</button></div>
   <div id="listingStatus" class="status">Carregando anúncios...</div>
   <section id="listings" class="grid"></section>
@@ -812,7 +820,7 @@ footer{color:#64748b;padding-bottom:100px}
   </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
-    <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal R$ 59,00 · Turbinamento e lojas com pagamento confirmado pelo Asaas.</p>
+    <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal padrão R$ 59,00 · Plano Parceiro Fundador R$ 39,00/mês · Turbinamentos pagos e benefícios promocionais conforme elegibilidade.</p>
     <div id="paymentStatus" class="status hidden"></div>
     <p id="adminBoostNotice" class="hint hidden" style="background:#e8f7ee;border:1px solid #9bd7b1;border-radius:10px;padding:12px;color:#14532d;font-weight:700">Benefício do proprietário: o turbinamento dos seus próprios anúncios é gratuito. Nenhuma cobrança será gerada.</p>
     <div class="form-grid">
@@ -824,12 +832,12 @@ footer{color:#64748b;padding-bottom:100px}
       <div class="field full hidden" id="boostFields"><label for="boostPlan">Destaque do anúncio</label><select id="boostPlan">
         <option value="boost_3d">3 dias — R$ 19,90</option><option value="boost_7d">7 dias — R$ 34,90</option>
         <option value="boost_15d">15 dias — R$ 59,90</option><option value="boost_30d">30 dias — R$ 89,90</option>
-        <option value="boost_60d">60 dias — R$ 149,90</option><option value="boost_custom">Orçamento personalizado</option>
+        <option value="boost_60d">60 dias — R$ 149,90</option><option value="founder_7d">Benefício Parceiro Fundador — 7 dias grátis (uma vez)</option><option value="boost_custom">Orçamento personalizado</option>
       </select></div>
       <div class="field hidden" id="customAmountField"><label for="customBoostAmount">Seu orçamento (R$ 20 a R$ 5.000)</label><input id="customBoostAmount" type="number" min="20" max="5000" step="0.01" value="20" placeholder="Ex.: 120"></div>
       <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" value="1" placeholder="Ex.: 10"></div>
       <div class="field full hidden" id="storeFields"><label for="storeName">Nome da loja</label><input id="storeName" placeholder="Nome comercial da sua loja"><label for="storePlan">Plano mensal da loja</label><select id="storePlan">
-        <option value="loja_basica">Básico — R$ 99/mês</option><option value="loja_pro">Pro — R$ 199/mês</option><option value="loja_premium">Premium — R$ 399/mês</option>
+        <option value="loja_fundador">Parceiro Fundador — R$ 39/mês (somente aprovado)</option><option value="loja_basica">Básico — R$ 99/mês</option><option value="loja_pro">Pro — R$ 199/mês</option><option value="loja_premium">Premium — R$ 399/mês</option>
       </select></div>
       <div class="field full hidden" id="paymentListingWrap"><label for="paymentListingId">Selecione seu anúncio</label><select id="paymentListingId"><option value="">Carregando seus anúncios...</option></select></div>
     </div>
@@ -861,7 +869,7 @@ footer{color:#64748b;padding-bottom:100px}
   </section>
   <section id="partnerPanel" class="panel hidden">
     <h2>Programa de parceiros Giro Fácil</h2>
-    <p class="hint">Lojas, concessionárias, imobiliárias e negócios podem solicitar parceria para cadastrar seus estoques no Giro Fácil.</p>
+    <p class="hint">Inscreva sua empresa na campanha dos 500 Parceiros Fundadores. A inscrição é gratuita e passa por análise da equipe. O número sequencial identifica sua inscrição; não é sorteio nem premiação aleatória.</p>
     <div id="partnerStatus" class="status hidden"></div>
     <div id="partnerApplicationForm" class="form-grid">
       <div class="field full"><label for="partnerBusiness">Nome da empresa *</label><input id="partnerBusiness" maxlength="120" placeholder="Nome da loja ou empresa"></div>
@@ -872,7 +880,17 @@ footer{color:#64748b;padding-bottom:100px}
       <div class="field"><label for="partnerState">Estado *</label><input id="partnerState" maxlength="2" placeholder="MT"></div>
       <div class="field full"><button id="partnerApplyBtn" type="button">Enviar solicitação de parceria</button></div>
     </div>
-    <div id="partnerApprovedArea" class="hidden"><h3>Cadastro de estoque em lote</h3>
+    <div id="partnerApprovedArea" class="hidden">
+      <div id="founderProgramArea" class="panel hidden" style="border:1px solid #d6b56d;background:#fffaf0">
+        <h3>Parceiro Fundador Giro Fácil BR</h3>
+        <p id="founderProgramStatus" class="hint">Benefícios do programa.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="founderSubscribeBtn" type="button">Assinar plano fundador — R$ 39/mês</button>
+          <button id="founderTurboBtn" type="button" class="secondary">Ativar meu turbo gratuito de 7 dias</button>
+          <a id="founderKitLink" class="secondary hidden" href="./kit-parceiro-fundador.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:10px 14px;border:1px solid #cbd5e1;border-radius:10px;text-decoration:none;color:#172033">Abrir kit digital</a>
+        </div>
+      </div>
+      <h3>Cadastro de estoque em lote</h3>
       <p class="hint">Cada linha precisa ter os 11 campos nesta ordem: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 anúncios por lote. Use uma categoria válida do Giro Fácil e não coloque ponto e vírgula dentro dos campos. Os anúncios entram como pendentes e só são publicados após revisão e confirmação do pagamento.</p>
       <textarea id="partnerBulkInput" rows="7" placeholder="Toyota SW4 SRX 2025;Carro;250000;Toyota;SW4 SRX;2025;Rondonópolis;MT;66999999999;Único dono;https://..."></textarea>
       <button id="partnerBulkSubmit" type="button" style="margin-top:10px">Enviar lote para aprovação</button>
@@ -1218,7 +1236,7 @@ footer{color:#64748b;padding-bottom:100px}
       $("adminTotals").innerHTML=cards.map(([k,v])=>'<div class="panel"><strong>'+k+'</strong><div style="font-size:22px;margin-top:8px">'+v+'</div></div>').join("");
       $("adminOrders").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>ID</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Data</th></tr>'+data.orders.map(o=>'<tr><td>'+escapeHtml(o.id.slice(0,8))+'</td><td>'+escapeHtml(o.kind)+'</td><td>'+Number(o.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(o.status)+'</td><td>'+new Date(o.created_at).toLocaleDateString("pt-BR")+'</td></tr>').join("")+'</table>';
       $("adminListings").innerHTML='<table style="width:100%;border-collapse:collapse"><tr><th>Anúncio</th><th>Preço</th><th>Status</th><th>Data</th><th>Ação</th></tr>'+data.listings.map(a=>'<tr><td>'+escapeHtml(a.titulo)+'</td><td>'+Number(a.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</td><td>'+escapeHtml(a.status)+'</td><td>'+new Date(a.criado_em).toLocaleDateString("pt-BR")+'</td><td>'+(a.status==="pendente"?'<button data-moderate="'+a.id+'" data-next-status="ativo">Aprovar</button> <button class="secondary" data-moderate="'+a.id+'" data-next-status="rejeitado">Reprovar</button>':'—')+'</td></tr>').join("")+'</table>';
-      $("adminPartners").innerHTML=(data.partnerApplications||[]).length?(data.partnerApplications||[]).map(p=>'<div class="partner-card"><strong>'+escapeHtml(p.business_name)+'</strong><small>'+escapeHtml(p.business_type)+' · '+escapeHtml(p.contact_name)+' · '+escapeHtml(p.phone)+' · '+escapeHtml(p.city)+'/'+escapeHtml(p.state)+'</small><div class="partner-actions"><button type="button" data-partner-review="'+p.id+'" data-decision="aprovado">Aprovar</button><button type="button" class="secondary" data-partner-review="'+p.id+'" data-decision="rejeitado">Rejeitar</button></div></div>').join(""):'<p class="hint">Nenhuma solicitação pendente de parceria.</p>';
+      $("adminPartners").innerHTML=(data.partnerApplications||[]).length?(data.partnerApplications||[]).map(p=>'<div class="partner-card"><strong>'+escapeHtml(p.business_name)+(p.founder_number?' · Parceiro Fundador #'+p.founder_number:'')+'</strong><small>'+escapeHtml(p.business_type)+' · '+escapeHtml(p.contact_name)+' · '+escapeHtml(p.phone)+' · '+escapeHtml(p.city)+'/'+escapeHtml(p.state)+'</small><div class="partner-actions"><button type="button" data-partner-review="'+p.id+'" data-decision="aprovado">Aprovar</button><button type="button" class="secondary" data-partner-review="'+p.id+'" data-decision="rejeitado">Rejeitar</button></div></div>').join(""):'<p class="hint">Nenhuma solicitação pendente de parceria.</p>';
       const acq=data.acquisition||{};const byState=acq.byState||{};const stateRows=Object.entries(byState).sort((a,b)=>b[1]-a[1]).map(([uf,total])=>'<span class="hint">'+escapeHtml(uf)+': '+total+'</span>').join(' · ');
       $("adminAcquisitionMetrics").innerHTML=[["Interessados",acq.total||0],["Novos",acq.newLeads||0],["Eventos registrados",(acq.events||[]).length],["Estados com cadastro",Object.keys(byState).length]].map(([label,value])=>'<div class="panel"><strong>'+label+'</strong><div style="font-size:22px;margin-top:8px">'+value+'</div></div>').join("")+(stateRows?'<div class="field full">'+stateRows+'</div>':'');
       const leads=acq.leads||[];
@@ -1250,14 +1268,38 @@ footer{color:#64748b;padding-bottom:100px}
     const {data:partner}=await db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle();
     const approved=partner?.status==="ativo";$("partnerApplicationForm").classList.toggle("hidden",approved);$("partnerApprovedArea").classList.toggle("hidden",!approved);
     if(approved)status("partnerStatus","Parceria ativa: "+partner.business_name+".","ok");
-    else {const {data:existing}=await db.from("partner_applications").select("status").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(existing?.status==="pendente"){$("partnerApplicationForm").classList.add("hidden");status("partnerStatus","Sua solicitação já está em análise. A equipe retornará após a revisão.","ok");}else if(existing?.status==="rejeitado")status("partnerStatus","Sua solicitação anterior não foi aprovada. Você pode atualizar os dados e enviar uma nova solicitação.","err");}
+    else {const {data:existing}=await db.from("partner_applications").select("status,founder_campaign_code,founder_number").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(existing?.status==="pendente"){$("partnerApplicationForm").classList.add("hidden");status("partnerStatus",existing.founder_number?"Sua inscrição fundadora nº "+existing.founder_number+" está em análise.":"Sua solicitação já está em análise. A equipe retornará após a revisão.","ok");}else if(existing?.status==="rejeitado"&&existing.founder_campaign_code==="fundadores-500"){$("partnerApplicationForm").classList.add("hidden");status("partnerStatus","Sua inscrição para a campanha foi analisada e não aprovada. Se precisar de esclarecimentos, fale com o atendimento pelo chat.","err");}else if(existing?.status==="rejeitado")status("partnerStatus","Sua solicitação anterior não foi aprovada. Você pode atualizar os dados e enviar uma nova solicitação.","err");}
+    const {data:founderApp}=await db.from("partner_applications").select("founder_campaign_code,founder_number,status").eq("user_id",currentUser.id).eq("founder_campaign_code","fundadores-500").order("created_at",{ascending:false}).limit(1).maybeSingle();
+    const {data:founderPlan}=await db.from("store_plans").select("id,status,founder_turbo_claimed_at").eq("user_id",currentUser.id).eq("plan_code","loja_fundador").in("status",["active","awaiting_payment"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+    const founderEligible=approved&&founderApp?.status==="aprovado"&&Number(founderApp?.founder_number)>0;
+    $("founderProgramArea").classList.toggle("hidden",!founderEligible);
+    if(founderEligible){
+      $("founderProgramStatus").textContent="Inscrição fundadora nº "+founderApp.founder_number+". Plano especial de R$ 39/mês. "+(founderPlan?.status==="active"?"Assinatura ativa.":founderPlan?.status==="awaiting_payment"?"Checkout aguardando pagamento.":"Contrate para liberar o turbo promocional e o kit digital.");
+      $("founderSubscribeBtn").classList.toggle("hidden",Boolean(founderPlan));
+      $("founderTurboBtn").classList.toggle("hidden",founderPlan?.status!=="active"||Boolean(founderPlan?.founder_turbo_claimed_at));
+      $("founderKitLink").classList.toggle("hidden",founderPlan?.status!=="active");
+    }
+  };
+  $("founderJoinBtn").onclick=()=>{if(!currentUser){openAuth();status("authStatus","Entre ou crie sua conta para solicitar uma vaga de Parceiro Fundador.","ok");return;}$("partnerOpen").click();};
+  $("founderSubscribeBtn").onclick=async()=>{
+    $("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    $("paymentKind").value="store";$("storePlan").value="loja_fundador";
+    const {data:partner}=await db.from("partner_accounts").select("business_name").eq("user_id",currentUser.id).maybeSingle();
+    $("storeName").value=partner?.business_name||"";
+    updatePaymentFields();syncBillingOptions();
+  };
+  $("founderTurboBtn").onclick=async()=>{
+    $("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    $("paymentKind").value="boost";$("boostPlan").value="founder_7d";
+    await loadOwnListings();updatePaymentFields();syncBillingOptions();
+    status("paymentStatus","Escolha um anúncio ativo para usar seu benefício único de 7 dias. Valor: R$ 0,00.","ok");
   };
   $("partnerApplyBtn").onclick=async()=>{
-    const payload={user_id:currentUser.id,business_name:$("partnerBusiness").value.trim(),business_type:$("partnerType").value,contact_name:$("partnerContact").value.trim(),phone:$("partnerPhone").value.trim(),city:$("partnerCity").value.trim(),state:$("partnerState").value.trim().toUpperCase(),status:"pendente"};
+    const payload={user_id:currentUser.id,business_name:$("partnerBusiness").value.trim(),business_type:$("partnerType").value,contact_name:$("partnerContact").value.trim(),phone:$("partnerPhone").value.trim(),city:$("partnerCity").value.trim(),state:$("partnerState").value.trim().toUpperCase(),status:"pendente",founder_campaign_code:"fundadores-500"};
     if(!payload.business_name||!payload.contact_name||!payload.phone||!payload.city||payload.state.length!==2){status("partnerStatus","Preencha todos os campos obrigatórios e informe a UF com duas letras.","err");return;}
     $("partnerApplyBtn").disabled=true;
-    try{const {error}=await db.from("partner_applications").insert(payload);if(error)throw error;status("partnerStatus","Solicitação enviada! Ela ficará pendente até a análise da equipe.","ok");$("partnerApplicationForm").classList.add("hidden");}
-    catch(e){status("partnerStatus",e.message||"Não foi possível enviar a solicitação.","err");}
+    try{const {data,error}=await db.from("partner_applications").insert(payload).select("founder_number").single();if(error)throw error;status("partnerStatus","Inscrição fundadora nº "+data.founder_number+" recebida! Ela ficará pendente até a análise da equipe.","ok");$("partnerApplicationForm").classList.add("hidden");}
+    catch(e){const message=e?.message||"Não foi possível enviar a solicitação.";status("partnerStatus",/maximum value|sequence.*exhausted/i.test(message)?"Não foi possível concluir a inscrição. Confira seus dados ou fale com o atendimento pelo chat.":/partner_founder_user_once/i.test(message)?"Sua conta já possui uma inscrição nesta campanha.":message,"err");}
     finally{$("partnerApplyBtn").disabled=false;}
   };
   function parseBulkListings(raw){
@@ -1665,15 +1707,15 @@ footer{color:#64748b;padding-bottom:100px}
       const {data,error}=await db.functions.invoke("asaas-create-payment",{body:payload});
       if(error)throw error;
       if(data.error)throw new Error(data.error);
-      status("paymentStatus",data.freeForAdmin?"Turbinamento gratuito ativado para seu anúncio! Nenhuma cobrança foi gerada.":"Checkout seguro criado: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Conclua o pagamento na página do Asaas.","ok");
+      status("paymentStatus",data.freeForAdmin?"Turbinamento gratuito ativado para seu anúncio! Nenhuma cobrança foi gerada.":data.freeForFounder?"Benefício de Parceiro Fundador ativado por 7 dias, sem cobrança.":"Checkout seguro criado: "+Number(data.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". Conclua o pagamento na página do Asaas.","ok");
       const result=$("paymentResult");
-      if(data.freeForAdmin && data.startsAt && data.endsAt){
+      if((data.freeForAdmin||data.freeForFounder) && data.startsAt && data.endsAt){
         const start=new Date(data.startsAt),end=new Date(data.endsAt);
         const dateTime={dateStyle:"short",timeStyle:"short"};
         const detail=document.createElement("div");
         detail.className="panel";
         detail.style.cssText="margin-top:12px;background:#e8f7ee;border:1px solid #9bd7b1;color:#14532d";
-        const heading=document.createElement("strong");heading.textContent="Destaque gratuito ativo";detail.appendChild(heading);
+        const heading=document.createElement("strong");heading.textContent=data.freeForFounder?"Benefício Parceiro Fundador ativo":"Destaque gratuito ativo";detail.appendChild(heading);
         const lines=[
           "Início: "+new Intl.DateTimeFormat("pt-BR",dateTime).format(start),
           "Término: "+new Intl.DateTimeFormat("pt-BR",dateTime).format(end),
@@ -1690,6 +1732,7 @@ footer{color:#64748b;padding-bottom:100px}
       const url=data.boletoUrl||data.paymentUrl;
       if(url){const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener";link.textContent=data.checkoutUrl?"Abrir checkout seguro do Asaas":(data.boletoUrl?"Abrir boleto bancário":"Abrir fatura Asaas");link.style="display:inline-block;margin:12px 0;font-weight:700";result.appendChild(link);}
       if(data.checkoutUrl){const note=document.createElement("p");note.textContent=data.recurring?"O Asaas concluirá a contratação da recorrência mensal após o pagamento no checkout.":"Conclua o PIX no checkout do Asaas. A ativação só ocorre após a confirmação do pagamento.";result.appendChild(note);}
+      if(data.recurring&&kind==="store"&&$("storePlan").value==="loja_fundador"){const note=document.createElement("p");note.textContent="O kit digital e o benefício de turbo gratuito ficam disponíveis após a confirmação da primeira mensalidade.";result.appendChild(note);}
     }catch(e){let detail=e?.message||"Não foi possível gerar a cobrança.";try{if(e?.context&&typeof e.context.json==="function"){const body=await e.context.json();detail=body?.error||body?.message||detail;}}catch{}status("paymentStatus",detail,"err");}
     finally{$("payBtn").disabled=false;}
   };

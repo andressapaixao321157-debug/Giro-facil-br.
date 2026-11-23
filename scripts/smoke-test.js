@@ -407,6 +407,8 @@ check("Todas as consultas do navegador em anúncios usam apenas colunas explicit
   !/\.from\(["\']anuncios["\']\)\.select\(\s*["\']\*["\']\s*\)/.test(html));
 const publicGrant = publicListingMigration.match(/GRANT SELECT \(([\s\S]*?)\) ON TABLE public\.anuncios TO anon, authenticated;/);
 const publicColumns = publicGrant ? publicGrant[1].split(",").map(column => column.trim()) : [];
+check("Migração revoga também eventuais concessões explícitas nos campos privados",
+  publicListingMigration.includes("REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;"));
 check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou status financeiro",
   publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
   publicColumns.includes("id") && publicColumns.includes("titulo") &&

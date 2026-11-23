@@ -391,8 +391,8 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.readFileSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
 
-const listingSelectCalls = [...html.matchAll(/\.from\(["\']anuncios["\']\)\.select\(/g)];
-const listingSelectMatches = [...html.matchAll(/\.from\(["\']anuncios["\']\)\.select\((["\'])([^"\']*)\\1/g)];
+const listingSelectCalls = [...html.matchAll(/\.from\(["']anuncios["']\)\.select\(/g)];
+const listingSelectMatches = [...html.matchAll(/\.from\(["']anuncios["']\)\.select\((["'])([^"']*)\1/g)];
 const allowedListingColumns = new Set([
   "id", "usuario_id", "titulo", "categoria", "marca", "modelo", "ano", "preco",
   "descricao", "cidade", "estado", "fotos", "status", "criado_em", "created_at", "updated_at"

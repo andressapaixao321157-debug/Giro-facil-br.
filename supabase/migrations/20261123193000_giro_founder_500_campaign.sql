@@ -1,11 +1,11 @@
 -- Campanha comercial dos 500 Parceiros Fundadores Giro Fácil BR.
 -- A reserva é limitada a 500 inscrições e não envolve sorteio ou prêmio aleatório.
-create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
+create schema if not exists giro_private;
+revoke all on schema giro_private from public, anon, authenticated;
 
-create sequence if not exists private.giro_founder_500_seq
+create sequence if not exists giro_private.giro_founder_500_seq
   start with 1 increment by 1 minvalue 1 maxvalue 500 no cycle;
-revoke all on sequence private.giro_founder_500_seq from public, anon, authenticated;
+revoke all on sequence giro_private.giro_founder_500_seq from public, anon, authenticated;
 
 alter table public.partner_applications
   add column if not exists founder_campaign_code text
@@ -19,7 +19,7 @@ create unique index if not exists partner_founder_user_once
   on public.partner_applications(user_id)
   where founder_campaign_code = 'fundadores-500';
 
-create or replace function public.assign_giro_founder_number()
+create or replace function giro_private.assign_giro_founder_number()
 returns trigger
 language plpgsql
 security definer
@@ -33,16 +33,16 @@ begin
   if new.founder_campaign_code <> 'fundadores-500' then
     raise exception 'Código de campanha inválido';
   end if;
-  new.founder_number := nextval('private.giro_founder_500_seq'::regclass);
+  new.founder_number := nextval('giro_private.giro_founder_500_seq'::regclass);
   return new;
 end;
 $$;
-revoke all on function public.assign_giro_founder_number() from public, anon, authenticated;
+revoke all on function giro_private.assign_giro_founder_number() from public, anon, authenticated;
 
 drop trigger if exists partner_applications_assign_founder_number on public.partner_applications;
 create trigger partner_applications_assign_founder_number
 before insert on public.partner_applications
-for each row execute function public.assign_giro_founder_number();
+for each row execute function giro_private.assign_giro_founder_number();
 
 alter table public.store_plans
   add column if not exists founder_turbo_claimed_at timestamptz;

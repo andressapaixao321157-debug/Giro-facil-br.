@@ -3,7 +3,7 @@
 **Status:** minuta técnica para revisão jurídica antes da divulgação pública.
 
 ## Oferta
-- Até 500 inscrições com código da campanha `fundadores-500`, numeradas automaticamente pelo sistema.
+- Meta comercial: alcançar 500 lojistas parceiros. O número de inscrição é sequencial e não limita a quantidade de participantes ou benefícios.
 - Inscrição gratuita, sujeita à análise cadastral e aprovação da equipe.
 - Plano Parceiro Fundador: R$ 39,00 por mês, cobrança recorrente no cartão via checkout do Asaas.
 - O valor especial permanece enquanto a assinatura estiver ativa e adimplente. Cancelada a assinatura, eventual contratação futura estará sujeita às condições comerciais vigentes.
@@ -16,8 +16,8 @@
 4. Perfil de parceiro e recursos de cadastro de estoque conforme as funcionalidades disponíveis na plataforma.
 
 ## Critérios e funcionamento
-- Uma inscrição por usuário, sujeita à validação dos dados e à aprovação da parceria.
-- A numeração é atribuída pelo banco de dados no momento do envio da inscrição; os números válidos vão de 1 a 500.
+- Uma inscrição por usuário, sujeita à validação dos dados e à aprovação da parceria. Todos os participantes que cumprirem os critérios durante a vigência da campanha podem receber os benefícios; a meta de 500 não é limite de estoque.
+- A numeração é atribuída pelo banco de dados no momento do envio da inscrição e serve apenas para organização e atendimento.
 - O número não representa sorte, chance de ganhar ou posição em competição.
 - A inscrição não exige pagamento. A contratação do plano é opcional e só ocorre após aprovação.
 - O turbo gratuito é resgatável uma vez, para um anúncio ativo, enquanto a assinatura fundadora estiver ativa.

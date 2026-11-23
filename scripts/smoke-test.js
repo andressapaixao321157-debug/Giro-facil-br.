@@ -165,16 +165,18 @@ check("Console envia agente selecionado ao backend existente sem alterar chat p�
 check("Console interno disponibiliza os cinco agentes da equipe",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&
-  html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>'));
+  html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>') &&
+  html.includes('<option value="acquisition">Captador — Compradores, lojistas e anunciantes</option>'));
 check("Nomes da equipe correspondem aos cinco papéis definidos pelo proprietário",
   html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
   html.includes("Vendedor — Clientes e vendas") && html.includes("Técnico — Engenharia e testes") &&
-  html.includes("Parceiro — Estratégia e crescimento"));
+  html.includes("Parceiro — Estratégia e crescimento") &&
+  html.includes("Captador — Compradores, lojistas e anunciantes"));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui cinco perfis de agente definidos",
   assistant.includes("const agentProfiles") &&
-  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:"].every(role => assistant.includes(role)));
+  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition:"].every(role => assistant.includes(role)));
 check("Agentes internos exigem papel admin validado no servidor",
   assistant.includes('if (agent !== "customer")') &&
   assistant.includes('profile?.papel !== "admin"') &&

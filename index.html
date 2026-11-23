@@ -1517,9 +1517,11 @@ footer{color:#64748b;padding-bottom:100px}
       stop.disabled=false;ownerVoiceSetStatus("Conectando ao assistente de voz...");
     }catch(error){
       console.error("Falha ao iniciar assistente de voz",error);
-      const detail=String(error?.message||error||"");
+      let detail=String(error?.message||error||"");
+      const statusCode=error?.context?.status||error?.status||0;
+      try{if(error?.context?.clone)detail+=" "+await error.context.clone().text();}catch(readError){}
       await stopOwnerVoiceConversation();
-      if(/429|credit|quota|crédito|credits remaining|insufficient_quota/i.test(detail)){
+      if(statusCode===429||/429|credit|quota|crédito|credits remaining|insufficient_quota/i.test(detail)){
         ownerVoiceSetStatus("A IA avançada está sem créditos. Vou iniciar o modo gratuito de voz do celular.");
         startOwnerFallbackVoice();
       }else ownerVoiceSetStatus(detail||"Não foi possível iniciar a conversa por voz.",true);

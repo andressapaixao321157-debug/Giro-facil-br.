@@ -391,8 +391,8 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
 check("Campanha 500 Parceiros Fundadores aparece na página inicial com preço e benefícios", html.includes("500 Parceiros Fundadores Giro Fácil BR") && html.includes("R$ 39 por mês") && html.includes("7 dias de turbo promocional"));
-check("Inscrição de parceiro reserva vaga na campanha por código próprio", html.includes('founder_campaign_code:"fundadores-500"') && founderMigration.includes("private.giro_founder_500_seq") && founderMigration.includes("maxvalue 500"));
-check("Banco impede mais de uma inscrição fundadora por usuário e numeração duplicada", founderMigration.includes("partner_founder_user_once") && founderMigration.includes("partner_founder_number_unique"));
+check("Inscrição de parceiro reserva vaga na campanha por código próprio", html.includes('founder_campaign_code:"fundadores-500"') && founderMigration.includes("giro_private.giro_founder_500_seq") && founderMigration.includes("no maxvalue"));
+check("Banco impede inscrição duplicada por usuário e numeração repetida, sem limitar estoque promocional", founderMigration.includes("partner_founder_user_once") && founderMigration.includes("partner_founder_number_unique") && founderMigration.includes("no maxvalue"));
 check("Plano fundador custa R$ 39 e exige parceiro aprovado no servidor", payment.includes("loja_fundador: 39") && payment.includes('eq("founder_campaign_code", "fundadores-500")') && payment.includes('partnerAccount?.status !== "ativo"'));
 check("Turbo fundador gratuito dura 7 dias e só pode ser resgatado uma vez", payment.includes('founder_7d: { amount: 0, days: 7 }') && payment.includes("founder_turbo_claimed_at") && payment.includes("freeForFounder"));
 check("Kit digital só aparece após ativação do plano fundador", html.includes('id="founderKitLink"') && html.includes('founderPlan?.status!=="active"'));

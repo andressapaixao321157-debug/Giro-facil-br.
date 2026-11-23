@@ -17,8 +17,9 @@ const BOOSTS: Record<string, { amount: number; days: number }> = {
   boost_15d: { amount: 59.90, days: 15 },
   boost_30d: { amount: 89.90, days: 30 },
   boost_60d: { amount: 149.90, days: 60 },
+  founder_7d: { amount: 0, days: 7 },
 };
-const STORES: Record<string, number> = { loja_basica: 99, loja_pro: 199, loja_premium: 399 };
+const STORES: Record<string, number> = { loja_fundador: 39, loja_basica: 99, loja_pro: 199, loja_premium: 399 };
 
 // O valor maior compra prioridade de exposição, não uma quantidade garantida de compradores.
 const reachMultiplierForAmount = (amount: number) =>
@@ -99,12 +100,39 @@ Deno.serve(async (req) => {
     if (kind === "store") {
       if (!planCode || !(planCode in STORES) || storeName.length < 2) return json({ error: "Escolha um plano de loja e informe o nome da loja." }, 400);
       amount = STORES[planCode];
+      if (planCode === "loja_fundador") {
+        const { data: founderApplication, error: founderApplicationError } = await admin.from("partner_applications")
+          .select("id,founder_number").eq("user_id", user.id).eq("founder_campaign_code", "fundadores-500")
+          .eq("status", "aprovado").not("founder_number", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (founderApplicationError) throw founderApplicationError;
+        const { data: partnerAccount, error: partnerAccountError } = await admin.from("partner_accounts")
+          .select("status,business_name").eq("user_id", user.id).maybeSingle();
+        if (partnerAccountError) throw partnerAccountError;
+        if (!founderApplication || partnerAccount?.status !== "ativo") return json({ error: "O plano de R$ 39/mês é exclusivo para Parceiros Fundadores aprovados." }, 403);
+        const { data: existingFounderPlan, error: existingFounderPlanError } = await admin.from("store_plans")
+          .select("id,status").eq("user_id", user.id).eq("plan_code", "loja_fundador")
+          .in("status", ["active", "awaiting_payment"]).limit(1).maybeSingle();
+        if (existingFounderPlanError) throw existingFounderPlanError;
+        if (existingFounderPlan) return json({ error: "Você já possui uma assinatura ou checkout do plano fundador." }, 409);
+      }
+    }
+    let founderPlanForBoost: { id: string; founder_turbo_claimed_at: string | null } | null = null;
+    const freeFounderBoost = kind === "boost" && planCode === "founder_7d";
+    if (freeFounderBoost) {
+      durationDays = 7; amount = 0;
+      const { data: founderPlan, error: founderPlanError } = await admin.from("store_plans")
+        .select("id,founder_turbo_claimed_at").eq("user_id", user.id).eq("plan_code", "loja_fundador")
+        .eq("status", "active").limit(1).maybeSingle();
+      if (founderPlanError) throw founderPlanError;
+      if (!founderPlan) return json({ error: "O turbo gratuito é liberado após a primeira mensalidade do plano Parceiro Fundador." }, 403);
+      if (founderPlan.founder_turbo_claimed_at) return json({ error: "Seu benefício de turbo de 7 dias já foi utilizado." }, 409);
+      founderPlanForBoost = founderPlan;
     }
     const { data: currentProfile, error: currentProfileError } = await admin.from("perfis").select("papel").eq("id", user.id).maybeSingle();
     if (currentProfileError) throw new Error("Não foi possível verificar o perfil administrativo.");
     const isAdmin = currentProfile?.papel === "admin";
     const freeAdminBoost = kind === "boost" && isAdmin;
-    if (!Number.isFinite(amount) || (amount <= 0 && !freeAdminBoost)) return json({ error: "Preço inválido." }, 400);
+    if (!Number.isFinite(amount) || (amount <= 0 && !freeAdminBoost && !freeFounderBoost)) return json({ error: "Preço inválido." }, 400);
     if (freeAdminBoost) amount = 0;
 
     if (kind === "single" || kind === "boost") {
@@ -112,6 +140,7 @@ Deno.serve(async (req) => {
       const { data: listing, error } = await admin.from("anuncios").select("id,usuario_id,status").eq("id", listingId).eq("usuario_id", user.id).maybeSingle();
       if (error || !listing) return json({ error: "Anúncio não encontrado para esta conta." }, 404);
       if (kind === "single" && listing.status !== "pendente") return json({ error: "Este anúncio não está aguardando pagamento." }, 409);
+      if (freeFounderBoost && listing.status !== "ativo") return json({ error: "Escolha um anúncio ativo para usar o turbo promocional." }, 409);
     }
 
     if (freeAdminBoost) {
@@ -132,19 +161,51 @@ Deno.serve(async (req) => {
       return json({ orderId: freeOrder.id, kind, billingType, amount: 0, status: "ACTIVE", freeForAdmin: true, startsAt: now.toISOString(), endsAt: endsAt.toISOString() });
     }
 
+    if (freeFounderBoost && founderPlanForBoost) {
+      const claimedAt = new Date().toISOString();
+      const { data: claimedPlan, error: claimError } = await admin.from("store_plans")
+        .update({ founder_turbo_claimed_at: claimedAt }).eq("id", founderPlanForBoost.id)
+        .is("founder_turbo_claimed_at", null).select("id").maybeSingle();
+      if (claimError) throw claimError;
+      if (!claimedPlan) return json({ error: "O benefício já foi utilizado em outro anúncio." }, 409);
+      const { data: freeOrder, error: freeOrderError } = await admin.from("payment_orders").insert({
+        user_id: user.id, listing_id: listingId, kind: "boost", billing_type: "PIX",
+        amount: 0, status: "PAID", asaas_customer_id: null, plan_code: "founder_7d", duration_days: 7,
+      }).select("id").single();
+      if (freeOrderError || !freeOrder) {
+        await admin.from("store_plans").update({ founder_turbo_claimed_at: null }).eq("id", founderPlanForBoost.id).eq("founder_turbo_claimed_at", claimedAt);
+        throw new Error("Não foi possível registrar o benefício gratuito.");
+      }
+      const starts = new Date(); const ends = new Date(starts.getTime() + 7 * 86400000);
+      const { error: freeBoostError } = await admin.from("ad_boosts").insert({
+        order_id: freeOrder.id, user_id: user.id, listing_id: listingId, plan_code: "founder_7d",
+        duration_days: 7, amount: 0, reach_multiplier: 3, status: "active",
+        starts_at: starts.toISOString(), ends_at: ends.toISOString(),
+      });
+      if (freeBoostError) {
+        await admin.from("store_plans").update({ founder_turbo_claimed_at: null }).eq("id", founderPlanForBoost.id).eq("founder_turbo_claimed_at", claimedAt);
+        await admin.from("payment_orders").delete().eq("id", freeOrder.id);
+        throw new Error("Não foi possível ativar o turbo promocional.");
+      }
+      return json({ orderId: freeOrder.id, kind: "boost", amount: 0, status: "ACTIVE", freeForFounder: true, startsAt: starts.toISOString(), endsAt: ends.toISOString(), durationDays: 7 });
+    }
+
     const { data: order, error: orderError } = await admin.from("payment_orders").insert({
       user_id: user.id, listing_id: listingId, kind, billing_type: billingType,
-      amount, status: "CREATING", asaas_customer_id: null,
+      amount, status: "CREATING", asaas_customer_id: null, plan_code: planCode,
+      duration_days: durationDays || null,
     }).select("id").single();
     if (orderError || !order) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
     const itemName = kind === "single" ? "Anúncio avulso Giro Fácil BR"
       : kind === "monthly" ? "Plano mensal Giro Fácil BR"
       : kind === "boost" ? "Turbinamento Giro Fácil BR"
+      : planCode === "loja_fundador" ? "Plano Parceiro Fundador Giro Fácil BR"
       : `Plano de loja Giro Fácil BR - ${storeName}`;
     const itemDescription = kind === "single" ? `Publicação do anúncio ${listingId}`
       : kind === "monthly" ? "Acesso ao plano mensal do marketplace"
       : kind === "boost" ? `Destaque ${planCode} por ${durationDays} dia(s)`
+      : planCode === "loja_fundador" ? "Assinatura mensal de Parceiro Fundador por R$ 39,00"
       : `Assinatura mensal da loja ${storeName} (${planCode})`;
 
     const checkoutPayload: Record<string, unknown> = {

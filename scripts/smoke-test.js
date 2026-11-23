@@ -418,7 +418,7 @@ check("Ações sensíveis exigem confirmação na interface e não são acionada
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
 
 // Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.
-check("Comando por voz abre Meus classificados pela ação existente do botão",
+check("Comando por voz abre Meus classificados pela ação existente do botão",html.includes('$("myListingsOpen")?.click()')&&html.includes("meus? anuncios|meus? classificados|meu estoque|meus produtos|meus anuncios publicados|meus itens"));
   html.includes('has(/\\b(meus? anuncios|meus? classificados|meu estoque|meus produtos)\\b/)') &&
   html.includes('$("myListingsOpen")?.click()'));
 check("Comandos por voz reconhecem as seis áreas da navegação inferior",

@@ -221,6 +221,15 @@ check("Política global proíbe que qualquer agente bloqueie ou restrinja contas
 check("CHEFE administrativo não tem autonomia para bloquear contas", assistant.includes("Nenhum robô, inclusive o CHEFE, pode autorizar bloqueio de conta."));
 check("VIGIA apenas sinaliza suspeitas e nunca bloqueia ou restringe pessoas", assistant.includes("Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas, perfis ou acesso de pessoas") && assistant.includes("autorização expressa do proprietário"));
 check("Endpoint administrativo rejeita ações automáticas de bloqueio de contas", admin.includes("forbiddenAccountControlActions") && ["block_user", "unblock_user", "suspend_user", "ban_user", "restrict_user"].every(action => admin.includes('"'+action+'"')) && admin.includes("Bloqueio e desbloqueio de contas não podem ser executados por robôs"));
+const accountControlGuardPosition = admin.indexOf("if (forbiddenAccountControlActions.has(String(body?.action ?? \"\")))");
+const firstPrivilegedActionPosition = admin.indexOf('if (body?.action === "bulk_create_listings")');
+const adminAuthorizationGatePosition = admin.indexOf('if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403);');
+check("Endpoint bloqueia ações de controle de contas antes de qualquer ação privilegiada ou decisão administrativa",
+  accountControlGuardPosition >= 0 &&
+  firstPrivilegedActionPosition > accountControlGuardPosition &&
+  adminAuthorizationGatePosition > accountControlGuardPosition &&
+  admin.includes('return reply({ error: "Bloqueio e desbloqueio de contas não podem ser executados por robôs ou por este serviço." }, 403);'));
+
 
 // Backend do assistente: autenticação, validação, contexto e resposta.
 check("Função giro-assistant existe no repositório", assistant.length > 0);

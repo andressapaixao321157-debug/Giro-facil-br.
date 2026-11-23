@@ -270,6 +270,14 @@ check("Painel administrativo mostra métricas e lista de interessados", hasId("a
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
+const listingStatusMigrationPath = "supabase/migrations/20261120140058_listing_analytics_and_advertiser_dashboard.sql";
+const listingStatusMigration = fs.existsSync(listingStatusMigrationPath) ? fs.readFileSync(listingStatusMigrationPath, "utf8") : "";
+check("Anunciante só pode mudar anúncio ativo para vendido",
+  listingStatusMigration.includes("IF auth.uid() = OLD.usuario_id AND NEW.status IS DISTINCT FROM OLD.status THEN") &&
+  listingStatusMigration.includes("IF OLD.status <> 'ativo' OR NEW.status <> 'vendido' THEN"));
+check("Proteção de status roda antes de qualquer atualização do anúncio",
+  listingStatusMigration.includes("CREATE TRIGGER giro_guard_owner_listing_status") &&
+  listingStatusMigration.includes("BEFORE UPDATE OF status ON public.anuncios"));
 
 // Recibos de leitura do chat: leitura apenas ao abrir a conversa, segurança e atualização.
 check("Recibo Entregue só aparece antes da confirmação Visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));

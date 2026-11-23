@@ -1,3 +1,4 @@
+// Redeploy trigger: refresh assistant after OPENAI_API_KEY was added to repository secrets.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 

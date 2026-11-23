@@ -44,6 +44,10 @@ create trigger partner_applications_assign_founder_number
 before insert on public.partner_applications
 for each row execute function giro_private.assign_giro_founder_number();
 
+alter table public.payment_orders
+  add column if not exists plan_code text,
+  add column if not exists duration_days integer;
+
 alter table public.store_plans
   add column if not exists founder_turbo_claimed_at timestamptz;
 

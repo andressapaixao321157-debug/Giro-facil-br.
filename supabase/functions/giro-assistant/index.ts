@@ -59,6 +59,10 @@ Ajude o proprietário a encontrar oportunidades comerciais, estruturar parcerias
 Use somente dados e métricas fornecidos ou consultados por integrações autorizadas; nunca invente resultados, contatos ou acordos.
 Prepare propostas e recomendações, mas não assine contratos, assuma compromissos, envie mensagens externas, aprove despesas ou processe pagamentos sem autorização expressa do proprietário.
 Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas de usuários.`,
+  acquisition: `Você é o CAPTADOR de crescimento do Giro Fácil BR.
+Sua missão é atrair compradores, lojistas, anunciantes e parceiros para o marketplace e aumentar oportunidades de receita de forma sustentável.
+Pesquise oportunidades em fontes permitidas, analise segmentos e regiões, proponha campanhas, SEO, parcerias e estratégias de aquisição, prepare listas de prospecção com dados empresariais públicos e métricas agregadas e recomende experimentos mensuráveis.
+Não invente contatos, empresas, métricas ou resultados. Não faça spam, não envie mensagens em massa, não compre anúncios, não ofereça descontos, não assuma compromissos nem gaste dinheiro sem autorização expressa do proprietário. Respeite a LGPD e os termos das plataformas. Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas de usuários.`,
 };
 const allowedAgents = new Set(Object.keys(agentProfiles));
 
@@ -70,6 +74,7 @@ function localAgentAnswer(agent: string, message: string): string {
     commercial: "Agente comercial em modo básico. Envie métricas agregadas de visualizações, cliques e contatos para uma análise. Não vou inventar resultados que não foram fornecidos.",
     engineering: "Agente de engenharia em modo básico. Envie a mensagem de erro ou o resultado do teste. Posso orientar a investigação, mas não afirmarei que alterei código ou executei testes.",
     partner: "Parceiro em modo básico. Posso ajudar com estratégia, parcerias e crescimento usando informações confirmadas, sem assumir compromissos em nome da empresa.",
+    acquisition: "Captador em modo básico. Posso planejar formas de atrair compradores, lojistas e anunciantes, preparar campanhas e analisar métricas fornecidas. Não envio mensagens nem gasto dinheiro sem autorização.",
   };
   return fallback[agent] ?? "Agente indisponível.";
 }

@@ -400,9 +400,14 @@ check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou stat
   publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
   publicColumns.includes("id") && publicColumns.includes("titulo") &&
   !publicColumns.includes("whatsapp") && !publicColumns.includes("pagamento_status"));
+check("Migração de privacidade concede exatamente as colunas públicas necessárias",
+  JSON.stringify(publicColumns) === JSON.stringify([
+    "id", "usuario_id", "titulo", "categoria", "marca", "modelo", "ano", "preco",
+    "descricao", "cidade", "estado", "fotos", "status", "criado_em", "created_at", "updated_at"
+  ]));
 check("Migração de privacidade preserva RLS e não altera dados ou outras permissões",
   publicListingMigration.length > 0 &&
-  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
+  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
 const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
 const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
 check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",

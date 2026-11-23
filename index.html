@@ -1380,6 +1380,37 @@ footer{color:#64748b;padding-bottom:100px}
     try{if(ownerVoiceChannel){ownerVoiceChannel.close();ownerVoiceChannel=null;}if(ownerVoicePeer){ownerVoicePeer.close();ownerVoicePeer=null;}if(ownerVoiceStream){ownerVoiceStream.getTracks().forEach(t=>t.stop());ownerVoiceStream=null;}if(ownerVoiceAudio){ownerVoiceAudio.pause();ownerVoiceAudio.srcObject=null;ownerVoiceAudio.remove();ownerVoiceAudio=null;}}
     finally{$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;ownerVoiceSetStatus("Conversa encerrada. O microfone foi desligado.");}
   }
+  async function runOwnerVoiceToolCall(item){
+    if(item?.name!=="get_owner_dashboard_summary"||!item?.call_id)return;
+    let output;
+    try{
+      if(!currentUser||document.body.dataset.isAdmin!=="true")throw new Error("Consulta disponível somente para a conta proprietária autenticada.");
+      const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
+      if(error)throw new Error(error.message||"Não foi possível consultar o painel.");
+      if(data?.error)throw new Error(data.error);
+      const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};
+      const [taskResult,reportResult]=await Promise.all([
+        db.from("owner_agent_tasks").select("status").limit(100),
+        db.from("owner_agent_reports").select("headline,summary,created_at,overall_status").order("created_at",{ascending:false}).limit(1)
+      ]);
+      if(taskResult.error)throw taskResult.error;
+      if(reportResult.error)throw reportResult.error;
+      const taskRows=taskResult.data||[];
+      output={
+        atualizado_em:new Date().toISOString(),
+        indicadores:{usuarios:t.users??null,anuncios:t.ads??null,anuncios_pendentes:t.pendingAds??null,receita_confirmada_brl:t.paidRevenue??null,destaques_ativos:t.activeBoosts??null,lojas_ativas:t.activeStores??null,parceiros_ativos:t.activePartners??null,solicitacoes_parceria_pendentes:t.pendingPartners??null},
+        campanha_fundadores_500:{inscricoes:f.total??null,pendentes:f.pending??null,aprovadas:f.approved??null,rejeitadas:f.rejected??null,meta_restante:f.remainingTarget??null,progresso_percentual:f.progressPercent??null},
+        captacao:{interessados:a.total??null,novos:a.newLeads??null,estados_com_cadastro:Object.keys(a.byState||{}).length},
+        tarefas_agentes:{total:taskRows.length,pendentes:taskRows.filter(x=>x.status==="pendente").length,em_andamento:taskRows.filter(x=>x.status==="em_andamento").length,aguardando_proprietario:taskRows.filter(x=>x.status==="aguardando_proprietario").length},
+        ultimo_relatorio:reportResult.data?.[0]||null,
+        limite:"Consulta somente leitura. Nenhuma alteração foi executada."
+      };
+    }catch(error){output={erro:error?.message||"Consulta não concluída.",limite:"Nenhuma alteração foi executada."};}
+    if(ownerVoiceChannel?.readyState==="open"){
+      ownerVoiceChannel.send(JSON.stringify({type:"conversation.item.create",item:{type:"function_call_output",call_id:item.call_id,output:JSON.stringify(output)}}));
+      ownerVoiceChannel.send(JSON.stringify({type:"response.create"}));
+    }
+  }
   async function startOwnerVoiceConversation(){
     const start=$("ownerVoiceStart"),stop=$("ownerVoiceStop");
     if(!currentUser||!db){ownerVoiceSetStatus("Entre na conta proprietária para usar o assistente.",true);return;}
@@ -1406,6 +1437,7 @@ footer{color:#64748b;padding-bottom:100px}
           if(item.type==="conversation.item.input_audio_transcription.completed"&&item.transcript)ownerVoiceAddLine("Você",item.transcript);
           else if(item.type==="response.output_audio_transcript.done"&&item.transcript)ownerVoiceAddLine("CHEFE",item.transcript);
           else if(item.type==="response.output_text.done"&&item.text)ownerVoiceAddLine("CHEFE",item.text);
+          else if(item.type==="response.function_call_arguments.done")runOwnerVoiceToolCall(item);
           else if(item.type==="error")ownerVoiceSetStatus(item.error?.message||"A conversa encontrou um erro. Tente novamente.",true);
         }catch(e){console.warn("Evento de voz inválido",e);}
       });

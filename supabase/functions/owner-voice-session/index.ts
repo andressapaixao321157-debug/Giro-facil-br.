@@ -108,7 +108,7 @@ Ações financeiras, exclusões, aprovações, envio de mensagens externas e mud
               transcription: { model: "gpt-4o-mini-transcribe", language: "pt" },
               turn_detection: { type: "server_vad", create_response: true, interrupt_response: true },
             },
-            output: { voice: "marin" },
+            output: { voice: "marin", speed: 1.25 },
           },
         },
       }),

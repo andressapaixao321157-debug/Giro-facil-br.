@@ -1367,12 +1367,15 @@ footer{color:#64748b;padding-bottom:100px}
     p.append(strong,document.createTextNode(message));box.appendChild(p);box.scrollTop=box.scrollHeight;
     while(box.children.length>24)box.removeChild(box.firstChild);
   }
+  let ownerGreetingPlayed=false;
   function greetOwnerOnEntry(){
-    const greeting="Olá, meu chefe! Seja bem-vindo de volta ao Giro Fácil BR. Estou pronto. O que precisa hoje?";
+    if(ownerGreetingPlayed)return;
+    ownerGreetingPlayed=true;
+    const greeting="Olá, meu chefe! Bom ter você de volta. O que vamos resolver hoje?";
     const welcome=$("ownerVoiceWelcome");if(welcome)welcome.textContent=greeting;
     ownerVoiceAddLine("CHEFE",greeting);
     if("speechSynthesis" in window){
-      try{window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(greeting);utterance.lang="pt-BR";utterance.rate=1;utterance.pitch=0.96;const voices=window.speechSynthesis.getVoices();const pt=voices.find(v=>/^pt-BR/i.test(v.lang));if(pt)utterance.voice=pt;window.speechSynthesis.speak(utterance);}catch(e){console.warn("Saudação por voz indisponível",e);}
+      try{window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(greeting);utterance.lang="pt-BR";utterance.rate=1.14;utterance.pitch=1.02;const voices=window.speechSynthesis.getVoices();const pt=voices.find(v=>/^pt-BR/i.test(v.lang));if(pt)utterance.voice=pt;window.speechSynthesis.speak(utterance);}catch(e){console.warn("Saudação por voz indisponível",e);}
     }
   }
   async function stopOwnerVoiceConversation(){

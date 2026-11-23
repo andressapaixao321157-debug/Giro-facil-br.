@@ -893,14 +893,15 @@ footer{color:#64748b;padding-bottom:100px}
     </section>
     <section class="panel" id="agentConsole" style="margin:16px 0;padding:16px;border:1px solid #35517d;background:#10264a;color:#edf4ff">
       <h3 style="margin:0 0 6px;color:#fff">Central de agentes inteligentes</h3>
-      <p class="hint" style="color:#c6d5ec">Equipe de seis agentes: Chefe (gestão geral), Vigia (segurança e fiscalização), Vendedor (clientes e vendas), Técnico (sistema e testes), Parceiro (estratégia e crescimento) e Captador (aquisição de compradores, lojistas e anunciantes). Os agentes analisam, organizam e recomendam; não bloqueiam contas nem executam pagamentos ou ações irreversíveis.</p>
+      <p class="hint" style="color:#c6d5ec">Equipe de sete agentes independentes: Chefe (gestão geral), Vigia (segurança e fiscalização), Vendedor (clientes e vendas), Técnico (sistema e testes), Parceiro (estratégia e crescimento), Captador 1 (compradores e vendedores pessoa física) e Captador 2 (lojistas, concessionárias e anunciantes). Cada Captador tem perfil, missão e orientação próprios. Os agentes analisam, organizam e recomendam; não bloqueiam contas nem executam pagamentos ou ações irreversíveis.</p>
       <div class="field"><label for="adminAgentSelect">Escolha o agente</label><select id="adminAgentSelect">
         <option value="admin">Chefe — Administração</option>
         <option value="moderation">Vigia — Segurança e fiscalização</option>
         <option value="commercial">Vendedor — Clientes e vendas</option>
         <option value="engineering">Técnico — Engenharia e testes</option>
         <option value="partner">Parceiro — Estratégia e crescimento</option>
-        <option value="acquisition">Captador — Compradores, lojistas e anunciantes</option>
+        <option value="acquisition_buyers">Captador 1 — Compradores e vendedores pessoa física</option>
+        <option value="acquisition_business">Captador 2 — Lojistas, concessionárias e anunciantes</option>
       </select></div>
       <div class="field" style="margin-top:10px"><label for="adminAgentInput">O que deseja analisar?</label><textarea id="adminAgentInput" rows="3" maxlength="4000" placeholder="Descreva sua dúvida ou cole dados não sensíveis para análise..."></textarea></div>
       <button id="adminAgentSend" type="button" style="margin-top:10px">Consultar agente</button>

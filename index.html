@@ -1632,7 +1632,8 @@ footer{color:#64748b;padding-bottom:100px}
   const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
   async function trackAcqEvent(eventName,listingId=null){
     if(!db)return;
-    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
+    const regionState=eventName==="partner_lead"?$("acqState")?.value||null:eventName==="listing_created"?$("state")?.value||null:$("locationFilter")?.value||null;
+    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,region_state:regionState,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';
   ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});
@@ -1696,7 +1697,7 @@ footer{color:#64748b;padding-bottom:100px}
   async function loadListings(){
     if(!db)return;
     const term=favoritesOnly?"":$("searchText").value.trim(),cat=favoritesOnly?"":$("searchCategory").value;
-    let q=db.from("anuncios").select("*").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
+    let q=db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
     if(cat && cat!=="Filtros")q=q.eq("categoria",cat);
     const uf=$("locationFilter")?.value||"", city=$("cityFilter")?.value||"";
@@ -1743,7 +1744,7 @@ footer{color:#64748b;padding-bottom:100px}
       const id=details.dataset.openListing;
       trackListingEvent("click",id);
       details.disabled=true;
-      const {data:item,error}=await db.from("anuncios").select("*").eq("id",id).eq("status","ativo").maybeSingle();
+      const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("id",id).eq("status","ativo").maybeSingle();
       details.disabled=false;
       if(error||!item){alert("Este anúncio não está disponível no momento.");return;}
       const photos=Array.isArray(item.fotos)?item.fotos:[];

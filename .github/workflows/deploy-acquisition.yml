@@ -22,15 +22,18 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Configure SUPABASE_ACCESS_TOKEN in GitHub Actions secrets."; exit 1; }
           test -n "$SUPABASE_PROJECT_REF" || { echo "::error::Configure SUPABASE_PROJECT_REF in GitHub Actions secrets."; exit 1; }
+          test -n "$SUPABASE_DB_URL" || { echo "::error::Configure SUPABASE_DB_URL with Supavisor Session mode (port 5432) in GitHub Actions secrets."; exit 1; }
       - name: Apply database migrations and deploy CRM function
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --db-url "$SUPABASE_DB_URL"
           supabase functions deploy admin-dashboard --project-ref "$SUPABASE_PROJECT_REF"

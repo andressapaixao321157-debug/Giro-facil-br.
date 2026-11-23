@@ -5,6 +5,12 @@ const assistantPath = "supabase/functions/giro-assistant/index.ts";
 const adminPath = "supabase/functions/admin-dashboard/index.ts";
 const paymentPath = "supabase/functions/asaas-create-payment/index.ts";
 const assistantWorkflowPath = ".github/workflows/deploy-giro-assistant.yml";
+const validationWorkflowPath = ".github/workflows/agent-validation.yml";
+const validationWorkflow = fs.existsSync(validationWorkflowPath) ? fs.readFileSync(validationWorkflowPath, "utf8") : "";
+const acquisitionWorkflowPath = ".github/workflows/deploy-acquisition.yml";
+const acquisitionWorkflow = fs.existsSync(acquisitionWorkflowPath) ? fs.readFileSync(acquisitionWorkflowPath, "utf8") : "";
+const publicListingMigrationPath = "supabase/migrations/20261123023000_restrict_public_listing_contact_fields.sql";
+const publicListingMigration = fs.existsSync(publicListingMigrationPath) ? fs.readFileSync(publicListingMigrationPath, "utf8") : "";
 const configPath = "supabase/config.toml";
 const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
@@ -215,6 +221,15 @@ check("Política global proíbe que qualquer agente bloqueie ou restrinja contas
 check("CHEFE administrativo não tem autonomia para bloquear contas", assistant.includes("Nenhum robô, inclusive o CHEFE, pode autorizar bloqueio de conta."));
 check("VIGIA apenas sinaliza suspeitas e nunca bloqueia ou restringe pessoas", assistant.includes("Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas, perfis ou acesso de pessoas") && assistant.includes("autorização expressa do proprietário"));
 check("Endpoint administrativo rejeita ações automáticas de bloqueio de contas", admin.includes("forbiddenAccountControlActions") && ["block_user", "unblock_user", "suspend_user", "ban_user", "restrict_user"].every(action => admin.includes('"'+action+'"')) && admin.includes("Bloqueio e desbloqueio de contas não podem ser executados por robôs"));
+const accountControlGuardPosition = admin.indexOf("if (forbiddenAccountControlActions.has(String(body?.action ?? \"\")))");
+const firstPrivilegedActionPosition = admin.indexOf('if (body?.action === "bulk_create_listings")');
+const adminAuthorizationGatePosition = admin.indexOf('if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403);');
+check("Endpoint bloqueia ações de controle de contas antes de qualquer ação privilegiada ou decisão administrativa",
+  accountControlGuardPosition >= 0 &&
+  firstPrivilegedActionPosition > accountControlGuardPosition &&
+  adminAuthorizationGatePosition > accountControlGuardPosition &&
+  admin.includes('return reply({ error: "Bloqueio e desbloqueio de contas não podem ser executados por robôs ou por este serviço." }, 403);'));
+
 
 // Backend do assistente: autenticação, validação, contexto e resposta.
 check("Função giro-assistant existe no repositório", assistant.length > 0);
@@ -276,6 +291,7 @@ check("Configuração exige JWT para assistente e painel",
 check("Formulário nacional de captação e consentimento LGPD", hasId("acquisitionPanel") && hasId("acqConsent") && hasId("acqSubmit"));
 check("Painel administrativo mostra métricas e lista de interessados", hasId("adminAcquisitionMetrics") && hasId("adminAcquisitionLeads") && html.includes("data-acq-status"));
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
+check("Eventos de aquisição usam a UF do contexto correto: filtro, lead ou anúncio", html.includes('const regionState=eventName==="partner_lead"?$("acqState")?.value||null:eventName==="listing_created"?$("state")?.value||null:$("locationFilter")?.value||null;') && html.includes("region_state:regionState") && html.includes('id="locationFilter"') && html.includes('id="acqState"') && html.includes('id="state"'));
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 const listingStatusMigrationPath = "supabase/migrations/20261120140058_listing_analytics_and_advertiser_dashboard.sql";
@@ -383,8 +399,96 @@ check("Asaas cria checkout com autenticação e tipo de pedido válidos",
   fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind, billing_type: billingType") &&
   !fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind: orderKind"));
 check("Banco aceita cartão para planos recorrentes no Asaas",
-  fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
-  fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+  fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+
+
+const listingSelectCalls = [...html.matchAll(/\.from\(["']anuncios["']\)\.select\(/g)];
+const listingSelectMatches = [...html.matchAll(/\.from\(["']anuncios["']\)\.select\((["'])([^"']*)\1/g)];
+const allowedListingColumns = new Set([
+  "id", "usuario_id", "titulo", "categoria", "marca", "modelo", "ano", "preco",
+  "descricao", "cidade", "estado", "fotos", "status", "criado_em", "created_at", "updated_at"
+]);
+check("Todas as consultas do navegador em anúncios usam apenas colunas explicitamente públicas",
+  listingSelectCalls.length >= 1 &&
+  listingSelectCalls.length === listingSelectMatches.length &&
+  listingSelectMatches.every(match =>
+    match[2] !== "*" &&
+    match[2].split(",").every(column => allowedListingColumns.has(column.trim()))
+  ) &&
+  !/\.from\(["\']anuncios["\']\)\.select\(\s*["\']\*["\']\s*\)/.test(html));
+const publicGrant = publicListingMigration.match(/GRANT SELECT \(([\s\S]*?)\) ON TABLE public\.anuncios TO anon, authenticated;/);
+const publicColumns = publicGrant ? publicGrant[1].split(",").map(column => column.trim()) : [];
+check("Migração revoga também eventuais concessões explícitas nos campos privados",
+  publicListingMigration.includes("REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;"));
+check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou status financeiro",
+  publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
+  publicColumns.includes("id") && publicColumns.includes("titulo") &&
+  !publicColumns.includes("whatsapp") && !publicColumns.includes("pagamento_status"));
+check("Migração de privacidade concede exatamente as colunas públicas necessárias",
+  JSON.stringify(publicColumns) === JSON.stringify([
+    "id", "usuario_id", "titulo", "categoria", "marca", "modelo", "ano", "preco",
+    "descricao", "cidade", "estado", "fotos", "status", "criado_em", "created_at", "updated_at"
+  ]));
+check("Migração de privacidade preserva RLS e não altera dados ou outras permissões",
+  publicListingMigration.length > 0 &&
+  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
+const privacyPrivilegeStatements = publicListingMigration.split(/\r?\n/).map(line => line.trim()).filter(line => /^(GRANT|REVOKE)\s/i.test(line));
+check("Migração modifica somente SELECT e preserva privilégios de escrita existentes",
+  privacyPrivilegeStatements.length === 3 &&
+  privacyPrivilegeStatements.every(line => /^(GRANT|REVOKE)\s+SELECT\b/i.test(line)) &&
+  !privacyPrivilegeStatements.some(line => /\b(INSERT|UPDATE|DELETE|ALL)\b/i.test(line)) &&
+  publicListingMigration.includes(") ON TABLE public.anuncios TO anon, authenticated;"));
+const revokeColumnPosition = publicListingMigration.indexOf("REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;");
+const revokeTablePosition = publicListingMigration.indexOf("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;");
+const publicGrantPosition = publicListingMigration.indexOf("GRANT SELECT (");
+check("Migração revoga concessões específicas e amplas antes de liberar as colunas públicas",
+  revokeColumnPosition >= 0 &&
+  revokeTablePosition > revokeColumnPosition &&
+  publicGrantPosition > revokeTablePosition &&
+  publicListingMigration.slice(publicGrantPosition).includes(") ON TABLE public.anuncios TO anon, authenticated;"));
+const debugKeyCachePosition = validationWorkflow.indexOf("- name: Restore persistent Android debug signing key");
+const debugKeyEnsurePosition = validationWorkflow.indexOf("- name: Ensure stable Android debug signing key");
+const apkBuildPosition = validationWorkflow.indexOf("- name: Build test APK without publishing");
+check("Build Android restaura ou cria uma chave debug persistente e versionada antes da compilação",
+  debugKeyCachePosition >= 0 &&
+  debugKeyEnsurePosition > debugKeyCachePosition &&
+  apkBuildPosition > debugKeyEnsurePosition &&
+  validationWorkflow.includes('path: ~/.android/debug.keystore') &&
+  validationWorkflow.includes("key: giro-facil-br-debug-keystore-v2") &&
+  validationWorkflow.includes("keytool -genkeypair") &&
+  validationWorkflow.includes('keytool -list -v -keystore "$HOME/.android/debug.keystore"') &&
+  validationWorkflow.includes('echo "GIRO_DEBUG_CERT_SHA256=$KEYSTORE_SHA256" >> "$GITHUB_ENV"') &&
+  validationWorkflow.includes('APK_CERT_SHA256') &&
+  validationWorkflow.includes('if [ "$APK_CERT_SHA256" != "$GIRO_DEBUG_CERT_SHA256" ]; then') &&
+  validationWorkflow.includes("-alias androiddebugkey"));
+check("Validação do APK imprime o certificado e confere o identificador do aplicativo",
+  validationWorkflow.includes('apksigner" verify --verbose --print-certs "$APK"') &&
+  validationWorkflow.includes("package: name='br.com.girofacil.app'"));
+const validationPushTrigger = validationWorkflow.split("  pull_request:")[0];
+check("Branch de privacidade usa o gatilho pull_request sem duplicar build por push",
+  validationPushTrigger.includes("branches: [main, feature/giro-agentes-inteligentes]") &&
+  !validationPushTrigger.includes("feature/privacy-hardening") &&
+  validationWorkflow.includes("  pull_request:\n    branches: [main]"));
+const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
+const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
+check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",
+  acquisitionDeployEnv.includes('SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}') &&
+  acquisitionDeployStep.includes('supabase db push --db-url "$SUPABASE_DB_URL"') &&
+  !acquisitionDeployStep.includes('supabase db push --project-ref "$SUPABASE_PROJECT_REF"'));
+check("Validação do deploy interrompe a execução se faltar segredo Supabase",
+  acquisitionWorkflow.includes('test -n "$SUPABASE_ACCESS_TOKEN"') &&
+  acquisitionWorkflow.includes('test -n "$SUPABASE_PROJECT_REF"') &&
+  acquisitionWorkflow.includes('test -n "$SUPABASE_DB_URL"'));
+check("Interface não consulta diretamente tabelas internas de webhook e legado",
+  !html.includes('.from("asaas_webhook_events")') &&
+  !html.includes(".from('asaas_webhook_events')") &&
+  !html.includes('.from("Giro rápido br")') &&
+  !html.includes(".from('Giro rápido br')"));
+
+check("Versão do arquivo de migração de cartão coincide com a migração já aplicada no Supabase",
+  fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
+  !fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql"));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

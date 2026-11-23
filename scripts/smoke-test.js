@@ -403,11 +403,16 @@ check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou stat
 check("Migração de privacidade preserva RLS e não altera dados ou outras permissões",
   publicListingMigration.length > 0 &&
   !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
-check("Deploy do CRM usa Supavisor Session por SUPABASE_DB_URL para evitar falha IPv6",
-  acquisitionWorkflow.includes('SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}') &&
-  acquisitionWorkflow.includes('test -n "$SUPABASE_DB_URL"') &&
-  acquisitionWorkflow.includes('supabase db push --db-url "$SUPABASE_DB_URL"') &&
-  !acquisitionWorkflow.includes('supabase db push --project-ref "$SUPABASE_PROJECT_REF"'));
+const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
+const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
+check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",
+  acquisitionDeployEnv.includes('SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}') &&
+  acquisitionDeployStep.includes('supabase db push --db-url "$SUPABASE_DB_URL"') &&
+  !acquisitionDeployStep.includes('supabase db push --project-ref "$SUPABASE_PROJECT_REF"'));
+check("Validação do deploy interrompe a execução se faltar segredo Supabase",
+  acquisitionWorkflow.includes('test -n "$SUPABASE_ACCESS_TOKEN"') &&
+  acquisitionWorkflow.includes('test -n "$SUPABASE_PROJECT_REF"') &&
+  acquisitionWorkflow.includes('test -n "$SUPABASE_DB_URL"'));
 check("Versão do arquivo de migração de cartão coincide com a migração já aplicada no Supabase",
   fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
   !fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql"));

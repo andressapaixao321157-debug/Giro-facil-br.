@@ -1,10 +1,10 @@
 -- Campanha comercial dos 500 Parceiros Fundadores Giro Fácil BR.
--- A reserva é limitada a 500 inscrições e não envolve sorteio ou prêmio aleatório.
+-- A meta comercial é alcançar 500 parceiros; não há limite de estoque de benefícios nem sorteio.
 create schema if not exists giro_private;
 revoke all on schema giro_private from public, anon, authenticated;
 
 create sequence if not exists giro_private.giro_founder_500_seq
-  start with 1 increment by 1 minvalue 1 maxvalue 500 no cycle;
+  start with 1 increment by 1 minvalue 1 no maxvalue no cycle;
 revoke all on sequence giro_private.giro_founder_500_seq from public, anon, authenticated;
 
 alter table public.partner_applications

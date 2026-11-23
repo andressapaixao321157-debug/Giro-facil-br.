@@ -1,7 +1,7 @@
 name: Validate intelligent agents
 on:
   push:
-    branches: [main, feature/giro-agentes-inteligentes]
+    branches: [main, feature/giro-agentes-inteligentes, fix/client-payment-status-insert]
     paths:
       - "supabase/functions/giro-assistant/**"
       - "supabase/functions/admin-dashboard/**"

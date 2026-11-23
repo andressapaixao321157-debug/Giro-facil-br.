@@ -450,12 +450,17 @@ check("Migração revoga concessões específicas e amplas antes de liberar as c
 const debugKeyCachePosition = validationWorkflow.indexOf("- name: Restore persistent Android debug signing key");
 const debugKeyEnsurePosition = validationWorkflow.indexOf("- name: Ensure stable Android debug signing key");
 const apkBuildPosition = validationWorkflow.indexOf("- name: Build test APK without publishing");
-check("Build Android restaura ou cria uma chave debug persistente antes da compilação",
+check("Build Android restaura ou cria uma chave debug persistente e versionada antes da compilação",
   debugKeyCachePosition >= 0 &&
   debugKeyEnsurePosition > debugKeyCachePosition &&
   apkBuildPosition > debugKeyEnsurePosition &&
   validationWorkflow.includes('path: ~/.android/debug.keystore') &&
+  validationWorkflow.includes("key: giro-facil-br-debug-keystore-v2") &&
   validationWorkflow.includes("keytool -genkeypair") &&
+  validationWorkflow.includes('keytool -list -v -keystore "$HOME/.android/debug.keystore"') &&
+  validationWorkflow.includes('echo "GIRO_DEBUG_CERT_SHA256=$KEYSTORE_SHA256" >> "$GITHUB_ENV"') &&
+  validationWorkflow.includes('APK_CERT_SHA256') &&
+  validationWorkflow.includes('if [ "$APK_CERT_SHA256" != "$GIRO_DEBUG_CERT_SHA256" ]; then') &&
   validationWorkflow.includes("-alias androiddebugkey"));
 check("Validação do APK imprime o certificado e confere o identificador do aplicativo",
   validationWorkflow.includes('apksigner" verify --verbose --print-certs "$APK"') &&

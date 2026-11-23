@@ -172,7 +172,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const model = Deno.env.get("OPENAI_MODEL") || "gpt-6.2-astra";
-    const response = await fetch("https://api.openai.com/v1/responses", {\n      signal: AbortSignal.timeout(15000),
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      signal: AbortSignal.timeout(15000),
       method: "POST",
       headers: {
         "Authorization": `Bearer ${openaiKey}`,

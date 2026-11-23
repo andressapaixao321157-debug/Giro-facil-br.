@@ -9,6 +9,10 @@ const configPath = "supabase/config.toml";
 const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
 const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
+const webhookPath = "supabase/functions/asaas-webhook/index.ts";
+const webhook = fs.existsSync(webhookPath) ? fs.readFileSync(webhookPath, "utf8") : "";
+const founderMigrationPath = "supabase/migrations/20261123193000_giro_founder_500_campaign.sql";
+const founderMigration = fs.existsSync(founderMigrationPath) ? fs.readFileSync(founderMigrationPath, "utf8") : "";
 const assistantWorkflow = fs.existsSync(assistantWorkflowPath) ? fs.readFileSync(assistantWorkflowPath, "utf8") : "";
 const config = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "";
 const checks = [];
@@ -385,6 +389,15 @@ check("Asaas cria checkout com autenticação e tipo de pedido válidos",
 check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+
+check("Campanha 500 Parceiros Fundadores aparece na página inicial com preço e benefícios", html.includes("500 Parceiros Fundadores Giro Fácil BR") && html.includes("R$ 39 por mês") && html.includes("7 dias de turbo promocional"));
+check("Inscrição de parceiro reserva vaga na campanha por código próprio", html.includes('founder_campaign_code:"fundadores-500"') && founderMigration.includes("private.giro_founder_500_seq") && founderMigration.includes("maxvalue 500"));
+check("Banco impede mais de uma inscrição fundadora por usuário e numeração duplicada", founderMigration.includes("partner_founder_user_once") && founderMigration.includes("partner_founder_number_unique"));
+check("Plano fundador custa R$ 39 e exige parceiro aprovado no servidor", payment.includes("loja_fundador: 39") && payment.includes('eq("founder_campaign_code", "fundadores-500")') && payment.includes('partnerAccount?.status !== "ativo"'));
+check("Turbo fundador gratuito dura 7 dias e só pode ser resgatado uma vez", payment.includes('founder_7d: { amount: 0, days: 7 }') && payment.includes("founder_turbo_claimed_at") && payment.includes("freeForFounder"));
+check("Kit digital só aparece após ativação do plano fundador", html.includes('id="founderKitLink"') && html.includes('founderPlan?.status!=="active"'));
+check("Webhook libera plano fundador após checkout pago e encerra assinatura cancelada", webhook.includes('checkoutOrder.kind === "store"') && webhook.includes('storeDeactivateError'));
+check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório", fs.readFileSync("docs/campanha-500-parceiros-fundadores.md", "utf8").includes("Nenhum sorteio, rifa, venda de números ou prêmio aleatório"));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

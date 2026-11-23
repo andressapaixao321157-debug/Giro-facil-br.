@@ -455,7 +455,7 @@ const validationPushTrigger = validationWorkflow.split("  pull_request:")[0];
 check("Branch de privacidade usa o gatilho pull_request sem duplicar build por push",
   validationPushTrigger.includes("branches: [main, feature/giro-agentes-inteligentes]") &&
   !validationPushTrigger.includes("feature/privacy-hardening") &&
-  validationWorkflow.includes("  pull_request:\\n    branches: [main]"));
+  validationWorkflow.includes("  pull_request:\n    branches: [main]"));
 const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
 const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
 check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",

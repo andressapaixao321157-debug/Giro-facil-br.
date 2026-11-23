@@ -1380,11 +1380,40 @@ footer{color:#64748b;padding-bottom:100px}
   }
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
   const ownerFallbackHistory=[];
+  let ownerVoicePendingChatLookup=null;
   async function executeOwnerVoiceCommand(transcript){
     const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
     const has=(pattern)=>pattern.test(q);
     const openIntent=has(/\b(abrir|abre|abra|entrar|entra|mostrar|mostra|ir|vai|acessar|acessa|quero ver|ver|acessar|acessa)\b/);
     const answer=(label)=>({handled:true,answer:"Pronto, chefe. "+label+" está aberto."});
+    const normVoiceName=(value)=>String(value||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    if(ownerVoicePendingChatLookup){
+      const requested=normVoiceName(transcript);
+      const matches=ownerVoicePendingChatLookup.matches||[];
+      const chosen=matches.filter(item=>normVoiceName(item.name)===requested||normVoiceName(item.name).includes(requested)||requested.includes(normVoiceName(item.name)));
+      if(chosen.length===1){
+        const target=chosen[0];ownerVoicePendingChatLookup=null;
+        await openChat(target.id);
+        return {handled:true,answer:"Pronto, chefe. Abri a conversa com "+target.name+"."};
+      }
+      if(chosen.length>1){
+        ownerVoicePendingChatLookup={matches:chosen};
+        return {handled:true,answer:"Encontrei mais de um comprador com esse nome: "+chosen.map(x=>x.name).join(", ")+". Diga o nome completo ou uma identificação para eu escolher a conversa certa."};
+      }
+      if(matches.length){
+        return {handled:true,answer:"Não encontrei esse nome entre as conversas carregadas. Diga o nome como aparece na lista de mensagens."};
+      }
+      ownerVoicePendingChatLookup=null;
+    }
+    if(openIntent&&has(/\\b(mensagem|mensagens|conversa|conversas|chat)\\b/)&&has(/\\b(comprador|cliente|compradores|clientes)\\b/)){
+      if(!currentUser){openAuth();return {handled:true,answer:"Entre na sua conta para acessar as mensagens dos compradores."};}
+      await openChat();
+      const rows=[...$("chatConversationList").querySelectorAll("button[data-conversation-id]")];
+      const buyers=rows.filter(item=>item.dataset.peerRole==="Comprador").map(item=>({id:item.dataset.conversationId,name:item.dataset.peerName||"Comprador"}));
+      if(!buyers.length)return {handled:true,answer:"Abri suas mensagens, chefe. Ainda não encontrei conversas de compradores na sua caixa de entrada."};
+      ownerVoicePendingChatLookup={matches:buyers};
+      return {handled:true,answer:"Claro, chefe. De qual comprador você quer abrir a mensagem? Pode me dizer o nome dele."};
+    }
     const clickNav=(id,label)=>{const control=$(id);if(!control)return {handled:true,answer:"Não encontrei "+label+" nesta versão do Giro Fácil."};control.click();return answer("Abri "+label);};
     if(has(/\b(meus? anuncios|meus? classificados|meu estoque|meus produtos|meus anuncios publicados|meus itens)\b/)){
       if(!currentUser){openAuth();return {handled:true,answer:"Para abrir seus classificados, primeiro entre na sua conta."};}
@@ -1796,6 +1825,9 @@ footer{color:#64748b;padding-bottom:100px}
       $("chatMessageInput").disabled=true;$("chatSend").disabled=true;updateConversationUnreadTotal();return;
     }
     const conversationIds=data.map(conv=>conv.id);
+    const peerIds=[...new Set(data.map(conv=>conv.comprador_id===currentUser.id?conv.vendedor_id:conv.comprador_id).filter(Boolean))];
+    const {data:peerProfiles}=await db.from("perfis").select("id,nome").in("id",peerIds);
+    const peerNameById=new Map((peerProfiles||[]).map(profile=>[profile.id,profile.nome]).filter(entry=>entry[1]));
     const {data:messageRows,error:messageError}=await db.from("mensagens")
       .select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em,entregue_em")
       .in("conversa_id",conversationIds).order("criada_em",{ascending:false}).limit(5000);
@@ -1820,7 +1852,9 @@ footer{color:#64748b;padding-bottom:100px}
       const unread=unreadByConversation.get(conv.id)||0;
       const isBuyer=conv.comprador_id===currentUser.id;
       const counterpartRole=isBuyer?"Vendedor":"Comprador";
-      const b=document.createElement("button");b.type="button";b.dataset.unread=String(unread);
+      const peerId=isBuyer?conv.vendedor_id:conv.comprador_id;
+      const peerName=peerNameById.get(peerId)||counterpartRole;
+      const b=document.createElement("button");b.type="button";b.dataset.unread=String(unread);b.dataset.conversationId=conv.id;b.dataset.peerName=peerName;b.dataset.peerRole=counterpartRole;
       const avatar=document.createElement("span");avatar.className="conversation-avatar";
       const photo=Array.isArray(conv.anuncios?.fotos)?conv.anuncios.fotos[0]:"";
       if(photo){
@@ -1835,11 +1869,11 @@ footer{color:#64748b;padding-bottom:100px}
       const preview=document.createElement("small");preview.className="conversation-preview";
       preview.textContent=latest?(latest.remetente_id===currentUser.id?"Você: ":"")+latest.conteudo:"Comece uma conversa";
       const metaRow=document.createElement("span");metaRow.className="conversation-meta-row";
-      const meta=document.createElement("small");meta.className="conversation-item-meta";meta.textContent=counterpartRole;
+      const meta=document.createElement("small");meta.className="conversation-item-meta";meta.textContent=peerName+" · "+counterpartRole;
       const unreadBadge=document.createElement("span");unreadBadge.className="conversation-unread";unreadBadge.textContent=unread>99?"99+":String(unread);unreadBadge.hidden=unread===0;unreadBadge.setAttribute("aria-label",unread+" mensagens não lidas");
       metaRow.append(meta,unreadBadge);content.append(titleRow,preview,metaRow);b.append(avatar,content);
       b.classList.toggle("selected",conv.id===(selectId||activeConversationId));
-      b.setAttribute("aria-label",(conv.anuncios?.titulo||"Anúncio")+" · "+counterpartRole+(unread?" · "+unread+" não lidas":""));
+      b.setAttribute("aria-label",peerName+" · "+(conv.anuncios?.titulo||"Anúncio")+" · "+counterpartRole+(unread?" · "+unread+" não lidas":""));
       b.onclick=()=>loadConversations(conv.id);list.appendChild(b);
     });
     const chosen=data.find(x=>x.id===(selectId||activeConversationId))||data[0];

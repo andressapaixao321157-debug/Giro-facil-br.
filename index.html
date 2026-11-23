@@ -1378,7 +1378,69 @@ footer{color:#64748b;padding-bottom:100px}
       try{window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(greeting);utterance.lang="pt-BR";utterance.rate=1.14;utterance.pitch=1.02;const voices=window.speechSynthesis.getVoices();const pt=voices.find(v=>/^pt-BR/i.test(v.lang));if(pt)utterance.voice=pt;window.speechSynthesis.speak(utterance);}catch(e){console.warn("Saudação por voz indisponível",e);}
     }
   }
+  let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
+  const ownerFallbackHistory=[];
+  function ownerFallbackSpeak(message){
+    if(!("speechSynthesis" in window)||!message)return;
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(message);
+    utterance.lang="pt-BR";utterance.rate=1.18;utterance.pitch=1.02;
+    const voices=window.speechSynthesis.getVoices();
+    const pt=voices.find(v=>/^pt-BR/i.test(v.lang))||voices.find(v=>/^pt/i.test(v.lang));
+    if(pt)utterance.voice=pt;
+    utterance.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy)ownerFallbackStartListening();};
+    utterance.onerror=()=>{if(ownerFallbackActive&&!ownerFallbackBusy)ownerFallbackStartListening();};
+    window.speechSynthesis.speak(utterance);
+  }
+  function ownerFallbackStartListening(){
+    if(!ownerFallbackActive||ownerFallbackBusy||window.speechSynthesis?.speaking)return;
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!Recognition){ownerVoiceSetStatus("Seu navegador não oferece reconhecimento de voz. Use o Chrome atualizado ou o chat por texto.",true);return;}
+    try{
+      ownerFallbackRecognition=new Recognition();
+      ownerFallbackRecognition.lang="pt-BR";ownerFallbackRecognition.continuous=false;ownerFallbackRecognition.interimResults=false;ownerFallbackRecognition.maxAlternatives=1;
+      ownerFallbackRecognition.onresult=async event=>{
+        const transcript=event.results?.[0]?.[0]?.transcript?.trim();if(!transcript)return;
+        ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Estou preparando uma resposta...");
+        try{
+          const history=ownerFallbackHistory.slice(-6);
+          const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}});
+          if(error)throw error;
+          const answer=data?.answer||data?.error||"Não consegui montar uma resposta agora. Tente falar de outro jeito.";
+          ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:answer});
+          ownerVoiceAddLine("CHEFE",answer);
+          ownerVoiceSetStatus(data?.mode==="ajuda-basica"?"Modo gratuito de contingência ativo. Pode continuar falando.":"Assistente pronto. Pode continuar falando.");
+          ownerFallbackBusy=false;ownerFallbackSpeak(answer);
+        }catch(error){
+          ownerFallbackBusy=false;ownerVoiceSetStatus("Não consegui consultar o assistente básico. Confira a internet e tente novamente.",true);
+          ownerFallbackSpeak("Meu chefe, perdi a conexão com o atendimento. Confira a internet e tente de novo.");
+        }
+      };
+      ownerFallbackRecognition.onerror=event=>{
+        if(!ownerFallbackActive)return;
+        if(event.error==="not-allowed"||event.error==="service-not-allowed"){
+          ownerVoiceSetStatus("Permita o microfone no Chrome para conversar por voz.",true);
+          ownerFallbackActive=false;$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;
+        }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+"). Toque em iniciar para tentar novamente.",true);
+      };
+      ownerFallbackRecognition.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)setTimeout(ownerFallbackStartListening,350);};
+      ownerFallbackRecognition.start();
+      ownerVoiceSetStatus("Modo gratuito ativo. Fale normalmente; a voz será sintetizada pelo seu celular.");
+    }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone. Feche e abra a conversa e tente novamente.",true);}
+  }
+  function startOwnerFallbackVoice(){
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!Recognition||!("speechSynthesis" in window)){
+      ownerVoiceSetStatus("Este navegador não oferece voz gratuita integrada. Use o Chrome atualizado ou o chat por texto.",true);
+      $("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;return;
+    }
+    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
+    $("ownerVoiceStart").disabled=true;$("ownerVoiceStop").disabled=false;
+    ownerVoiceSetStatus("Ativando modo gratuito de voz...");
+    ownerFallbackSpeak("Fala, meu chefe! A IA avançada está sem créditos, mas o modo gratuito está na escuta. O que vamos resolver?");
+  }
   async function stopOwnerVoiceConversation(){
+    ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}
     try{if(ownerVoiceChannel){ownerVoiceChannel.close();ownerVoiceChannel=null;}if(ownerVoicePeer){ownerVoicePeer.close();ownerVoicePeer=null;}if(ownerVoiceStream){ownerVoiceStream.getTracks().forEach(t=>t.stop());ownerVoiceStream=null;}if(ownerVoiceAudio){ownerVoiceAudio.pause();ownerVoiceAudio.srcObject=null;ownerVoiceAudio.remove();ownerVoiceAudio=null;}}
     finally{$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;ownerVoiceSetStatus("Conversa encerrada. O microfone foi desligado.");}
   }
@@ -1455,8 +1517,12 @@ footer{color:#64748b;padding-bottom:100px}
       stop.disabled=false;ownerVoiceSetStatus("Conectando ao assistente de voz...");
     }catch(error){
       console.error("Falha ao iniciar assistente de voz",error);
+      const detail=String(error?.message||error||"");
       await stopOwnerVoiceConversation();
-      ownerVoiceSetStatus(error?.message||"Não foi possível iniciar a conversa por voz.",true);
+      if(/429|credit|quota|crédito|credits remaining|insufficient_quota/i.test(detail)){
+        ownerVoiceSetStatus("A IA avançada está sem créditos. Vou iniciar o modo gratuito de voz do celular.");
+        startOwnerFallbackVoice();
+      }else ownerVoiceSetStatus(detail||"Não foi possível iniciar a conversa por voz.",true);
     }
   }
   $("ownerVoiceStart").onclick=startOwnerVoiceConversation;

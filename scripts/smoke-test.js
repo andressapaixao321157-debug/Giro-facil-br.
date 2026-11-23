@@ -189,6 +189,11 @@ check("Fallback local mantém resposta específica para cada agente",
   assistant.includes("function localAgentAnswer") &&
   assistant.includes('fallback[agent]'));
 
+check("Política global proíbe que qualquer agente bloqueie ou restrinja contas", assistant.includes("Nenhum agente pode bloquear, desbloquear, suspender, banir ou restringir contas de usuários."));
+check("CHEFE administrativo não tem autonomia para bloquear contas", assistant.includes("Nenhum robô, inclusive o CHEFE, pode autorizar bloqueio de conta."));
+check("VIGIA apenas sinaliza suspeitas e nunca bloqueia ou restringe pessoas", assistant.includes("Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas, perfis ou acesso de pessoas") && assistant.includes("autorização expressa do proprietário"));
+check("Endpoint administrativo rejeita ações automáticas de bloqueio de contas", admin.includes("forbiddenAccountControlActions") && ["block_user", "unblock_user", "suspend_user", "ban_user", "restrict_user"].every(action => admin.includes('"'+action+'"')) && admin.includes("Bloqueio e desbloqueio de contas não podem ser executados por robôs"));
+
 // Backend do assistente: autenticação, validação, contexto e resposta.
 check("Função giro-assistant existe no repositório", assistant.length > 0);
 check("Assistente usa resposta básica se a API de IA retornar 429 ou 5xx",

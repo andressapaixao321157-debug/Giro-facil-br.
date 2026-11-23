@@ -1649,11 +1649,12 @@ footer{color:#64748b;padding-bottom:100px}
       input.focus();
     }
   }
-  let adminAgentHistory=[];
+  let adminAgentHistory=[];let lastAdminAgent="";
   async function sendAdminAgentMessage(){
     const input=$("adminAgentInput"),button=$("adminAgentSend"),output=$("adminAgentOutput");
     if(!input||!button||!output){console.error("Central de agentes incompleta no HTML.");return;}
     const message=input.value.trim(),agent=$("adminAgentSelect")?.value||"admin";
+    if(agent!==lastAdminAgent){adminAgentHistory=[];lastAdminAgent=agent;}
     if(!message){output.textContent="Escreva o que deseja analisar.";output.classList.remove("hidden");return;}
     if(!db||!currentUser){output.textContent="Entre na conta administradora para usar os agentes.";output.classList.remove("hidden");return;}
     if(button.disabled)return;

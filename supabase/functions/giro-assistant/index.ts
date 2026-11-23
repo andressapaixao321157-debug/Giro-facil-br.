@@ -72,16 +72,30 @@ const allowedAgents = new Set(Object.keys(agentProfiles));
 
 function localAgentAnswer(agent: string, message: string): string {
   if (agent === "customer") return localAnswer(message);
-  const fallback: Record<string, string> = {
-    admin: "Agente administrativo em modo básico. Posso ajudar a organizar procedimentos e interpretar dados agregados que você fornecer. Nenhuma ação administrativa é executada por este agente.",
-    moderation: "Agente de fiscalização em modo básico. Envie o texto do anúncio para uma análise preliminar. Posso apontar suspeitas e recomendar revisão, mas não posso bloquear, desbloquear, suspender ou restringir contas; nenhum agente pode executar essas ações.",
-    commercial: "Agente comercial em modo básico. Envie métricas agregadas de visualizações, cliques e contatos para uma análise. Não vou inventar resultados que não foram fornecidos.",
-    engineering: "Agente de engenharia em modo básico. Envie a mensagem de erro ou o resultado do teste. Posso orientar a investigação, mas não afirmarei que alterei código ou executei testes.",
-    partner: "Parceiro em modo básico. Posso ajudar com estratégia, parcerias e crescimento usando informações confirmadas, sem assumir compromissos em nome da empresa.",
-    acquisition_buyers: "Captador 1 em modo básico. Minha frente é atrair compradores e vendedores pessoa física, anúncios particulares e tráfego qualificado. Não envio mensagens nem gasto dinheiro sem autorização.",
-    acquisition_business: "Captador 2 em modo básico. Minha frente é prospectar lojistas, concessionárias, revendedores, imobiliárias e anunciantes profissionais. Não envio mensagens nem gasto dinheiro sem autorização.",
+  const q = message.toLocaleLowerCase("pt-BR");
+  const request = message.trim().slice(0, 700);
+  if (agent === "acquisition_buyers") {
+    if (/quantos|captou|conseguiu|resultado|leads|contatos/.test(q))
+      return "Resposta direta: não há confirmação de captação automática nem de contatos conquistados por este agente.\n\nO que posso organizar agora: campanhas orgânicas para pessoas físicas, grupos e comunidades com divulgação permitida, conteúdo para SEO e um roteiro de anúncio. Para comprovar resultados, precisamos registrar cada lead no CRM do Giro Fácil (origem, cidade/UF, data e etapa). Não vou inventar contatos nem dizer que enviei mensagens.";
+    if (/mensagem|abordagem|convite|texto/.test(q))
+      return "Sugestão de convite para pessoas físicas:\n\n“Está comprando ou vendendo carro, moto, imóvel ou outro produto? Anuncie e encontre oportunidades no Giro Fácil BR. Cadastre seu anúncio e fale com interessados pelo chat da plataforma.”\n\nDistribua individualmente em canais que permitam divulgação, sem disparos em massa. Posso adaptar o texto para uma categoria ou cidade.";
+    return "Entendi seu pedido: “" + request + "”\n\nPlano do Captador 1 — pessoas físicas:\n1. Atrair vendedores particulares com anúncios simples e chamada para cadastro.\n2. Atrair compradores com páginas por categoria e cidade.\n3. Publicar conteúdo útil e compartilhável, sem spam.\n4. Registrar origem, cidade/UF e conversão de cada interessado no CRM.\n\nNão envio mensagens nem gasto dinheiro sem autorização, e não afirmo resultados que ainda não foram registrados.";
+  }
+  if (agent === "acquisition_business") {
+    if (/quantos|captou|conseguiu|resultado|leads|contatos|lojas/.test(q))
+      return "Resposta direta: não há confirmação de lojistas captados automaticamente nem de parcerias fechadas por este agente. Para medir a captação, cada contato precisa entrar no CRM com empresa, segmento, cidade/UF, origem e etapa. Não vou inventar nomes ou acordos.";
+    if (/mensagem|abordagem|convite|texto|proposta/.test(q))
+      return "Abordagem individual sugerida para lojistas:\n\n“Olá! Estamos apresentando o Giro Fácil BR, um marketplace nacional para divulgar estoque e receber contatos pelo chat da plataforma. Estamos formando a rede inicial de parceiros e podemos apresentar as condições do plano fundador. Posso enviar os detalhes?”\n\nEnvie somente a contatos empresariais obtidos de fontes públicas e respeite pedidos para não receber novas mensagens. Não disparo mensagens automaticamente.";
+    return "Entendi seu pedido: “" + request + "”\n\nPlano do Captador 2 — lojistas e anunciantes:\n1. Priorizar concessionárias, lojas de veículos, imobiliárias e revendas de máquinas.\n2. Organizar oportunidades por segmento e cidade/UF.\n3. Apresentar o plano fundador e o turbo promocional com condições claras.\n4. Registrar cada abordagem e retorno no CRM, sem duplicar contatos.\n\nNão envio mensagens, não fecho acordos e não gasto dinheiro sem autorização.";
+  }
+  const replies: Record<string, string> = {
+    admin: "Entendi sua solicitação: “" + request + "”\n\nPosso organizar a análise administrativa, separar fatos confirmados de pendências e sugerir próximos passos. Para números reais, preciso consultar os indicadores do painel ou receber dados agregados. Não aprovo cadastros nem executo pagamentos por esta conversa.",
+    moderation: "Análise preliminar solicitada: “" + request + "”\n\nEnvie o texto do anúncio e os sinais observados (sem dados pessoais desnecessários). Vou separar evidências, possíveis riscos e nível de confiança. A decisão de moderação continua humana; não bloqueio nem restrinjo contas.",
+    commercial: "Análise comercial solicitada: “" + request + "”\n\nPara avaliar vendas, acompanhe visualizações → cliques → contatos → anúncios publicados → pagamentos confirmados. Compare por categoria, cidade e período. Não vou inventar métricas nem prometer faturamento.",
+    engineering: "Vamos tratar tecnicamente: “" + request + "”\n\nEnvie o erro completo e a etapa em que ocorre. Vou apontar a causa provável, propor uma correção pequena e definir um teste de regressão. Não afirmo que alterei código ou rodei testes sem evidência.",
+    partner: "Entendi a oportunidade: “" + request + "”\n\nVou estruturar a recomendação em público-alvo, benefício para o parceiro, abordagem individual, custo, risco e métrica de sucesso. Nenhuma mensagem externa, despesa ou compromisso será executado sem autorização.",
   };
-  return fallback[agent] ?? "Agente indisponível.";
+  return replies[agent] ?? "Agente indisponível no momento. Tente novamente.";
 }
 
 function json(data: unknown, status = 200, headers = corsHeadersFor(null)) {
@@ -152,7 +166,18 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => null);
-    const agent = typeof body?.agent === "string" ? body.agent : "customer";
+    const requestedAgent = typeof body?.agent === "string" ? body.agent.trim() : "customer";
+    // Compatibilidade com valores usados pelo seletor do painel administrativo.
+    const agentAliases: Record<string, string> = {
+      acquisition: "acquisition_buyers",
+      captador: "acquisition_buyers",
+      buyers: "acquisition_buyers",
+      captador_compradores: "acquisition_buyers",
+      business: "acquisition_business",
+      captador_lojas: "acquisition_business",
+      lojas: "acquisition_business",
+    };
+    const agent = agentAliases[requestedAgent] ?? requestedAgent;
     if (!allowedAgents.has(agent)) return respond({ error: "Agente solicitado inválido." }, 400);
     if (agent !== "customer") {
       const { data: profile, error: profileError } = await supabase
@@ -187,9 +212,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const model = Deno.env.get("OPENAI_MODEL") || "gpt-6.2-astra";
+    const model = Deno.env.get("OPENAI_MODEL") || "gpt-6.2-sol";
     const response = await fetch("https://api.openai.com/v1/responses", {
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
       method: "POST",
       headers: {
         "Authorization": `Bearer ${openaiKey}`,
@@ -199,7 +224,8 @@ Deno.serve(async (req: Request) => {
         model,
         instructions: agentProfiles[agent],
         input: [...safeHistory, { role: "user", content: message }],
-        max_output_tokens: 700,
+        reasoning: { effort: "low" },
+        max_output_tokens: 600,
         store: false,
       }),
     });

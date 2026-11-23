@@ -100,7 +100,7 @@ Ações financeiras, exclusões, aprovações, envio de mensagens externas e mud
           model: "gpt-realtime-2.1",
           instructions,
           output_modalities: ["audio"],
-          tools: [{type:"function",name:"get_owner_dashboard_summary",description:"Consulta indicadores agregados e atuais do painel do proprietário: usuários, anúncios, receita confirmada, parceiros fundadores, captação e tarefas dos agentes. Somente leitura.",parameters:{type:"object",properties:{},required:[],additionalProperties:false},strict:true}],
+          tools: [{type:"function",name:"get_owner_dashboard_summary",description:"Consulta indicadores agregados e atuais do painel do proprietário: usuários, anúncios, receita confirmada, parceiros fundadores, captação e tarefas dos agentes. Somente leitura.",parameters:{type:"object",properties:{},required:[],additionalProperties:false}}],
           tool_choice: "auto",
           audio: {
             input: {

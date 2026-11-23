@@ -1381,17 +1381,17 @@ footer{color:#64748b;padding-bottom:100px}
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
   const ownerFallbackHistory=[];
   async function executeOwnerVoiceCommand(transcript){
-    const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").trim();
+    const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
     if(!currentUser||document.body.dataset.isAdmin!=="true")return {handled:true,answer:"Esse comando só pode ser executado pela conta proprietária autenticada."};
     const goTo=async(id,label)=>{const target=$(id);if(!target)return {handled:true,answer:"Não encontrei a seção "+label+" nesta versão."};target.scrollIntoView({behavior:"smooth",block:"start"});return {handled:true,answer:"Pronto, meu chefe. Abri "+label+" no painel."};};
-    if(/\\b(abrir|abre|entrar|mostra|mostrar|ir para)\\b.*\\b(painel|administrativo|administracao)\\b/.test(q)){$("adminOpen")?.click();return {handled:true,answer:"Abrindo o painel administrativo e atualizando os indicadores."};}
-    if(/\\b(atualizar|atualiza|recarregar|recarrega)\\b.*\\b(painel|indicadores|dados)\\b/.test(q)){ownerVoiceSetStatus("Atualizando os dados do painel...");await loadAdminDashboard();const summary=($("adminTotals")?.innerText||"").replace(/\\s+/g," ").trim();return {handled:true,answer:summary?"Painel atualizado. "+summary.slice(0,850):"Solicitei a atualização do painel. Confira o status na tela."};}
-    if(/\\b(financeiro|pagamentos|pedidos|recebimentos)\\b/.test(q))return await goTo("adminOrders","financeiro e pagamentos");
-    if(/\\b(anuncios|classificados|estoque)\\b/.test(q))return await goTo("adminListings","anúncios recentes");
-    if(/\\b(parceiros|inscricoes|fundadores|campanha)\\b/.test(q))return await goTo("adminPartners","solicitações de parceiros");
-    if(/\\b(captacao|captadores|leads|crm)\\b/.test(q))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
-    if(/\\b(central 24|agentes|tarefas dos agentes|equipe)\\b/.test(q))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
-    if(/\\b(resumo|indicadores|numeros|metricas|como esta o giro)\\b/.test(q)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
+    if(/\b(abrir|abre|entrar|mostra|mostrar|ir para)\b.*\b(painel|administrativo|administracao)\b/.test(q)){$("adminOpen")?.click();return {handled:true,answer:"Abrindo o painel administrativo e atualizando os indicadores."};}
+    if(/\b(atualizar|atualiza|recarregar|recarrega)\b.*\b(painel|indicadores|dados)\b/.test(q)){ownerVoiceSetStatus("Atualizando os dados do painel...");await loadAdminDashboard();const summary=($("adminTotals")?.innerText||"").replace(/\s+/g," ").trim();return {handled:true,answer:summary?"Painel atualizado. "+summary.slice(0,850):"Solicitei a atualização do painel. Confira o status na tela."};}
+    if(/\b(financeiro|pagamentos|pedidos|recebimentos)\b/.test(q))return await goTo("adminOrders","financeiro e pagamentos");
+    if(/\b(anuncios|classificados|estoque)\b/.test(q))return await goTo("adminListings","anúncios recentes");
+    if(/\b(parceiros|inscricoes|fundadores|campanha)\b/.test(q))return await goTo("adminPartners","solicitações de parceiros");
+    if(/\b(captacao|captadores|leads|crm)\b/.test(q))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
+    if(/\b(central 24|agentes|tarefas dos agentes|equipe)\b/.test(q))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
+    if(/\b(resumo|indicadores|numeros|metricas|como esta o giro)\b/.test(q)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
     return {handled:false};
   }
   function ownerFallbackSpeak(message){

@@ -169,20 +169,30 @@ Deno.serve(async (req) => {
       admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at", { count: "exact" }).order("created_at", { ascending: false }).limit(100),
       admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at", { ascending: false }).limit(1000),
-      admin.from("partner_applications").select("id,user_id,business_name,business_type,contact_name,phone,city,state,status,created_at,founder_campaign_code,founder_number").eq("status", "pendente").order("created_at", { ascending: false }).limit(100),
+      admin.from("partner_applications").select("id,user_id,business_name,business_type,contact_name,phone,city,state,status,created_at,reviewed_at,founder_campaign_code,founder_number").eq("founder_campaign_code", "fundadores-500").order("created_at", { ascending: false }).limit(500),
       admin.from("partner_accounts").select("user_id", { count: "exact", head: true }).eq("status", "ativo"),
     ]);
     const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents, partnerApps, partnerAccounts].find(x => x.error);
     if (queryError?.error) throw new Error("Não foi possível carregar todos os dados administrativos: " + queryError.error.message);
+    const [founderTotal, founderPending, founderApproved, founderRejected] = await Promise.all([
+      admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500"),
+      admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500").eq("status", "pendente"),
+      admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500").eq("status", "aprovado"),
+      admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500").eq("status", "rejeitado"),
+    ]);
+    const founderError = [founderTotal, founderPending, founderApproved, founderRejected].find(x => x.error);
+    if (founderError?.error) throw new Error("Não foi possível calcular o progresso dos parceiros fundadores: " + founderError.error.message);
+    const founderCount = founderTotal.count || 0;
     const revenue = (paid.data || []).reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
     const byState = (acquisitionLeads.data || []).reduce((acc: Record<string, number>, row: any) => { const uf = String(row.state || "").trim().toUpperCase(); if (uf) acc[uf] = (acc[uf] || 0) + 1; return acc; }, {});
     return reply({
       totals: {
         users: users.count || 0, ads: ads.count || 0, pendingAds: pending.count || 0,
         paidRevenue: revenue, activeBoosts: boosts.count || 0, activeStores: stores.count || 0,
-        activePartners: partnerAccounts.count || 0, pendingPartners: partnerApps.data?.length || 0,
+        activePartners: partnerAccounts.count || 0, pendingPartners: founderPending.count || 0,
       },
       orders: orders.data || [], listings: latestAds.data || [], partnerApplications: partnerApps.data || [],
+      founderCampaign: { total: founderCount, pending: founderPending.count || 0, approved: founderApproved.count || 0, rejected: founderRejected.count || 0, remainingTarget: Math.max(0, 500 - founderCount), progressPercent: Math.min(100, Math.round(founderCount / 500 * 100)) },
       acquisition: { total: acquisitionLeads.count || 0, byState, newLeads: (acquisitionLeads.data || []).filter(x => x.status === "novo").length, leads: acquisitionLeads.data || [], events: acquisitionEvents.data || [] },
     });
   } catch (error) {

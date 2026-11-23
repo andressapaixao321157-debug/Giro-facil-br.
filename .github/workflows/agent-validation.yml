@@ -1,7 +1,7 @@
 name: Validate intelligent agents
 on:
   push:
-    branches: [main, feature/giro-agentes-inteligentes, campaign/500-parceiros-fundadores]
+    branches: [main, feature/giro-agentes-inteligentes, campaign/500-parceiros-fundadores, fix/client-payment-status-insert-mainline]
     paths:
       - "index.html"
       - "kit-parceiro-fundador.html"
@@ -14,6 +14,12 @@ on:
       - "supabase/migrations/**"
       - "scripts/smoke-test.js"
       - "package.json"
+      - ".github/workflows/agent-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/smoke-test.js"
       - ".github/workflows/agent-validation.yml"
   workflow_dispatch:
 jobs:

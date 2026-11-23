@@ -390,6 +390,62 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
+const paymentInsertMigrationPath = "supabase/migrations/20261123193000_restrict_client_payment_status_insert.sql";
+const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
+const paymentInsertGrantStart = paymentInsertMigration.indexOf("GRANT INSERT (");
+const paymentInsertGrantEnd = paymentInsertMigration.indexOf(") ON TABLE public.anuncios TO authenticated;", paymentInsertGrantStart);
+const paymentInsertColumns = paymentInsertGrantStart >= 0 && paymentInsertGrantEnd > paymentInsertGrantStart
+  ? paymentInsertMigration.slice(paymentInsertGrantStart + "GRANT INSERT (".length, paymentInsertGrantEnd).split(",").map(column => column.trim()).filter(Boolean)
+  : [];
+const paymentColumnRevoke = "REVOKE INSERT (pagamento_status) ON TABLE public.anuncios FROM authenticated;";
+const paymentTableRevoke = "REVOKE INSERT ON TABLE public.anuncios FROM authenticated;";
+check("Migração revoga INSERT de pagamento_status antes de remover INSERT amplo",
+  paymentInsertMigration.indexOf(paymentColumnRevoke) >= 0 &&
+  paymentInsertMigration.indexOf(paymentTableRevoke) > paymentInsertMigration.indexOf(paymentColumnRevoke) &&
+  paymentInsertGrantStart > paymentInsertMigration.indexOf(paymentTableRevoke));
+check("Migração concede somente as demais colunas e não libera pagamento_status",
+  paymentInsertColumns.length === 17 && !paymentInsertColumns.includes("pagamento_status"));
+check("Migração preserva INSERT confiável do service_role",
+  !paymentInsertMigration.includes("FROM service_role") &&
+  !paymentInsertMigration.includes("TO service_role"));
+const listingInsertStart = html.indexOf("const payload={usuario_id:currentUser.id");
+const listingInsertEnd = html.indexOf("db.from(\"anuncios\").insert(payload)", listingInsertStart);
+const listingInsertPayload = listingInsertStart >= 0 && listingInsertEnd > listingInsertStart ? html.slice(listingInsertStart, listingInsertEnd) : "";
+check("Cadastro atual de anúncio não envia pagamento_status pelo navegador",
+  listingInsertPayload.length > 0 && !listingInsertPayload.includes("pagamento_status"));
+check("Painel administrativo mantém pagamento_status como dado controlado no servidor",
+  admin.includes('pagamento_status: "nao_pago"') &&
+  admin.includes('candidate.pagamento_status === "pago"'));
+
+const publicListingMigrationPath = "supabase/migrations/20261123170000_restrict_public_listing_contact_fields.sql";
+const publicListingMigration = fs.existsSync(publicListingMigrationPath) ? fs.readFileSync(publicListingMigrationPath, "utf8") : "";
+const publicListingColumns = "id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at";
+const publicListingSelect = 'db.from("anuncios").select("' + publicListingColumns + '")';
+check("Listagem e detalhes públicos usam projeção explícita sem select amplo",
+  html.split(publicListingSelect).length - 1 >= 2 &&
+  !html.includes('db.from("anuncios").select("*")'));
+const publicGrantStart = publicListingMigration.indexOf("GRANT SELECT (");
+const publicGrantEnd = publicListingMigration.indexOf(") ON TABLE public.anuncios TO anon, authenticated;", publicGrantStart);
+const grantedPublicColumns = publicGrantStart >= 0 && publicGrantEnd > publicGrantStart
+  ? publicListingMigration.slice(publicGrantStart + "GRANT SELECT (".length, publicGrantEnd).split(",").map(column => column.trim()).filter(Boolean)
+  : [];
+check("Migração revoga SELECT amplo para anon e authenticated",
+  publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;"));
+const privateColumnRevoke = "REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;";
+const privateRevokePosition = publicListingMigration.indexOf(privateColumnRevoke);
+const broadRevokePosition = publicListingMigration.indexOf("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;");
+check("Migração remove concessões explícitas de campos privados antes do GRANT público",
+  privateRevokePosition >= 0 &&
+  broadRevokePosition > privateRevokePosition &&
+  publicGrantStart > broadRevokePosition);
+check("Migração não concede WhatsApp nem status interno de pagamento",
+  grantedPublicColumns.length === 16 &&
+  !grantedPublicColumns.includes("whatsapp") &&
+  !grantedPublicColumns.includes("pagamento_status"));
+check("Migração de privacidade não altera políticas RLS nem dados",
+  publicListingMigration.length > 0 &&
+  ["CREATE POLICY", "DROP POLICY", "INSERT INTO", "UPDATE public.", "DELETE FROM"].every(statement => !publicListingMigration.includes(statement)));
+
 check("Campanha 500 Parceiros Fundadores aparece na página inicial com preço e benefícios", html.includes("500 Parceiros Fundadores Giro Fácil BR") && html.includes("R$ 39 por mês") && html.includes("7 dias de turbo promocional"));
 check("Inscrição de parceiro reserva vaga na campanha por código próprio", html.includes('founder_campaign_code:"fundadores-500"') && founderMigration.includes("giro_private.giro_founder_500_seq") && founderMigration.includes("no maxvalue"));
 check("Banco impede inscrição duplicada por usuário e numeração repetida, sem limitar estoque promocional", founderMigration.includes("partner_founder_user_once") && founderMigration.includes("partner_founder_number_unique") && founderMigration.includes("no maxvalue"));

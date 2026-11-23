@@ -162,21 +162,23 @@ check("Central de agentes aparece dentro do painel administrativo",
 check("Console envia agente selecionado ao backend existente sem alterar chat público",
   html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
-check("Console interno disponibiliza os seis agentes da equipe",
+check("Console interno disponibiliza os sete agentes independentes da equipe",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&
   html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>') &&
-  html.includes('<option value="acquisition">Captador — Compradores, lojistas e anunciantes</option>'));
-check("Nomes da equipe correspondem aos seis papéis da equipe",
+  html.includes('<option value="acquisition_buyers">Captador 1 — Compradores e vendedores pessoa física</option>') &&
+  html.includes('<option value="acquisition_business">Captador 2 — Lojistas, concessionárias e anunciantes</option>'));
+check("Nomes da equipe correspondem aos sete papéis independentes",
   html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
   html.includes("Vendedor — Clientes e vendas") && html.includes("Técnico — Engenharia e testes") &&
   html.includes("Parceiro — Estratégia e crescimento") &&
-  html.includes("Captador — Compradores, lojistas e anunciantes"));
+  html.includes("Captador 1 — Compradores e vendedores pessoa física") &&
+  html.includes("Captador 2 — Lojistas, concessionárias e anunciantes"));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui atendimento público e seis perfis internos de agente",
   assistant.includes("const agentProfiles") &&
-  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition:"].every(role => assistant.includes(role)));
+  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition_buyers:", "acquisition_business:"].every(role => assistant.includes(role)));
 check("Agentes internos exigem papel admin validado no servidor",
   assistant.includes('if (agent !== "customer")') &&
   assistant.includes('profile?.papel !== "admin"') &&
@@ -192,15 +194,21 @@ check("Fallback local mantém resposta específica para cada agente",
   assistant.includes("function localAgentAnswer") &&
   assistant.includes('fallback[agent]'));
 
-check("CAPTADOR respeita LGPD e não faz spam nem prospecção em massa",
-  assistant.includes("Você é o CAPTADOR de crescimento do Giro Fácil BR.") &&
+check("Captador 1 tem missão exclusiva de pessoas físicas e respeita LGPD",
+  assistant.includes("Você é o CAPTADOR 1 do Giro Fácil BR") &&
+  assistant.includes("compradores e vendedores pessoa física") &&
   assistant.includes("Não faça spam, não envie mensagens em massa") &&
   assistant.includes("Respeite a LGPD e os termos das plataformas."));
-check("CAPTADOR não compra anúncios nem gasta dinheiro sem autorização",
+check("Captador 2 tem missão exclusiva B2B e respeita LGPD",
+  assistant.includes("Você é o CAPTADOR 2 do Giro Fácil BR") &&
+  assistant.includes("lojistas, concessionárias, revendedores") &&
+  assistant.includes("evite duplicar oportunidades do Captador 1") &&
+  assistant.includes("Não faça spam, não envie mensagens em massa"));
+check("Os dois Captadores não gastam dinheiro nem enviam mensagens sem autorização",
   assistant.includes("não compre anúncios") &&
-  assistant.includes("nem gaste dinheiro sem autorização expressa do proprietário"));
-check("Fallback do CAPTADOR não envia mensagens nem gasta dinheiro",
-  assistant.includes('acquisition: "Captador em modo básico.') &&
+  assistant.includes("nem gaste dinheiro sem autorização expressa do proprietário") &&
+  assistant.includes('acquisition_buyers: "Captador 1 em modo básico.') &&
+  assistant.includes('acquisition_business: "Captador 2 em modo básico.') &&
   assistant.includes("Não envio mensagens nem gasto dinheiro sem autorização."));
 
 check("Política global proíbe que qualquer agente bloqueie ou restrinja contas", assistant.includes("Nenhum agente pode bloquear, desbloquear, suspender, banir ou restringir contas de usuários."));

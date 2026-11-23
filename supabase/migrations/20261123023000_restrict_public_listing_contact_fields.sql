@@ -1,5 +1,7 @@
 -- Keep marketplace listings public while excluding private contact and internal payment fields.
 -- RLS policies continue to decide which rows each client role may read.
+-- Revoke any prior column-level grants on sensitive fields as defense in depth.
+REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;
 REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;
 
 GRANT SELECT (

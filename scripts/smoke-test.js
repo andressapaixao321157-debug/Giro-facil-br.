@@ -415,6 +415,19 @@ check("Comandos de voz executáveis exigem sessão e papel de administrador",htm
 check("Executor de voz contextual opera controles visíveis, campos e navegação",html.includes("Executor semântico genérico")&&html.includes("document.querySelectorAll")&&html.includes("field.dispatchEvent")&&html.includes("history.back()"));
 check("Comandos reconhecem português sem acentos e identificam os comandos financeiros",html.includes('normalize("NFD")')&&html.includes("financeiro|pagamentos|pedidos|recebimentos"));
 check("Ações sensíveis exigem confirmação na interface e não são acionadas genericamente",html.includes("const risky=")&&html.includes("confirme diretamente no botão da tela")&&html.includes("return {handled:false}"));
+check("CHEFE pergunta qual comprador antes de abrir uma conversa por voz",
+  html.includes("ownerVoicePendingChatLookup") &&
+  html.includes("De qual comprador você quer abrir a mensagem?") &&
+  html.includes('has(/\\\\b(mensagem|mensagens|conversa|conversas|chat)\\\\b/)'));
+check("Inbox identifica o comprador pelo nome do perfil e associa a conversa ao ID correto",
+  html.includes('from("perfis").select("id,nome").in("id",peerIds)') &&
+  html.includes('b.dataset.conversationId=conv.id') &&
+  html.includes('b.dataset.peerName=peerName') &&
+  html.includes('b.dataset.peerRole=counterpartRole'));
+check("CHEFE abre a conversa correspondente após o proprietário informar o nome",
+  html.includes('await openChat(target.id)') &&
+  html.includes('Abri a conversa com "+target.name'));
+
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
 
 // Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.

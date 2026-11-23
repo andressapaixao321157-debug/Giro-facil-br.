@@ -64,6 +64,13 @@ Deno.serve(async (req) => {
         }).eq("id", checkoutOrder.id);
         if (checkoutUpdateError) throw checkoutUpdateError;
 
+        if (checkoutOrder.kind === "store" && ["CHECKOUT_CANCELED", "CHECKOUT_EXPIRED"].includes(payload.event)) {
+          const nextStoreStatus = payload.event === "CHECKOUT_EXPIRED" ? "expired" : "cancelled";
+          const { error: storeCancelError } = await admin.from("store_plans").update({ status: nextStoreStatus })
+            .eq("order_id", checkoutOrder.id).eq("status", "awaiting_payment");
+          if (storeCancelError) throw storeCancelError;
+        }
+
         if (payload.event === "CHECKOUT_PAID") {
           if (checkoutOrder.kind === "single" && checkoutOrder.listing_id) {
             await admin.from("anuncios").update({ pagamento_status: "pago" })
@@ -124,6 +131,14 @@ Deno.serve(async (req) => {
     if (subscription?.id && ["SUBSCRIPTION_INACTIVATED", "SUBSCRIPTION_DELETED"].includes(payload.event)) {
       await admin.from("perfis").update({ plano_status: "pendente" })
         .eq("plano_asaas_subscription_id", subscription.id);
+      const { data: storeOrder, error: storeOrderError } = await admin.from("payment_orders")
+        .select("id").eq("asaas_subscription_id", subscription.id).eq("kind", "store").maybeSingle();
+      if (storeOrderError) throw storeOrderError;
+      if (storeOrder) {
+        const { error: storeDeactivateError } = await admin.from("store_plans").update({ status: "cancelled" })
+          .eq("order_id", storeOrder.id).eq("status", "active");
+        if (storeDeactivateError) throw storeDeactivateError;
+      }
     }
 
     const payment = payload.payment;

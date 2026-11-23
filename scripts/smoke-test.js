@@ -480,6 +480,12 @@ check("Validação do deploy interrompe a execução se faltar segredo Supabase"
   acquisitionWorkflow.includes('test -n "$SUPABASE_ACCESS_TOKEN"') &&
   acquisitionWorkflow.includes('test -n "$SUPABASE_PROJECT_REF"') &&
   acquisitionWorkflow.includes('test -n "$SUPABASE_DB_URL"'));
+check("Interface não consulta diretamente tabelas internas de webhook e legado",
+  !html.includes('.from("asaas_webhook_events")') &&
+  !html.includes(".from('asaas_webhook_events')") &&
+  !html.includes('.from("Giro rápido br")') &&
+  !html.includes(".from('Giro rápido br')"));
+
 check("Versão do arquivo de migração de cartão coincide com a migração já aplicada no Supabase",
   fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
   !fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql"));

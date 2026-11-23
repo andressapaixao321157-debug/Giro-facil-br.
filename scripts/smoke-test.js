@@ -407,6 +407,16 @@ check("Kit digital só aparece após ativação do plano fundador", html.include
 check("Webhook libera plano fundador após checkout pago e encerra assinatura cancelada", webhook.includes('checkoutOrder.kind === "store"') && webhook.includes('storeDeactivateError'));
 check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório", fs.readFileSync("docs/campanha-500-parceiros-fundadores.md", "utf8").includes("Nenhum sorteio, rifa, venda de números ou prêmio aleatório"));
 
+// CHEFE: comandos de voz do proprietário — testes de regressão.
+check("Assistente de voz do proprietário possui controles de iniciar e encerrar",hasId("ownerVoiceStart")&&hasId("ownerVoiceStop")&&hasId("ownerVoiceStatus")&&hasId("ownerVoiceTranscript"));
+check("Modo gratuito usa reconhecimento e síntese de voz pt-BR do navegador",html.includes("window.SpeechRecognition||window.webkitSpeechRecognition")&&html.includes("new SpeechSynthesisUtterance(message)")&&html.includes('utterance.lang="pt-BR"'));
+check("Modo gratuito interrompe reconhecimento e fala ao encerrar",html.includes("ownerFallbackRecognition.abort()")&&html.includes("window.speechSynthesis.cancel()"));
+check("Comandos de voz executáveis exigem sessão e papel de administrador",html.includes("async function executeOwnerVoiceCommand")&&html.includes('document.body.dataset.isAdmin!=="true"'));
+check("Comandos de voz limitam-se à navegação e consultas reais do painel",["adminOrders","adminListings","adminPartners","adminAcquisitionLeads","ownerAgentControl"].every(id=>html.includes('goTo("'+id+'"'))&&html.includes('db.functions.invoke("admin-dashboard",{body:{}})'));
+check("Comandos reconhecem português sem acentos e usam limites de palavra",html.includes('normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")')&&html.includes('/\\\\b(financeiro|pagamentos|pedidos|recebimentos)\\\\b/'));
+check("Comandos por voz não executam pagamentos, exclusões ou moderação automaticamente",!html.includes('executeOwnerVoiceCommand(transcript).then')&&html.includes("return {handled:false}")&&html.includes('Nenhuma alteração foi executada'));
+check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

@@ -188,7 +188,7 @@ check("Agentes internos exigem papel admin validado no servidor",
   assistant.includes('profile?.papel !== "admin"') &&
   assistant.includes('return respond({ error: "Este agente está disponível somente para administradores autorizados." }, 403)'));
 check("Agente padrão mantém compatibilidade com o chat atual",
-  assistant.includes('body?.agent === "string" ? body.agent : "customer"') &&
+  assistant.includes('body?.agent === "string" ? body.agent.trim() : "customer"') &&
   html.includes('db.functions.invoke("giro-assistant"'));
 check("Agentes internos são consultivos e não executam ações administrativas",
   assistant.includes("Você é o agente de análise de segurança e moderação") &&
@@ -196,7 +196,7 @@ check("Agentes internos são consultivos e não executam ações administrativas
   assistant.includes("Você não tem acesso para editar repositórios"));
 check("Fallback local mantém resposta específica para cada agente",
   assistant.includes("function localAgentAnswer") &&
-  assistant.includes('fallback[agent]'));
+  assistant.includes('if (agent === "acquisition_buyers")') && assistant.includes("Entendi seu pedido"));
 
 check("Captador 1 tem missão exclusiva de pessoas físicas e respeita LGPD",
   assistant.includes("Você é o CAPTADOR 1 do Giro Fácil BR") &&
@@ -211,8 +211,7 @@ check("Captador 2 tem missão exclusiva B2B e respeita LGPD",
 check("Os dois Captadores não gastam dinheiro nem enviam mensagens sem autorização",
   assistant.includes("não compre anúncios") &&
   assistant.includes("nem gaste dinheiro sem autorização expressa do proprietário") &&
-  assistant.includes('acquisition_buyers: "Captador 1 em modo básico.') &&
-  assistant.includes('acquisition_business: "Captador 2 em modo básico.') &&
+  assistant.includes('if (agent === "acquisition_business")') &&
   assistant.includes("Não envio mensagens nem gasto dinheiro sem autorização."));
 
 check("Política global proíbe que qualquer agente bloqueie ou restrinja contas", assistant.includes("Nenhum agente pode bloquear, desbloquear, suspender, banir ou restringir contas de usuários."));

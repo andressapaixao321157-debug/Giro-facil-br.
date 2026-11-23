@@ -3,16 +3,22 @@ on:
   push:
     branches: [main, feature/giro-agentes-inteligentes, feature/privacy-hardening]
     paths:
+      - "index.html"
       - "supabase/functions/giro-assistant/**"
       - "supabase/functions/admin-dashboard/**"
+      - "supabase/migrations/**"
+      - ".github/workflows/deploy-acquisition.yml"
       - "scripts/smoke-test.js"
       - "package.json"
       - ".github/workflows/agent-validation.yml"
   pull_request:
     branches: [main]
     paths:
+      - "index.html"
       - "supabase/functions/giro-assistant/**"
       - "supabase/functions/admin-dashboard/**"
+      - "supabase/migrations/**"
+      - ".github/workflows/deploy-acquisition.yml"
       - "scripts/smoke-test.js"
       - "package.json"
       - ".github/workflows/agent-validation.yml"

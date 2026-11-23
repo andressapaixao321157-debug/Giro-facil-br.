@@ -387,15 +387,19 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
 
+
 const publicListingMigrationPath = "supabase/migrations/20261123170000_restrict_public_listing_contact_fields.sql";
 const publicListingMigration = fs.existsSync(publicListingMigrationPath) ? fs.readFileSync(publicListingMigrationPath, "utf8") : "";
 const publicListingColumns = "id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at";
 const publicListingSelect = 'db.from("anuncios").select("' + publicListingColumns + '")';
 check("Listagem e detalhes públicos usam projeção explícita sem select amplo",
   html.split(publicListingSelect).length - 1 >= 2 &&
-  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)/.test(html));
-const publicGrantMatch = publicListingMigration.match(/GRANT SELECT \\(([\\s\\S]*?)\\) ON TABLE public\\.anuncios TO anon, authenticated;/);
-const grantedPublicColumns = publicGrantMatch ? publicGrantMatch[1].split(",").map(column => column.trim()).filter(Boolean) : [];
+  !html.includes('db.from("anuncios").select("*")'));
+const publicGrantStart = publicListingMigration.indexOf("GRANT SELECT (");
+const publicGrantEnd = publicListingMigration.indexOf(") ON TABLE public.anuncios TO anon, authenticated;", publicGrantStart);
+const grantedPublicColumns = publicGrantStart >= 0 && publicGrantEnd > publicGrantStart
+  ? publicListingMigration.slice(publicGrantStart + "GRANT SELECT (".length, publicGrantEnd).split(",").map(column => column.trim()).filter(Boolean)
+  : [];
 check("Migração revoga SELECT amplo para anon e authenticated",
   publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;"));
 check("Migração não concede WhatsApp nem status interno de pagamento",
@@ -404,7 +408,7 @@ check("Migração não concede WhatsApp nem status interno de pagamento",
   !grantedPublicColumns.includes("pagamento_status"));
 check("Migração de privacidade não altera políticas RLS nem dados",
   publicListingMigration.length > 0 &&
-  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\\.|DELETE FROM/i.test(publicListingMigration));
+  ["CREATE POLICY", "DROP POLICY", "INSERT INTO", "UPDATE public.", "DELETE FROM"].every(statement => !publicListingMigration.includes(statement)));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

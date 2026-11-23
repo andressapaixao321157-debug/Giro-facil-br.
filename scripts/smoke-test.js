@@ -378,6 +378,14 @@ check("Migração habilita somente conversas e mensagens na publicação Realtim
   fs.existsSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql") &&
   fs.readFileSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql","utf8").includes("alter publication supabase_realtime add table public.mensagens") &&
   fs.readFileSync("supabase/migrations/20261122155404_enable_chat_realtime_publication.sql","utf8").includes("alter publication supabase_realtime add table public.conversas"));
+check("Asaas cria checkout com autenticação e tipo de pedido válidos",
+  fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes('const headers = { "Content-Type": "application/json", access_token: apiKey };') &&
+  fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind, billing_type: billingType") &&
+  !fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind: orderKind"));
+check("Banco aceita cartão para planos recorrentes no Asaas",
+  fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

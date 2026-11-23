@@ -1,0 +1,6 @@
+-- Allow recurring monthly/store checkout orders to record card billing type.
+alter table public.payment_orders
+  drop constraint if exists payment_orders_billing_type_check;
+alter table public.payment_orders
+  add constraint payment_orders_billing_type_check
+  check (billing_type = any (array['PIX'::text, 'BOLETO'::text, 'CREDIT_CARD'::text]));

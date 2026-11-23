@@ -436,6 +436,19 @@ check("Migração revoga concessões específicas e amplas antes de liberar as c
   revokeTablePosition > revokeColumnPosition &&
   publicGrantPosition > revokeTablePosition &&
   publicListingMigration.slice(publicGrantPosition).includes(") ON TABLE public.anuncios TO anon, authenticated;"));
+const debugKeyCachePosition = assistantWorkflow.indexOf("- name: Restore persistent Android debug signing key");
+const debugKeyEnsurePosition = assistantWorkflow.indexOf("- name: Ensure stable Android debug signing key");
+const apkBuildPosition = assistantWorkflow.indexOf("- name: Build test APK without publishing");
+check("Build Android restaura ou cria uma chave debug persistente antes da compilação",
+  debugKeyCachePosition >= 0 &&
+  debugKeyEnsurePosition > debugKeyCachePosition &&
+  apkBuildPosition > debugKeyEnsurePosition &&
+  assistantWorkflow.includes('path: ~/.android/debug.keystore') &&
+  assistantWorkflow.includes("keytool -genkeypair") &&
+  assistantWorkflow.includes("-alias androiddebugkey"));
+check("Validação do APK imprime o certificado e confere o identificador do aplicativo",
+  assistantWorkflow.includes('apksigner" verify --verbose --print-certs "$APK"') &&
+  assistantWorkflow.includes("package: name='br.com.girofacil.app'"));
 const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
 const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
 check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",

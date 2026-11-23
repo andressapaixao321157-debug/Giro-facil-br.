@@ -386,6 +386,34 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
+
+const paymentInsertMigrationPath = "supabase/migrations/20261123193000_restrict_client_payment_status_insert.sql";
+const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
+const paymentInsertGrantStart = paymentInsertMigration.indexOf("GRANT INSERT (");
+const paymentInsertGrantEnd = paymentInsertMigration.indexOf(") ON TABLE public.anuncios TO authenticated;", paymentInsertGrantStart);
+const paymentInsertColumns = paymentInsertGrantStart >= 0 && paymentInsertGrantEnd > paymentInsertGrantStart
+  ? paymentInsertMigration.slice(paymentInsertGrantStart + "GRANT INSERT (".length, paymentInsertGrantEnd).split(",").map(column => column.trim()).filter(Boolean)
+  : [];
+const paymentColumnRevoke = "REVOKE INSERT (pagamento_status) ON TABLE public.anuncios FROM authenticated;";
+const paymentTableRevoke = "REVOKE INSERT ON TABLE public.anuncios FROM authenticated;";
+check("Migração revoga INSERT de pagamento_status antes de remover INSERT amplo",
+  paymentInsertMigration.indexOf(paymentColumnRevoke) >= 0 &&
+  paymentInsertMigration.indexOf(paymentTableRevoke) > paymentInsertMigration.indexOf(paymentColumnRevoke) &&
+  paymentInsertGrantStart > paymentInsertMigration.indexOf(paymentTableRevoke));
+check("Migração concede somente as demais colunas e não libera pagamento_status",
+  paymentInsertColumns.length === 17 && !paymentInsertColumns.includes("pagamento_status"));
+check("Migração preserva INSERT confiável do service_role",
+  !paymentInsertMigration.includes("FROM service_role") &&
+  !paymentInsertMigration.includes("TO service_role"));
+const listingInsertStart = html.indexOf("const payload={usuario_id:currentUser.id");
+const listingInsertEnd = html.indexOf("db.from(\"anuncios\").insert(payload)", listingInsertStart);
+const listingInsertPayload = listingInsertStart >= 0 && listingInsertEnd > listingInsertStart ? html.slice(listingInsertStart, listingInsertEnd) : "";
+check("Cadastro atual de anúncio não envia pagamento_status pelo navegador",
+  listingInsertPayload.length > 0 && !listingInsertPayload.includes("pagamento_status"));
+check("Painel administrativo mantém pagamento_status como dado controlado no servidor",
+  admin.includes('pagamento_status: "nao_pago"') &&
+  admin.includes('candidate.pagamento_status === "pago"'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

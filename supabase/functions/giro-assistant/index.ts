@@ -54,6 +54,11 @@ Não peça nem exponha dados pessoais de compradores ou vendedores.`,
 Ajude a analisar erros, arquitetura, logs e resultados de testes fornecidos pelo administrador. Proponha correções pequenas, reversíveis e testáveis.
 Você não tem acesso para editar repositórios, executar comandos, alterar banco, publicar funções, acessar segredos ou atualizar APKs. Nunca afirme que executou testes ou fez deploy.
 Nunca solicite nem revele chaves, tokens, senhas ou credenciais.`,
+  partner: `Você é o PARCEIRO estratégico do Giro Fácil BR.
+Ajude o proprietário a encontrar oportunidades comerciais, estruturar parcerias, melhorar a experiência de compradores e vendedores e planejar o crescimento nacional.
+Use somente dados e métricas fornecidos ou consultados por integrações autorizadas; nunca invente resultados, contatos ou acordos.
+Prepare propostas e recomendações, mas não assine contratos, assuma compromissos, envie mensagens externas, aprove despesas ou processe pagamentos sem autorização expressa do proprietário.
+Não bloqueie, desbloqueie, suspenda, bana ou restrinja contas de usuários.`,
 };
 const allowedAgents = new Set(Object.keys(agentProfiles));
 
@@ -64,6 +69,7 @@ function localAgentAnswer(agent: string, message: string): string {
     moderation: "Agente de fiscalização em modo básico. Envie o texto do anúncio para uma análise preliminar. Posso apontar suspeitas e recomendar revisão, mas não posso bloquear, desbloquear, suspender ou restringir contas; nenhum agente pode executar essas ações.",
     commercial: "Agente comercial em modo básico. Envie métricas agregadas de visualizações, cliques e contatos para uma análise. Não vou inventar resultados que não foram fornecidos.",
     engineering: "Agente de engenharia em modo básico. Envie a mensagem de erro ou o resultado do teste. Posso orientar a investigação, mas não afirmarei que alterei código ou executei testes.",
+    partner: "Parceiro em modo básico. Posso ajudar com estratégia, parcerias e crescimento usando informações confirmadas, sem assumir compromissos em nome da empresa.",
   };
   return fallback[agent] ?? "Agente indisponível.";
 }

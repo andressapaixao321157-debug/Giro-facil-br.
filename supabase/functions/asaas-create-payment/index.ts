@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
     const singlePrice = Number(Deno.env.get("ASAAS_SINGLE_AD_PRICE") || 10);
     const monthlyPrice = Number(Deno.env.get("ASAAS_MONTHLY_PLAN_PRICE") || 59);
     if (!apiKey) return json({ error: "Integração Asaas ainda não configurada no servidor." }, 503);
+    const headers = { "Content-Type": "application/json", access_token: apiKey };
 
     const auth = req.headers.get("Authorization");
     if (!auth) return json({ error: "Faça login para continuar." }, 401);
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: order, error: orderError } = await admin.from("payment_orders").insert({
-      user_id: user.id, listing_id: listingId, kind: orderKind, billing_type: billingType,
+      user_id: user.id, listing_id: listingId, kind, billing_type: billingType,
       amount, status: "CREATING", asaas_customer_id: null,
     }).select("id").single();
     if (orderError || !order) throw new Error("Não foi possível registrar o pedido de pagamento.");

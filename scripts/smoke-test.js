@@ -428,6 +428,14 @@ check("Migração modifica somente SELECT e preserva privilégios de escrita exi
   privacyPrivilegeStatements.every(line => /^(GRANT|REVOKE)\s+SELECT\b/i.test(line)) &&
   !privacyPrivilegeStatements.some(line => /\b(INSERT|UPDATE|DELETE|ALL)\b/i.test(line)) &&
   publicListingMigration.includes(") ON TABLE public.anuncios TO anon, authenticated;"));
+const revokeColumnPosition = publicListingMigration.indexOf("REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;");
+const revokeTablePosition = publicListingMigration.indexOf("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;");
+const publicGrantPosition = publicListingMigration.indexOf("GRANT SELECT (");
+check("Migração revoga concessões específicas e amplas antes de liberar as colunas públicas",
+  revokeColumnPosition >= 0 &&
+  revokeTablePosition > revokeColumnPosition &&
+  publicGrantPosition > revokeTablePosition &&
+  publicListingMigration.slice(publicGrantPosition).includes(") ON TABLE public.anuncios TO anon, authenticated;"));
 const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
 const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
 check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",

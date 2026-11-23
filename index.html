@@ -1396,7 +1396,7 @@ footer{color:#64748b;padding-bottom:100px}
     if(has(/\\b(favoritos|favorito)\\b/))return clickNav("navFavorites","seus favoritos");
     if(has(/\\b(mensagens|message|conversas|chat)\\b/))return clickNav("navMessages","suas mensagens");
     if(has(/\\b(minha conta|minha area|conta|perfil)\\b/))return clickNav("navAccount","sua conta");
-    if(has(/\\b(planos|pagamentos|minhas cobrancas|assinatura)\\b/)&&!has(/\\b(painel|administrativo|financeiro do admin)\\b/)){
+    if(has(/\\b(planos|minhas cobrancas|assinatura)\\b/)){
       if(!currentUser){openAuth();return {handled:true,answer:"Entre na sua conta para abrir planos e pagamentos."};}
       $("plansOpen")?.click();return answer("Planos e pagamentos");
     }
@@ -1409,7 +1409,7 @@ footer{color:#64748b;padding-bottom:100px}
     const goTo=async(id,label)=>{const target=$(id);if(!target)return {handled:true,answer:"Não encontrei a seção "+label+" nesta versão."};target.scrollIntoView({behavior:"smooth",block:"start"});return {handled:true,answer:"Pronto, meu chefe. Abri "+label+" no painel."};};
     if(has(/\\b(painel|administrativo|administracao)\\b/)&&openIntent){$("adminOpen")?.click();return {handled:true,answer:"Abrindo o painel administrativo e atualizando os indicadores."};}
     if(has(/\\b(atualizar|atualiza|recarregar|recarrega)\\b.*\\b(painel|indicadores|dados)\\b/)){ownerVoiceSetStatus("Atualizando os dados do painel...");await loadAdminDashboard();const summary=($("adminTotals")?.innerText||"").replace(/\\s+/g," ").trim();return {handled:true,answer:summary?"Painel atualizado. "+summary.slice(0,850):"Solicitei a atualização do painel. Confira o status na tela."};}
-    if(has(/\\b(financeiro|pedidos|recebimentos)\\b/))return await goTo("adminOrders","financeiro e pagamentos");
+    if(has(/\\b(financeiro|pagamentos|pedidos|recebimentos)\\b/))return await goTo("adminOrders","financeiro e pagamentos");
     if(has(/\\b(anuncios|classificados|estoque)\\b/))return await goTo("adminListings","anúncios recentes");
     if(has(/\\b(parceiros|inscricoes|fundadores|campanha)\\b/))return await goTo("adminPartners","solicitações de parceiros");
     if(has(/\\b(captacao|captadores|leads|crm)\\b/))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
@@ -1542,6 +1542,7 @@ footer{color:#64748b;padding-bottom:100px}
             ownerVoiceAddLine("Você",item.transcript);
             executeOwnerVoiceCommand(item.transcript).then(command=>{
               if(command?.handled&&ownerVoiceChannel?.readyState==="open"){
+                ownerVoiceChannel.send(JSON.stringify({type:"response.cancel"}));
                 ownerVoiceAddLine("CHEFE",command.answer);
                 ownerVoiceChannel.send(JSON.stringify({type:"response.create",response:{instructions:"Responda em português brasileiro, por áudio, dizendo exatamente: "+command.answer+" Não acrescente explicações nem diga que não executou."}}));
               }

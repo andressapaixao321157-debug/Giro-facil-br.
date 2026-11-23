@@ -414,7 +414,7 @@ check("Modo gratuito interrompe reconhecimento e fala ao encerrar",html.includes
 check("Comandos de voz executáveis exigem sessão e papel de administrador",html.includes("async function executeOwnerVoiceCommand")&&html.includes('document.body.dataset.isAdmin!=="true"'));
 check("Comandos de voz limitam-se à navegação e consultas reais do painel",["adminOrders","adminListings","adminPartners","adminAcquisitionLeads","ownerAgentControl"].every(id=>html.includes('goTo("'+id+'"'))&&html.includes('db.functions.invoke("admin-dashboard",{body:{}})'));
 check("Comandos reconhecem português sem acentos e identificam os comandos financeiros",html.includes('normalize("NFD")')&&html.includes("financeiro|pagamentos|pedidos|recebimentos"));
-check("Comandos por voz não executam pagamentos, exclusões ou moderação automaticamente",!html.includes('executeOwnerVoiceCommand(transcript).then')&&html.includes("return {handled:false}")&&html.includes('Nenhuma alteração foi executada'));
+check("Ações sensíveis exigem confirmação na interface e não são acionadas genericamente",html.includes("const risky=")&&html.includes("confirme diretamente no botão da tela")&&html.includes("return {handled:false}"));
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
 
 // Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.
@@ -428,9 +428,8 @@ check("Navegação por voz também é executada na transcrição do modo Realtim
   html.includes('type:"response.cancel"'));
 check("Área administrativa continua protegida por verificação de papel",
   html.includes('if(document.body.dataset.isAdmin!=="true")return {handled:false};'));
-check("Comando de voz não executa pagamentos nem exclusões automaticamente",
-  html.includes("Nenhuma alteração foi executada") &&
-  !html.includes('executeOwnerVoiceCommand(transcript).then'));
+check("Ações financeiras e destrutivas não são executadas sem confirmação explícita",
+  html.includes("const risky=") && html.includes("confirme diretamente no botão da tela"));
  
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

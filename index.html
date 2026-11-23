@@ -1632,7 +1632,7 @@ footer{color:#64748b;padding-bottom:100px}
   const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
   async function trackAcqEvent(eventName,listingId=null){
     if(!db)return;
-    const regionState=$("locationFilter")?.value||$("acqState")?.value||null;
+    const regionState=eventName==="partner_lead"?$("acqState")?.value||null:eventName==="listing_created"?$("state")?.value||null:$("locationFilter")?.value||null;
     try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,region_state:regionState,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';

@@ -162,19 +162,19 @@ check("Central de agentes aparece dentro do painel administrativo",
 check("Console envia agente selecionado ao backend existente sem alterar chat público",
   html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
-check("Console interno disponibiliza os cinco agentes da equipe",
+check("Console interno disponibiliza os seis agentes da equipe",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&
   html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>') &&
   html.includes('<option value="acquisition">Captador — Compradores, lojistas e anunciantes</option>'));
-check("Nomes da equipe correspondem aos cinco papéis definidos pelo proprietário",
+check("Nomes da equipe correspondem aos seis papéis da equipe",
   html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
   html.includes("Vendedor — Clientes e vendas") && html.includes("Técnico — Engenharia e testes") &&
   html.includes("Parceiro — Estratégia e crescimento") &&
   html.includes("Captador — Compradores, lojistas e anunciantes"));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
-check("Assistente possui cinco perfis de agente definidos",
+check("Assistente possui atendimento público e seis perfis internos de agente",
   assistant.includes("const agentProfiles") &&
   ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition:"].every(role => assistant.includes(role)));
 check("Agentes internos exigem papel admin validado no servidor",
@@ -191,6 +191,17 @@ check("Agentes internos são consultivos e não executam ações administrativas
 check("Fallback local mantém resposta específica para cada agente",
   assistant.includes("function localAgentAnswer") &&
   assistant.includes('fallback[agent]'));
+
+check("CAPTADOR respeita LGPD e não faz spam nem prospecção em massa",
+  assistant.includes("Você é o CAPTADOR de crescimento do Giro Fácil BR.") &&
+  assistant.includes("Não faça spam, não envie mensagens em massa") &&
+  assistant.includes("Respeite a LGPD e os termos das plataformas."));
+check("CAPTADOR não compra anúncios nem gasta dinheiro sem autorização",
+  assistant.includes("não compre anúncios") &&
+  assistant.includes("nem gaste dinheiro sem autorização expressa do proprietário"));
+check("Fallback do CAPTADOR não envia mensagens nem gasta dinheiro",
+  assistant.includes('acquisition: "Captador em modo básico.') &&
+  assistant.includes("Não envio mensagens nem gasto dinheiro sem autorização."));
 
 check("Política global proíbe que qualquer agente bloqueie ou restrinja contas", assistant.includes("Nenhum agente pode bloquear, desbloquear, suspender, banir ou restringir contas de usuários."));
 check("CHEFE administrativo não tem autonomia para bloquear contas", assistant.includes("Nenhum robô, inclusive o CHEFE, pode autorizar bloqueio de conta."));

@@ -422,6 +422,12 @@ check("Migração de privacidade concede exatamente as colunas públicas necess�
 check("Migração de privacidade preserva RLS e não altera dados ou outras permissões",
   publicListingMigration.length > 0 &&
   !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
+const privacyPrivilegeStatements = publicListingMigration.split(/\\r?\\n/).map(line => line.trim()).filter(line => /^(GRANT|REVOKE)\\s/i.test(line));
+check("Migração modifica somente SELECT e preserva privilégios de escrita existentes",
+  privacyPrivilegeStatements.length === 3 &&
+  privacyPrivilegeStatements.every(line => /^(GRANT|REVOKE)\\s+SELECT\\b/i.test(line)) &&
+  !privacyPrivilegeStatements.some(line => /\\b(INSERT|UPDATE|DELETE|ALL)\\b/i.test(line)) &&
+  publicListingMigration.includes(") ON TABLE public.anuncios TO anon, authenticated;"));
 const acquisitionDeployStep = acquisitionWorkflow.split("- name: Apply database migrations and deploy CRM function")[1]?.split("\n      - name:")[0] || "";
 const acquisitionDeployEnv = acquisitionDeployStep.split("run:")[0] || "";
 check("Deploy do CRM injeta SUPABASE_DB_URL no próprio passo que executa db push",

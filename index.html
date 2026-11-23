@@ -1632,7 +1632,8 @@ footer{color:#64748b;padding-bottom:100px}
   const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
   async function trackAcqEvent(eventName,listingId=null){
     if(!db)return;
-    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
+    const regionState=$("locationFilter")?.value||$("acqState")?.value||null;
+    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,region_state:regionState,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';
   ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});

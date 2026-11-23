@@ -419,7 +419,7 @@ check("Resposta de contingência mantém contexto recente e não repete saudaç�
 
 // Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.
 check("Comando por voz abre Meus classificados pela ação existente do botão",
-  html.includes('has(/\\\\b(meus? anuncios|meus? classificados|meu estoque|meus produtos)\\\\b/)') &&
+  html.includes('has(/\\b(meus? anuncios|meus? classificados|meu estoque|meus produtos)\\b/)') &&
   html.includes('$("myListingsOpen")?.click()'));
 check("Comandos por voz reconhecem as seis áreas da navegação inferior",
   ["navHome","navSearch","navAnnounce","navFavorites","navMessages","navAccount"].every(id=>html.includes('clickNav("'+id+'"')));

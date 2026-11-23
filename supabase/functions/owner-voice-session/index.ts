@@ -117,7 +117,7 @@ Ações financeiras, exclusões, aprovações, envio de mensagens externas e mud
 
     const result = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
-      console.error("OpenAI Realtime credential error", upstream.status, result?.error?.code ?? "unknown");
+      console.error("OpenAI Realtime credential error", upstream.status, result?.error?.code ?? "unknown", result?.error?.param ?? "no_param", result?.error?.message ?? "no_message");
       return reply({
         error: upstream.status === 401
           ? "A chave de IA do servidor precisa ser revisada."

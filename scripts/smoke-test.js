@@ -276,6 +276,20 @@ check("Configuração exige JWT para assistente e painel",
 check("Formulário nacional de captação e consentimento LGPD", hasId("acquisitionPanel") && hasId("acqConsent") && hasId("acqSubmit"));
 check("Painel administrativo mostra métricas e lista de interessados", hasId("adminAcquisitionMetrics") && hasId("adminAcquisitionLeads") && html.includes("data-acq-status"));
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
+const acqTrackingStart=html.indexOf("async function trackAcqEvent(");
+const acqTrackingEnd=html.indexOf('\n  $("acqState")',acqTrackingStart);
+const acqTracking=acqTrackingStart>=0&&acqTrackingEnd>acqTrackingStart?html.slice(acqTrackingStart,acqTrackingEnd):"";
+check("Eventos de aquisição registram UF somente quando há contexto explícito e válido",
+  acqTracking.includes("region_state:validRegionState") &&
+  acqTracking.includes('String(regionState||$("locationFilter")?.value||"").trim().toUpperCase()') &&
+  acqTracking.includes("/^[A-Z]{2}$/.test(candidateState)"));
+check("Eventos de contato, lead e anúncio usam UF do próprio contexto",
+  html.includes('data-listing-state="${escapeHtml(item.estado||"")}"') &&
+  html.includes('trackAcqEvent("listing_view",b.dataset.listingId,b.dataset.listingState)') &&
+  html.includes('trackAcqEvent("partner_lead",null,payload.state)') &&
+  html.includes('trackAcqEvent("listing_created",createdListing.id,$("state").value)'));
+check("Rastreamento regional não solicita GPS nem localização precisa",
+  acqTracking.length>0 && !acqTracking.includes("navigator.geolocation") && !acqTracking.includes("getCurrentPosition"));
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 const listingStatusMigrationPath = "supabase/migrations/20261120140058_listing_analytics_and_advertiser_dashboard.sql";

@@ -1,12 +1,20 @@
 name: Validate intelligent agents
 on:
   push:
-    branches: [main, feature/giro-agentes-inteligentes]
+    branches: [main, feature/giro-agentes-inteligentes, fix/acquisition-region-context]
     paths:
       - "supabase/functions/giro-assistant/**"
       - "supabase/functions/admin-dashboard/**"
       - "scripts/smoke-test.js"
       - "package.json"
+      - ".github/workflows/agent-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "scripts/smoke-test.js"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/agent-validation.yml"
   workflow_dispatch:
 jobs:

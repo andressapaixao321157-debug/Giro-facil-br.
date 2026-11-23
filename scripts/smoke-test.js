@@ -162,18 +162,19 @@ check("Central de agentes aparece dentro do painel administrativo",
 check("Console envia agente selecionado ao backend existente sem alterar chat público",
   html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
-check("Console interno limita opções aos quatro agentes administrativos",
+check("Console interno disponibiliza os cinco agentes da equipe",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
-  html.includes('<option value="commercial">') && html.includes('<option value="engineering">'));
-check("Apelidos da equipe aparecem na central sem alterar os identificadores internos",
-  html.includes("Chefe — Administração") && html.includes("Léo — Fiscalização de anúncios") &&
-  html.includes("Pri — Inteligência comercial") && html.includes("Téo — Engenharia e testes") &&
-  html.includes("Sam será o especialista de atendimento"));
+  html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&
+  html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>'));
+check("Nomes da equipe correspondem aos cinco papéis definidos pelo proprietário",
+  html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
+  html.includes("Vendedor — Clientes e vendas") && html.includes("Técnico — Engenharia e testes") &&
+  html.includes("Parceiro — Estratégia e crescimento"));
 
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui cinco perfis de agente definidos",
   assistant.includes("const agentProfiles") &&
-  ["customer:", "admin:", "moderation:", "commercial:", "engineering:"].every(role => assistant.includes(role)));
+  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:"].every(role => assistant.includes(role)));
 check("Agentes internos exigem papel admin validado no servidor",
   assistant.includes('if (agent !== "customer")') &&
   assistant.includes('profile?.papel !== "admin"') &&

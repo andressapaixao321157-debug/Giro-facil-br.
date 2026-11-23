@@ -41,6 +41,11 @@ Deno.serve(async (req) => {
     if (profileError) throw profileError;
     const isAdmin = profile?.papel === "admin";
     const body = await req.json().catch(() => ({}));
+    // Proteção explícita: nenhum agente ou endpoint automático pode bloquear contas.
+    const forbiddenAccountControlActions = new Set(["block_user", "unblock_user", "suspend_user", "ban_user", "restrict_user"]);
+    if (forbiddenAccountControlActions.has(String(body?.action ?? ""))) {
+      return reply({ error: "Bloqueio e desbloqueio de contas não podem ser executados por robôs ou por este serviço." }, 403);
+    }
 
     if (body?.action === "bulk_create_listings") {
       const { data: partner, error: partnerError } = await admin.from("partner_accounts")

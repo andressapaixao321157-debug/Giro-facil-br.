@@ -1015,7 +1015,9 @@ footer{color:#64748b;padding-bottom:100px}
   $("yearNow").textContent = new Date().getFullYear();
 
   function status(id, message, type="") {
-    const el=$(id); el.textContent=message; el.className="status"+(type?" "+type:""); el.classList.remove("hidden");
+    const el=$(id);
+    if(!el){console.warn("Área de status ausente:",id,message);return;}
+    el.textContent=message; el.className="status"+(type?" "+type:""); el.classList.remove("hidden");
   }
   function configured(){
     return SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COLE_AQUI") && SUPABASE_ANON_KEY.length>30 && !SUPABASE_ANON_KEY.includes("COLE_AQUI");
@@ -1246,8 +1248,12 @@ footer{color:#64748b;padding-bottom:100px}
     if(!db||!currentUser)return;
     $("adminRefresh").disabled=true;
     try{
+      const requiredAdminIds=["adminStatus","adminRefresh","adminFounderStats","adminFounderProgress","adminFounderList","adminTotals","adminOrders","adminListings","adminPartners","adminAcquisitionMetrics","adminAcquisitionLeads"];
+      const missingAdminIds=requiredAdminIds.filter(id=>!$(id));
+      if(missingAdminIds.length)throw new Error("Painel incompleto nesta versão. Atualize a página para carregar: "+missingAdminIds.join(", "));
       const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
-      if(error)throw error;if(data.error)throw new Error(data.error);
+      if(error)throw error;if(data?.error)throw new Error(data.error);
+      if(!data||!data.totals||!Array.isArray(data.orders)||!Array.isArray(data.listings))throw new Error("O servidor retornou dados incompletos para o painel. Toque em Atualizar painel novamente.");
       const t=data.totals;
       const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores],["Parceiros ativos",t.activePartners],["Solicitações de parceria",t.pendingPartners]];
       const campaign=data.founderCampaign||{};const founderApps=data.partnerApplications||[];let activeFounderFilter="todos";
@@ -1643,9 +1649,11 @@ footer{color:#64748b;padding-bottom:100px}
       input.focus();
     }
   }
+  let adminAgentHistory=[];
   async function sendAdminAgentMessage(){
     const input=$("adminAgentInput"),button=$("adminAgentSend"),output=$("adminAgentOutput");
-    const message=input.value.trim(),agent=$("adminAgentSelect").value;
+    if(!input||!button||!output){console.error("Central de agentes incompleta no HTML.");return;}
+    const message=input.value.trim(),agent=$("adminAgentSelect")?.value||"admin";
     if(!message){output.textContent="Escreva o que deseja analisar.";output.classList.remove("hidden");return;}
     if(!db||!currentUser){output.textContent="Entre na conta administradora para usar os agentes.";output.classList.remove("hidden");return;}
     if(button.disabled)return;
@@ -1653,11 +1661,12 @@ footer{color:#64748b;padding-bottom:100px}
     output.textContent="O agente está analisando sua solicitação...";
     output.classList.remove("hidden");
     try{
-      const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}});
+      const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent,message,history:adminAgentHistory}});
       if(error)throw new Error(error.message||"Falha ao chamar o agente.");
       if(data?.error)throw new Error(data.error);
       if(typeof data?.answer!=="string"||!data.answer.trim())throw new Error("O agente não retornou uma resposta.");
-      output.textContent=data.answer;
+      output.textContent=data.answer+(data.mode==="ajuda-basica"?"\n\nAviso: atendimento básico ativo; a IA avançada não está conectada.":"");
+      adminAgentHistory=[...adminAgentHistory,{role:"user",content:message},{role:"assistant",content:data.answer}].slice(-8);
       input.value="";
     }catch(err){
       output.textContent="Não foi possível consultar o agente: "+(err?.message||"erro desconhecido")+". Tente novamente.";

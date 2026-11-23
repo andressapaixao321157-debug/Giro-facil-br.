@@ -391,9 +391,20 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.readFileSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
 
-check("Consultas públicas da vitrine e do detalhe não solicitam colunas privadas de anúncios",
-  !/db\.from\("anuncios"\)\.select\("\*"\)/.test(html) &&
-  (html.match(/db\.from\("anuncios"\)\.select\("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at"\)/g) || []).length === 2);
+const listingSelectCalls = [...html.matchAll(/\.from\(["\']anuncios["\']\)\.select\(/g)];
+const listingSelectMatches = [...html.matchAll(/\.from\(["\']anuncios["\']\)\.select\((["\'])([^"\']*)\\1/g)];
+const allowedListingColumns = new Set([
+  "id", "usuario_id", "titulo", "categoria", "marca", "modelo", "ano", "preco",
+  "descricao", "cidade", "estado", "fotos", "status", "criado_em", "created_at", "updated_at"
+]);
+check("Todas as consultas do navegador em anúncios usam apenas colunas explicitamente públicas",
+  listingSelectCalls.length >= 1 &&
+  listingSelectCalls.length === listingSelectMatches.length &&
+  listingSelectMatches.every(match =>
+    match[2] !== "*" &&
+    match[2].split(",").every(column => allowedListingColumns.has(column.trim()))
+  ) &&
+  !/\.from\(["\']anuncios["\']\)\.select\(\s*["\']\*["\']\s*\)/.test(html));
 const publicGrant = publicListingMigration.match(/GRANT SELECT \(([\s\S]*?)\) ON TABLE public\.anuncios TO anon, authenticated;/);
 const publicColumns = publicGrant ? publicGrant[1].split(",").map(column => column.trim()) : [];
 check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou status financeiro",

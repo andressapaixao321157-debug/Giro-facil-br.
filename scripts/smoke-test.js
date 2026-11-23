@@ -417,6 +417,21 @@ check("Comandos reconhecem português sem acentos e identificam os comandos fina
 check("Comandos por voz não executam pagamentos, exclusões ou moderação automaticamente",!html.includes('executeOwnerVoiceCommand(transcript).then')&&html.includes("return {handled:false}")&&html.includes('Nenhuma alteração foi executada'));
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
 
+// Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.
+check("Comando por voz abre Meus classificados pela ação existente do botão",
+  html.includes('has(/\\\\b(meus? anuncios|meus? classificados|meu estoque|meus produtos)\\\\b/)') &&
+  html.includes('$("myListingsOpen")?.click()'));
+check("Comandos por voz reconhecem as seis áreas da navegação inferior",
+  ["navHome","navSearch","navAnnounce","navFavorites","navMessages","navAccount"].every(id=>html.includes('clickNav("'+id+'"')));
+check("Navegação por voz também é executada na transcrição do modo Realtime",
+  html.includes('executeOwnerVoiceCommand(item.transcript).then') &&
+  html.includes('type:"response.cancel"'));
+check("Área administrativa continua protegida por verificação de papel",
+  html.includes('if(document.body.dataset.isAdmin!=="true")return {handled:false};'));
+check("Comando de voz não executa pagamentos nem exclusões automaticamente",
+  html.includes("Nenhuma alteração foi executada") &&
+  !html.includes('executeOwnerVoiceCommand(transcript).then'));
+ 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

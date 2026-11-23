@@ -386,6 +386,26 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
+
+const publicListingMigrationPath = "supabase/migrations/20261123170000_restrict_public_listing_contact_fields.sql";
+const publicListingMigration = fs.existsSync(publicListingMigrationPath) ? fs.readFileSync(publicListingMigrationPath, "utf8") : "";
+const publicListingColumns = "id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at";
+const publicListingSelect = 'db.from("anuncios").select("' + publicListingColumns + '")';
+check("Listagem e detalhes públicos usam projeção explícita sem select amplo",
+  html.split(publicListingSelect).length - 1 >= 2 &&
+  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)/.test(html));
+const publicGrantMatch = publicListingMigration.match(/GRANT SELECT \\(([\\s\\S]*?)\\) ON TABLE public\\.anuncios TO anon, authenticated;/);
+const grantedPublicColumns = publicGrantMatch ? publicGrantMatch[1].split(",").map(column => column.trim()).filter(Boolean) : [];
+check("Migração revoga SELECT amplo para anon e authenticated",
+  publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;"));
+check("Migração não concede WhatsApp nem status interno de pagamento",
+  grantedPublicColumns.length === 16 &&
+  !grantedPublicColumns.includes("whatsapp") &&
+  !grantedPublicColumns.includes("pagamento_status"));
+check("Migração de privacidade não altera políticas RLS nem dados",
+  publicListingMigration.length > 0 &&
+  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\\.|DELETE FROM/i.test(publicListingMigration));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

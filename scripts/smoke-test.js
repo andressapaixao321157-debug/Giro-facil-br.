@@ -5,6 +5,10 @@ const assistantPath = "supabase/functions/giro-assistant/index.ts";
 const adminPath = "supabase/functions/admin-dashboard/index.ts";
 const paymentPath = "supabase/functions/asaas-create-payment/index.ts";
 const assistantWorkflowPath = ".github/workflows/deploy-giro-assistant.yml";
+const acquisitionWorkflowPath = ".github/workflows/deploy-acquisition.yml";
+const acquisitionWorkflow = fs.existsSync(acquisitionWorkflowPath) ? fs.readFileSync(acquisitionWorkflowPath, "utf8") : "";
+const publicListingMigrationPath = "supabase/migrations/20261123023000_restrict_public_listing_contact_fields.sql";
+const publicListingMigration = fs.existsSync(publicListingMigrationPath) ? fs.readFileSync(publicListingMigrationPath, "utf8") : "";
 const configPath = "supabase/config.toml";
 const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
@@ -383,8 +387,30 @@ check("Asaas cria checkout com autenticação e tipo de pedido válidos",
   fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind, billing_type: billingType") &&
   !fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind: orderKind"));
 check("Banco aceita cartão para planos recorrentes no Asaas",
-  fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
-  fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+  fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+
+
+check("Consultas públicas da vitrine e do detalhe não solicitam colunas privadas de anúncios",
+  !/db\\.from\\("anuncios"\\)\\.select\\("\*"\\)/.test(html) &&
+  (html.match(/db\\.from\\("anuncios"\\)\\.select\\("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at"\\)/g) || []).length === 2);
+const publicGrant = publicListingMigration.match(/GRANT SELECT \\(([\\s\\S]*?)\\) ON TABLE public\\.anuncios TO anon, authenticated;/);
+const publicColumns = publicGrant ? publicGrant[1].split(",").map(column => column.trim()) : [];
+check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou status financeiro",
+  publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
+  publicColumns.includes("id") && publicColumns.includes("titulo") &&
+  !publicColumns.includes("whatsapp") && !publicColumns.includes("pagamento_status"));
+check("Migração de privacidade preserva RLS e não altera dados ou outras permissões",
+  publicListingMigration.length > 0 &&
+  !/CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE public\\.|DELETE FROM|GRANT INSERT|GRANT UPDATE|GRANT DELETE/i.test(publicListingMigration));
+check("Deploy do CRM usa Supavisor Session por SUPABASE_DB_URL para evitar falha IPv6",
+  acquisitionWorkflow.includes('SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}') &&
+  acquisitionWorkflow.includes('test -n "$SUPABASE_DB_URL"') &&
+  acquisitionWorkflow.includes('supabase db push --db-url "$SUPABASE_DB_URL"') &&
+  !acquisitionWorkflow.includes('supabase db push --project-ref "$SUPABASE_PROJECT_REF"'));
+check("Versão do arquivo de migração de cartão coincide com a migração já aplicada no Supabase",
+  fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
+  !fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql"));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

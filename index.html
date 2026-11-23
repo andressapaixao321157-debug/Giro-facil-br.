@@ -926,6 +926,22 @@ footer{color:#64748b;padding-bottom:100px}
       <button id="adminAgentSend" type="button" style="margin-top:10px">Consultar agente</button>
       <div id="adminAgentOutput" class="status hidden" aria-live="polite" style="margin-top:12px;white-space:pre-wrap"></div>
     </section>
+    <section id="adminFounderCampaign" class="panel" aria-labelledby="adminFounderTitle" style="margin:18px 0;padding:16px;background:#10264a;border:1px solid #35517d;color:#edf4ff">
+      <h3 id="adminFounderTitle" style="margin:0 0 8px;color:#fff">Programa dos 500 Parceiros Fundadores</h3>
+      <p class="hint">Acompanhe inscrições, aprovações e a meta nacional de parceiros.</p>
+      <div id="adminFounderStats" class="form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"></div>
+      <div style="margin:14px 0">
+        <div style="display:flex;justify-content:space-between;gap:8px;color:#dbeafe;font-size:12px"><strong>Progresso da campanha</strong><span>Meta: 500 parceiros</span></div>
+        <div role="progressbar" aria-label="Progresso dos parceiros fundadores" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height:12px;margin-top:8px;border-radius:99px;background:#294568;overflow:hidden"><div id="adminFounderProgress" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#ff7900,#ffb14b)"></div></div>
+      </div>
+      <div class="founder-admin-tabs" role="group" aria-label="Filtrar inscrições de parceiros">
+        <button type="button" class="active" data-founder-filter="todos">Todas</button>
+        <button type="button" data-founder-filter="pendente">Pendentes</button>
+        <button type="button" data-founder-filter="aprovado">Aprovadas</button>
+        <button type="button" data-founder-filter="rejeitado">Rejeitadas</button>
+      </div>
+      <div id="adminFounderList" class="founder-admin-list"><p class="hint">Carregando inscrições...</p></div>
+    </section>
     <div id="adminTotals" class="form-grid"></div>
     <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>

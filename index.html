@@ -906,9 +906,26 @@ footer{color:#64748b;padding-bottom:100px}
         <span class="owner-role">● Conta administradora</span>
       </div>
       <div class="owner-shortcuts" aria-label="Atalhos do proprietário">
-        <a href="#adminTotals">Visão geral</a><a href="#adminListings">Anúncios</a><a href="#adminOrders">Financeiro</a><a href="#adminPartners">Parceiros</a><a href="#adminAcquisitionLeads">Captação nacional</a><a href="#agentConsole">Agentes inteligentes</a>
+        <a href="#adminTotals">Visão geral</a><a href="#adminListings">Anúncios</a><a href="#adminOrders">Financeiro</a><a href="#adminPartners">Parceiros</a><a href="#adminAcquisitionLeads">Captação nacional</a><a href="#ownerAgentControl">Central 24h</a><a href="#agentConsole">Agentes inteligentes</a>
       </div>
       <div class="owner-security-note"><strong>Proteção da conta</strong><span>Este painel só é exibido após autenticação e verificação do papel administrativo no Supabase. Ações privilegiadas continuam validadas no servidor.</span></div>
+    </section>
+    <section id="ownerAgentControl" class="panel" aria-labelledby="ownerAgentControlTitle" style="margin:16px 0;padding:18px;background:linear-gradient(145deg,#081b3a,#112e58);border:1px solid #34547e;color:#edf4ff">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><span class="owner-eyebrow">CENTRAL DE COMANDO · OPERAÇÃO RECORRENTE</span><h2 id="ownerAgentControlTitle" style="color:#fff;margin:8px 0">Central 24h do Proprietário</h2><p class="hint" style="color:#c6d5ec;margin:0">Os sete especialistas trabalham em ciclos horários. Aqui você acompanha somente resultados confirmados, pendências e decisões que dependem de você.</p></div>
+        <span id="ownerAgentHeartbeat" class="owner-role">● Ciclo horário ativo</span>
+      </div>
+      <div id="ownerAgentMetrics" class="form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0">
+        <div class="panel"><strong>Agentes</strong><div style="font-size:25px">7</div></div>
+        <div class="panel"><strong>Frequência</strong><div style="font-size:18px">1 hora</div></div>
+        <div class="panel"><strong>Tarefas pendentes</strong><div style="font-size:25px">—</div></div>
+        <div class="panel"><strong>Decisões do proprietário</strong><div style="font-size:25px">—</div></div>
+      </div>
+      <div class="section-head" style="margin-top:12px"><h3 style="color:#fff;margin:0">Último resumo executivo</h3><button type="button" class="secondary" id="ownerAgentRefresh">Atualizar central</button></div>
+      <div id="ownerAgentLatest" class="panel" style="background:#10294c;border:1px solid #35517d;color:#edf4ff"><p class="hint" style="color:#c6d5ec">Carregando resumo da equipe...</p></div>
+      <h3 style="color:#fff">Quadro dos sete agentes</h3>
+      <div id="ownerAgentTasks" style="display:grid;gap:9px"><p class="hint" style="color:#c6d5ec">Carregando tarefas...</p></div>
+      <p class="hint" style="color:#9fb4d1;margin-top:14px;font-size:12px">Segurança: os agentes podem analisar, organizar, testar e recomendar. Mensagens externas, despesas, pagamentos, moderação definitiva e mudanças sensíveis continuam exigindo autorização humana.</p>
     </section>
     <section class="panel" id="agentConsole" style="margin:16px 0;padding:16px;border:1px solid #35517d;background:#10264a;color:#edf4ff">
       <h3 style="margin:0 0 6px;color:#fff">Central de agentes inteligentes</h3>
@@ -1245,6 +1262,36 @@ footer{color:#64748b;padding-bottom:100px}
     finally{$("myListingsRefresh").disabled=false;}
   }
 
+  async function loadOwnerAgentControlCenter(){
+    const latest=$("ownerAgentLatest"),tasksBox=$("ownerAgentTasks"),metrics=$("ownerAgentMetrics"),refresh=$("ownerAgentRefresh");
+    if(!latest||!tasksBox||!metrics||!db||!currentUser)return;
+    if(refresh)refresh.disabled=true;
+    try{
+      const [reportsResult,tasksResult]=await Promise.all([
+        db.from("owner_agent_reports").select("id,created_at,overall_status,headline,summary,metrics,completed_items,pending_items,approvals_needed,evidence").order("created_at",{ascending:false}).limit(5),
+        db.from("owner_agent_tasks").select("id,agent_key,title,description,status,priority,updated_at").order("updated_at",{ascending:false}).limit(30)
+      ]);
+      if(reportsResult.error)throw reportsResult.error;
+      if(tasksResult.error)throw tasksResult.error;
+      const reports=reportsResult.data||[],tasks=tasksResult.data||[],report=reports[0];
+      const pending=tasks.filter(t=>["pendente","em_andamento","bloqueada"].includes(t.status)).length;
+      const approvals=tasks.filter(t=>t.status==="aguardando_proprietario").length+(report?.approvals_needed||[]).length;
+      const labels={chefe:"CHEFE",vigia:"VIGIA",vendedor:"VENDEDOR",tecnico:"TÉCNICO",parceiro:"PARCEIRO",captador_1:"CAPTADOR 1",captador_2:"CAPTADOR 2"};
+      const statusLabel={pendente:"Pendente",em_andamento:"Em andamento",aguardando_proprietario:"Aguardando você",concluida:"Concluída",bloqueada:"Bloqueada"};
+      const priorityLabel={baixa:"Baixa",media:"Média",alta:"Alta",critica:"Crítica"};
+      metrics.innerHTML='<div class="panel"><strong>Agentes especialistas</strong><div style="font-size:25px">7</div></div><div class="panel"><strong>Frequência de execução</strong><div style="font-size:18px">A cada hora</div></div><div class="panel"><strong>Tarefas em aberto</strong><div style="font-size:25px">'+pending+'</div></div><div class="panel"><strong>Decisões do proprietário</strong><div style="font-size:25px">'+approvals+'</div></div>';
+      $("ownerAgentHeartbeat").textContent="● "+(report?"Último ciclo: "+new Date(report.created_at).toLocaleString("pt-BR"):"Aguardando primeiro relatório");
+      latest.innerHTML=report?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong style="color:#fff">'+escapeHtml(report.headline)+'</strong><span class="owner-role">'+escapeHtml(report.overall_status)+'</span></div><p style="white-space:pre-wrap;color:#d8e5f6;line-height:1.6">'+escapeHtml(report.summary)+'</p><div class="form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"><div><strong style="color:#b8d0f0">Avanços confirmados</strong>'+renderOwnerAgentList(report.completed_items)+'</div><div><strong style="color:#b8d0f0">Próximas pendências</strong>'+renderOwnerAgentList(report.pending_items)+'</div></div>'+(report.approvals_needed?.length?'<div style="margin-top:12px;padding:12px;border:1px solid #a66b29;border-radius:10px"><strong style="color:#ffd08a">Precisam da sua decisão</strong>'+renderOwnerAgentList(report.approvals_needed)+'</div>':''):'<p class="hint">Ainda não há relatórios registrados. A equipe gravará o próximo resumo após sua execução.</p>';
+      tasksBox.innerHTML=tasks.length?tasks.map(t=>'<article class="panel" style="background:#10294c;border:1px solid #35517d;color:#edf4ff;padding:13px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong style="color:#fff">'+escapeHtml(labels[t.agent_key]||t.agent_key)+' · '+escapeHtml(t.title)+'</strong><span class="owner-role">'+escapeHtml(statusLabel[t.status]||t.status)+'</span></div><p style="margin:7px 0;color:#c6d5ec;font-size:13px">'+escapeHtml(t.description||"")+'</p><small style="color:#9fb4d1">Prioridade: '+escapeHtml(priorityLabel[t.priority]||t.priority)+' · Atualizado: '+new Date(t.updated_at).toLocaleString("pt-BR")+'</small></article>').join(""):'<p class="hint">Nenhuma tarefa cadastrada.</p>';
+    }catch(e){
+      latest.innerHTML='<p class="hint">Não foi possível carregar os relatórios: '+escapeHtml(e.message||"erro inesperado")+'. Confirme que sua conta tem papel de administrador.</p>';
+      tasksBox.innerHTML="";
+    }finally{if(refresh)refresh.disabled=false;}
+  }
+  function renderOwnerAgentList(items){
+    const list=Array.isArray(items)?items:[];
+    return list.length?'<ul style="padding-left:18px;color:#d8e5f6">'+list.map(x=>'<li style="margin:5px 0">'+escapeHtml(typeof x==="string"?x:JSON.stringify(x))+'</li>').join("")+'</ul>':'<p class="hint" style="color:#9fb4d1">Nenhum item registrado.</p>';
+  }
   async function loadAdminDashboard(){
     if(!db||!currentUser)return;
     $("adminRefresh").disabled=true;
@@ -1255,6 +1302,7 @@ footer{color:#64748b;padding-bottom:100px}
       const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
       if(error)throw error;if(data?.error)throw new Error(data.error);
       if(!data||!data.totals||!Array.isArray(data.orders)||!Array.isArray(data.listings))throw new Error("O servidor retornou dados incompletos para o painel. Toque em Atualizar painel novamente.");
+      await loadOwnerAgentControlCenter();
       const t=data.totals;
       const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores],["Parceiros ativos",t.activePartners],["Solicitações de parceria",t.pendingPartners]];
       const campaign=data.founderCampaign||{};const founderApps=data.partnerApplications||[];let activeFounderFilter="todos";
@@ -1293,6 +1341,7 @@ footer{color:#64748b;padding-bottom:100px}
     loadAdminDashboard();
   };
   $("adminRefresh").onclick=loadAdminDashboard;
+  $("ownerAgentRefresh").onclick=loadOwnerAgentControlCenter;
   $("partnerOpen").onclick=async()=>{
     if(!currentUser){openAuth();return;}
     $("partnerPanel").classList.remove("hidden");$("partnerPanel").scrollIntoView({behavior:"smooth",block:"start"});

@@ -167,13 +167,13 @@ check("Console envia agente selecionado ao backend existente sem alterar chat p�
   html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:adminAgentHistory}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
 check("Console interno disponibiliza os sete agentes independentes da equipe",
-  html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
+  html.includes('<option value="coordinator">IA Central — Coordenadora dos sete agentes</option>') && html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&
   html.includes('<option value="partner">Parceiro — Estratégia e crescimento</option>') &&
   html.includes('<option value="acquisition_buyers">Captador 1 — Compradores e vendedores pessoa física</option>') &&
   html.includes('<option value="acquisition_business">Captador 2 — Lojistas, concessionárias e anunciantes</option>'));
 check("Nomes da equipe correspondem aos sete papéis independentes",
-  html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
+  html.includes("IA Central — Coordenadora dos sete agentes") && html.includes("Chefe — Administração") && html.includes("Vigia — Segurança e fiscalização") &&
   html.includes("Vendedor — Clientes e vendas") && html.includes("Técnico — Engenharia e testes") &&
   html.includes("Parceiro — Estratégia e crescimento") &&
   html.includes("Captador 1 — Compradores e vendedores pessoa física") &&
@@ -182,7 +182,7 @@ check("Nomes da equipe correspondem aos sete papéis independentes",
 // Roteamento dos cinco agentes com autorização administrativa para os agentes internos.
 check("Assistente possui atendimento público e seis perfis internos de agente",
   assistant.includes("const agentProfiles") &&
-  ["customer:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition_buyers:", "acquisition_business:"].every(role => assistant.includes(role)));
+  ["customer:", "coordinator:", "admin:", "moderation:", "commercial:", "engineering:", "partner:", "acquisition_buyers:", "acquisition_business:"].every(role => assistant.includes(role)));
 check("Agentes internos exigem papel admin validado no servidor",
   assistant.includes('if (agent !== "customer")') &&
   assistant.includes('profile?.papel !== "admin"') &&
@@ -196,6 +196,7 @@ check("Agentes internos são consultivos e não executam ações administrativas
   assistant.includes("Você não tem acesso para editar repositórios"));
 check("Fallback local mantém resposta específica para cada agente",
   assistant.includes("function localAgentAnswer") &&
+  assistant.includes('if (agent === "coordinator")') &&
   assistant.includes('if (agent === "acquisition_buyers")') && assistant.includes("Entendi seu pedido"));
 
 check("Captador 1 tem missão exclusiva de pessoas físicas e respeita LGPD",

@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.android/debug.keystore
-          key: giro-facil-br-debug-keystore-v1
+          key: giro-facil-br-debug-keystore-v2
       - name: Ensure stable Android debug signing key
         run: |
           mkdir -p "$HOME/.android"
@@ -69,6 +69,11 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US"
           fi
           test -s "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey >/dev/null
+          KEYSTORE_SHA256="$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test -n "$KEYSTORE_SHA256"
+          echo "GIRO_DEBUG_CERT_SHA256=$KEYSTORE_SHA256" >> "$GITHUB_ENV"
+          echo "Persistent debug keystore certificate SHA-256: $KEYSTORE_SHA256"
       - name: Prepare Android SDK
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
@@ -90,7 +95,13 @@ jobs:
           cd ..
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          APK_CERT_SHA256="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test -n "$APK_CERT_SHA256"
+          if [ "$APK_CERT_SHA256" != "$GIRO_DEBUG_CERT_SHA256" ]; then
+            echo "::error::APK signature does not match the persistent debug keystore."
+            exit 1
+          fi
+          echo "APK signing certificate matches the persistent debug keystore."
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='br.com.girofacil.app'"
       - name: Upload test APK artifact
         uses: actions/upload-artifact@v7

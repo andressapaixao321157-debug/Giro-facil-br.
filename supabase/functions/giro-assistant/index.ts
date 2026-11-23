@@ -98,6 +98,28 @@ function localAgentAnswer(agent: string, message: string): string {
   if (agent === "coordinator") {
     return "Sou a IA central coordenadora do Giro Fácil BR.\n\nRecebi sua solicitação: “" + request + "”\n\nVou organizar a análise pelos especialistas mais adequados:\n• Chefe: operação e indicadores.\n• Vigia: segurança e anúncios suspeitos.\n• Vendedor: clientes e conversão.\n• Técnico: sistema e testes.\n• Parceiro: estratégia e crescimento.\n• Captador 1: público pessoa física.\n• Captador 2: lojistas e anunciantes.\n\nPosso consolidar um plano com responsáveis, prioridades e verificações. Nesta versão de contingência, os agentes não executam tarefas externas nem alteram dados; não vou afirmar que houve captação, envio, pagamento ou correção sem confirmação.";
   }
+  if (agent === "admin") {
+    if (/^(oi|olá|ola|bom dia|boa tarde|boa noite|e aí|eai|fala|tudo bem)[!?., ]*$/i.test(q))
+      return "Fala, meu chefe! Tô na escuta. Pode mandar: vamos direto ao que você precisa.";
+    if (/captador|captaç|parceir|lojista|concession|imobili|leads|contatos/.test(q)) {
+      if (/quantos|resultado|conseguiu|fechou|captou|já tem|ja tem/.test(q))
+        return "Sobre os captadores: temos dois focos, pessoas físicas (compradores e vendedores) e empresas (lojistas, concessionárias e imobiliárias). Eu não tenho aqui uma leitura confirmada dos novos contatos nem de parcerias fechadas. Para não inventar resultado, preciso consultar os registros atuais do CRM. Quer que eu organize a situação por captador e etapa?";
+      return "Os captadores trabalham em duas frentes: Captador 1 busca compradores e vendedores particulares; Captador 2 busca lojistas, concessionárias, imobiliárias e anunciantes profissionais. O próximo controle é registrar cada oportunidade no CRM com origem, cidade, contato empresarial quando aplicável e etapa. Quer falar da captação de pessoas físicas ou de lojistas?";
+    }
+    if (/dinheiro|fatur|receita|venda|pagamento|asaas|pix|boleto|plano|mensalidade|turbo/.test(q))
+      return "Vamos olhar a parte financeira com cuidado. As condições comerciais já definidas incluem anúncio avulso, plano mensal e opções de destaque; a campanha de parceiros fundadores foi planejada a R$ 39 por mês com turbo promocional de 7 dias. Mas não tenho nesta resposta os valores efetivamente recebidos ou saldo do Asaas. Para isso precisamos consultar o painel financeiro e os pagamentos confirmados. Você quer ver preços, vendas ou dinheiro recebido?";
+    if (/app|aplicativo|apk|atualiz|versão|versao|site|erro|bug|voz|microfone/.test(q))
+      return "Sobre o aplicativo: posso ajudar a separar o que está publicado no site, o que entrou no código e o que já foi testado no Android. Não vou chamar uma versão de atualizada sem confirmar o build e a instalação. Me diga qual parte você quer conferir: APK, site, painel ou assistente de voz?";
+    if (/anúncio|anuncio|classificado|publica|foto|vendedor|comprador/.test(q))
+      return "Na operação do marketplace, o caminho é: o usuário publica o anúncio, ele passa pela análise e, quando aprovado, fica disponível para compradores. As conversas acontecem pelo chat interno. Posso ajudar com publicação, moderação, fotos ou atendimento. Qual dessas partes você quer resolver?";
+    if (/campanha|fundador|500 parceiros|marketing|divulga|crescimento/.test(q))
+      return "A campanha dos 500 Parceiros Fundadores foi estruturada com mensalidade de R$ 39, turbo promocional de 7 dias e kit digital, sem sorteio ou venda de chances. Para saber quantos parceiros aderiram de verdade, precisamos conferir as inscrições e pagamentos no painel. Quer analisar a campanha ou preparar a próxima ação?";
+    if (/painel|indicador|métrica|metrica|visualiza|clique/.test(q))
+      return "Posso ajudar a interpretar o painel do proprietário: anúncios, usuários, parceiros, pagamentos e captação. Não tenho números em tempo real nesta resposta, então não vou chutar métricas. Qual indicador você quer conferir primeiro?";
+    if (/obrigad|valeu|tamo junto/.test(q))
+      return "Tamo junto, meu chefe! Manda a próxima que a gente resolve uma coisa de cada vez.";
+    return "Entendi o que você pediu: “" + request + "”. Quero te responder certo, sem inventar dado. Posso ajudar com operação, captadores, financeiro, campanha, anúncios, aplicativo e suporte. Qual resultado você espera dessa solicitação?";
+  }
   const replies: Record<string, string> = {
     admin: "Entendi sua solicitação: “" + request + "”\n\nPosso organizar a análise administrativa, separar fatos confirmados de pendências e sugerir próximos passos. Para números reais, preciso consultar os indicadores do painel ou receber dados agregados. Não aprovo cadastros nem executo pagamentos por esta conversa.",
     moderation: "Análise preliminar solicitada: “" + request + "”\n\nEnvie o texto do anúncio e os sinais observados (sem dados pessoais desnecessários). Vou separar evidências, possíveis riscos e nível de confiança. A decisão de moderação continua humana; não bloqueio nem restrinjo contas.",

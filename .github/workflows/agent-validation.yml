@@ -1,10 +1,17 @@
 name: Validate intelligent agents
 on:
   push:
-    branches: [main, feature/giro-agentes-inteligentes]
+    branches: [main, feature/giro-agentes-inteligentes, campaign/500-parceiros-fundadores]
     paths:
+      - "index.html"
+      - "kit-parceiro-fundador.html"
+      - "campanha-parceiros-fundadores.html"
+      - "docs/campanha-500-parceiros-fundadores.md"
       - "supabase/functions/giro-assistant/**"
       - "supabase/functions/admin-dashboard/**"
+      - "supabase/functions/asaas-create-payment/**"
+      - "supabase/functions/asaas-webhook/**"
+      - "supabase/migrations/**"
       - "scripts/smoke-test.js"
       - "package.json"
       - ".github/workflows/agent-validation.yml"

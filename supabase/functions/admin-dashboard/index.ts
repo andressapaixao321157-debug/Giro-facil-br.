@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at", { count: "exact" }).order("created_at", { ascending: false }).limit(100),
       admin.from("acquisition_events").select("event_name,region_state,source,created_at").order("created_at", { ascending: false }).limit(1000),
-      admin.from("partner_applications").select("id,user_id,business_name,business_type,contact_name,phone,city,state,status,created_at").eq("status", "pendente").order("created_at", { ascending: false }).limit(100),
+      admin.from("partner_applications").select("id,user_id,business_name,business_type,contact_name,phone,city,state,status,created_at,founder_campaign_code,founder_number").eq("status", "pendente").order("created_at", { ascending: false }).limit(100),
       admin.from("partner_accounts").select("user_id", { count: "exact", head: true }).eq("status", "ativo"),
     ]);
     const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents, partnerApps, partnerAccounts].find(x => x.error);

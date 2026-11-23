@@ -942,7 +942,7 @@ footer{color:#64748b;padding-bottom:100px}
     </section>
     <section class="panel" id="agentConsole" style="margin:16px 0;padding:16px;border:1px solid #35517d;background:#10264a;color:#edf4ff">
       <h3 style="margin:0 0 6px;color:#fff">Central de agentes inteligentes</h3>
-      <div id="adminAgentConnectionStatus" role="status" style="margin:12px 0;padding:12px;border:1px solid #a66b29;border-radius:10px;background:#2b1c12;color:#ffd08a">IA avançada: aguardando configuração segura da chave de IA no servidor. Enquanto isso, os agentes respondem no modo básico.</div>
+      <div id="adminAgentConnectionStatus" role="status" style="margin:12px 0;padding:12px;border:1px solid #a66b29;border-radius:10px;background:#2b1c12;color:#ffd08a">IA avançada configurada no servidor. Envie uma consulta para confirmar a resposta inteligente; o modo básico permanece como contingência.</div>
       <p class="hint" style="color:#c6d5ec">IA central coordenadora com sete agentes especialistas: Chefe (gestão geral), Vigia (segurança e fiscalização), Vendedor (clientes e vendas), Técnico (sistema e testes), Parceiro (estratégia e crescimento), Captador 1 (compradores e vendedores pessoa física) e Captador 2 (lojistas, concessionárias e anunciantes). Cada Captador tem perfil, missão e orientação próprios. Os agentes analisam, organizam e recomendam; não bloqueiam contas nem executam pagamentos ou ações irreversíveis.</p>
       <div class="field"><label for="adminAgentSelect">Escolha o agente</label><select id="adminAgentSelect">
         <option value="coordinator">IA Central — Coordenadora dos sete agentes</option>
@@ -1043,7 +1043,7 @@ footer{color:#64748b;padding-bottom:100px}
   const SUPABASE_ANON_KEY = "sb_publishable_AkT6XsEKmR45zurwhVTRrQ_H4F7pNgq";
 
   let db = null, currentUser = null, signupMode = false, pendingListingId = null, favoritesOnly = false, ownerListingFilter = "all";
-  let ownerVoicePeer=null,ownerVoiceStream=null,ownerVoiceChannel=null,ownerVoiceAudio=null,ownerGreetingDone=false;
+  let ownerVoicePeer=null,ownerVoiceStream=null,ownerVoiceChannel=null,ownerVoiceAudio=null;
   const $ = id => document.getElementById(id);
   $("yearNow").textContent = new Date().getFullYear();
 
@@ -1368,7 +1368,6 @@ footer{color:#64748b;padding-bottom:100px}
     while(box.children.length>24)box.removeChild(box.firstChild);
   }
   function greetOwnerOnEntry(){
-    if(ownerGreetingDone)return;ownerGreetingDone=true;
     const greeting="Olá, meu chefe! Seja bem-vindo de volta ao Giro Fácil BR. Estou pronto. O que precisa hoje?";
     const welcome=$("ownerVoiceWelcome");if(welcome)welcome.textContent=greeting;
     ownerVoiceAddLine("CHEFE",greeting);

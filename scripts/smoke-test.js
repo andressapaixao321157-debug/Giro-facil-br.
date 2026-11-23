@@ -390,7 +390,7 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
   fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
   fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
-const paymentInsertMigrationPath = "supabase/migrations/20261123193000_restrict_client_payment_status_insert.sql";
+const paymentInsertMigrationPath = "supabase/migrations/20261123230300_restrict_client_payment_status_insert.sql";
 const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
 const paymentInsertGrantStart = paymentInsertMigration.indexOf("GRANT INSERT (");
 const paymentInsertGrantEnd = paymentInsertMigration.indexOf(") ON TABLE public.anuncios TO authenticated;", paymentInsertGrantStart);
@@ -454,6 +454,11 @@ check("Turbo fundador gratuito dura 7 dias e só pode ser resgatado uma vez", pa
 check("Kit digital só aparece após ativação do plano fundador", html.includes('id="founderKitLink"') && html.includes('founderPlan?.status!=="active"'));
 check("Webhook libera plano fundador após checkout pago e encerra assinatura cancelada", webhook.includes('checkoutOrder.kind === "store"') && webhook.includes('storeDeactivateError'));
 check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório", fs.readFileSync("docs/campanha-500-parceiros-fundadores.md", "utf8").includes("Nenhum sorteio, rifa, venda de números ou prêmio aleatório"));
+
+const migrationDirectory = "supabase/migrations";
+const migrationFiles = fs.readdirSync(migrationDirectory).filter(name => name.endsWith(".sql"));
+const migrationVersions = migrationFiles.map(name => name.slice(0, 14));
+check("Arquivos de migração usam versões únicas", new Set(migrationVersions).size === migrationVersions.length);
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

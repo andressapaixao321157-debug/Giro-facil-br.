@@ -732,10 +732,10 @@ footer{color:#64748b;padding-bottom:100px}
   </section>
   <section id="founderCampaign" class="panel" style="border:1px solid #d6b56d;background:linear-gradient(135deg,#101827,#20344b);color:#fff">
     <span style="display:inline-block;padding:6px 10px;border-radius:20px;background:#d6b56d;color:#172033;font-weight:800;font-size:12px">CAMPANHA DE LANÇAMENTO</span>
-    <h2 style="color:#fff;margin:12px 0 6px">500 Parceiros Fundadores Giro Fácil BR</h2>
+    <h2 style="color:#fff;margin:12px 0 6px">Meta de 500 Parceiros Fundadores Giro Fácil BR</h2>
     <p style="color:#e5edf7;margin:0 0 14px">Plano especial de R$ 39 por mês para os parceiros aprovados, com 7 dias de turbo promocional em um anúncio e kit digital profissional após a primeira mensalidade confirmada.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px"><span>✓ Selo Parceiro Fundador</span><span>✓ Kit digital</span><span>✓ 7 dias de turbo</span><span>✓ Cadastro de loja</span></div>
-    <p style="color:#cbd5e1;font-size:12px">Válido para até 500 inscrições elegíveis, sujeitas à análise e aprovação. Mensalidade recorrente de R$ 39 enquanto a assinatura permanecer ativa. <a href="./campanha-parceiros-fundadores.html" target="_blank" rel="noopener" style="color:#f3d58f">Consulte as condições completas.</a></p>
+    <p style="color:#cbd5e1;font-size:12px">Meta de 500 lojistas parceiros. Benefícios disponíveis a todos que cumprirem os critérios durante a vigência da campanha, sujeitos à aprovação. Mensalidade recorrente de R$ 39 enquanto a assinatura permanecer ativa. <a href="./campanha-parceiros-fundadores.html" target="_blank" rel="noopener" style="color:#f3d58f">Consulte as condições completas.</a></p>
     <button id="founderJoinBtn" type="button" style="background:#d6b56d;color:#172033">Quero ser parceiro fundador ›</button>
   </section>
   <div class="section-head"><h2>🔥 Destaques da semana</h2><button type="button" class="secondary" id="seeAllListings">Ver todos ›</button></div>
@@ -1299,7 +1299,7 @@ footer{color:#64748b;padding-bottom:100px}
     if(!payload.business_name||!payload.contact_name||!payload.phone||!payload.city||payload.state.length!==2){status("partnerStatus","Preencha todos os campos obrigatórios e informe a UF com duas letras.","err");return;}
     $("partnerApplyBtn").disabled=true;
     try{const {data,error}=await db.from("partner_applications").insert(payload).select("founder_number").single();if(error)throw error;status("partnerStatus","Inscrição fundadora nº "+data.founder_number+" recebida! Ela ficará pendente até a análise da equipe.","ok");$("partnerApplicationForm").classList.add("hidden");}
-    catch(e){const message=e?.message||"Não foi possível enviar a solicitação.";status("partnerStatus",/maximum value|sequence.*exhausted/i.test(message)?"As 500 inscrições da campanha já foram preenchidas. Obrigado pelo interesse!":/partner_founder_user_once/i.test(message)?"Sua conta já possui uma inscrição nesta campanha.":message,"err");}
+    catch(e){const message=e?.message||"Não foi possível enviar a solicitação.";status("partnerStatus",/maximum value|sequence.*exhausted/i.test(message)?"Não foi possível concluir a inscrição. Confira seus dados ou fale com o atendimento pelo chat.":/partner_founder_user_once/i.test(message)?"Sua conta já possui uma inscrição nesta campanha.":message,"err");}
     finally{$("partnerApplyBtn").disabled=false;}
   };
   function parseBulkListings(raw){

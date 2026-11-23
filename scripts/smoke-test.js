@@ -166,6 +166,14 @@ check("Central de agentes aparece dentro do painel administrativo",
 check("Console envia agente selecionado ao backend existente sem alterar chat público",
   html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:adminAgentHistory}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
+check("Painel do proprietário exibe a Central 24h com resumo e tarefas dos sete agentes",
+  html.includes('id="ownerAgentControl"') &&
+  html.includes('id="ownerAgentMetrics"') &&
+  html.includes('id="ownerAgentLatest"') &&
+  html.includes('id="ownerAgentTasks"') &&
+  html.includes('id="ownerAgentRefresh"') &&
+  html.includes('db.from("owner_agent_reports")') &&
+  html.includes('db.from("owner_agent_tasks")'));
 check("Console interno disponibiliza os sete agentes independentes da equipe",
   html.includes('<option value="coordinator">IA Central — Coordenadora dos sete agentes</option>') && html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
   html.includes('<option value="commercial">') && html.includes('<option value="engineering">') &&

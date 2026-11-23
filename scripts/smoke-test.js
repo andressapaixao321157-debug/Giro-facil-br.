@@ -402,6 +402,13 @@ const grantedPublicColumns = publicGrantStart >= 0 && publicGrantEnd > publicGra
   : [];
 check("Migração revoga SELECT amplo para anon e authenticated",
   publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;"));
+const privateColumnRevoke = "REVOKE SELECT (whatsapp, pagamento_status) ON TABLE public.anuncios FROM anon, authenticated;";
+const privateRevokePosition = publicListingMigration.indexOf(privateColumnRevoke);
+const broadRevokePosition = publicListingMigration.indexOf("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;");
+check("Migração remove concessões explícitas de campos privados antes do GRANT público",
+  privateRevokePosition >= 0 &&
+  broadRevokePosition > privateRevokePosition &&
+  publicGrantStart > broadRevokePosition);
 check("Migração não concede WhatsApp nem status interno de pagamento",
   grantedPublicColumns.length === 16 &&
   !grantedPublicColumns.includes("whatsapp") &&

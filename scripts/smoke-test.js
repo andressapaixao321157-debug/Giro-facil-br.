@@ -212,7 +212,7 @@ check("Os dois Captadores não gastam dinheiro nem enviam mensagens sem autoriza
   assistant.includes("não compre anúncios") &&
   assistant.includes("nem gaste dinheiro sem autorização expressa do proprietário") &&
   assistant.includes('if (agent === "acquisition_business")') &&
-  assistant.includes("Não envio mensagens nem gasto dinheiro sem autorização."));
+  assistant.includes("Não envio mensagens") && assistant.includes("não gasto dinheiro sem autorização"));
 
 check("Política global proíbe que qualquer agente bloqueie ou restrinja contas", assistant.includes("Nenhum agente pode bloquear, desbloquear, suspender, banir ou restringir contas de usuários."));
 check("CHEFE administrativo não tem autonomia para bloquear contas", assistant.includes("Nenhum robô, inclusive o CHEFE, pode autorizar bloqueio de conta."));

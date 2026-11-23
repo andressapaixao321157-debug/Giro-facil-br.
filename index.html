@@ -1381,17 +1381,40 @@ footer{color:#64748b;padding-bottom:100px}
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
   const ownerFallbackHistory=[];
   async function executeOwnerVoiceCommand(transcript){
-    const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
-    if(!currentUser||document.body.dataset.isAdmin!=="true")return {handled:true,answer:"Esse comando só pode ser executado pela conta proprietária autenticada."};
+    const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").trim();
+    const has=(pattern)=>pattern.test(q);
+    const openIntent=has(/\\b(abrir|abre|abra|entrar|entra|mostrar|mostra|ir|vai|acessar|acessa|quero ver|ver)\\b/);
+    const answer=(label)=>({handled:true,answer:"Pronto, chefe. "+label+" está aberto."});
+    const clickNav=(id,label)=>{const control=$(id);if(!control)return {handled:true,answer:"Não encontrei "+label+" nesta versão do Giro Fácil."};control.click();return answer("Abri "+label);};
+    if(has(/\\b(meus? anuncios|meus? classificados|meu estoque|meus produtos)\\b/)){
+      if(!currentUser){openAuth();return {handled:true,answer:"Para abrir seus classificados, primeiro entre na sua conta."};}
+      $("myListingsOpen")?.click();return answer("Seus classificados");
+    }
+    if(has(/\\b(inicio|pagina inicial|home)\\b/)&&(openIntent||q.length<25))return clickNav("navHome","a página inicial");
+    if(has(/\\b(buscar|pesquisar|pesquisa|busca)\\b/)&&(openIntent||q.length<25))return clickNav("navSearch","a busca");
+    if(has(/\\b(anunciar|publicar anuncio|novo anuncio|criar anuncio)\\b/))return clickNav("navAnnounce","a publicação de anúncio");
+    if(has(/\\b(favoritos|favorito)\\b/))return clickNav("navFavorites","seus favoritos");
+    if(has(/\\b(mensagens|message|conversas|chat)\\b/))return clickNav("navMessages","suas mensagens");
+    if(has(/\\b(minha conta|minha area|conta|perfil)\\b/))return clickNav("navAccount","sua conta");
+    if(has(/\\b(planos|pagamentos|minhas cobrancas|assinatura)\\b/)&&!has(/\\b(painel|administrativo|financeiro do admin)\\b/)){
+      if(!currentUser){openAuth();return {handled:true,answer:"Entre na sua conta para abrir planos e pagamentos."};}
+      $("plansOpen")?.click();return answer("Planos e pagamentos");
+    }
+    if(has(/\\b(parceiro|parceria|estoque da loja)\\b/)){
+      if(!currentUser){openAuth();return {handled:true,answer:"Entre na sua conta para abrir a área de parceiros."};}
+      $("partnerOpen")?.click();return answer("A área de parceiros");
+    }
+    if(!currentUser)return {handled:false};
+    if(document.body.dataset.isAdmin!=="true")return {handled:false};
     const goTo=async(id,label)=>{const target=$(id);if(!target)return {handled:true,answer:"Não encontrei a seção "+label+" nesta versão."};target.scrollIntoView({behavior:"smooth",block:"start"});return {handled:true,answer:"Pronto, meu chefe. Abri "+label+" no painel."};};
-    if(/\b(abrir|abre|entrar|mostra|mostrar|ir para)\b.*\b(painel|administrativo|administracao)\b/.test(q)){$("adminOpen")?.click();return {handled:true,answer:"Abrindo o painel administrativo e atualizando os indicadores."};}
-    if(/\b(atualizar|atualiza|recarregar|recarrega)\b.*\b(painel|indicadores|dados)\b/.test(q)){ownerVoiceSetStatus("Atualizando os dados do painel...");await loadAdminDashboard();const summary=($("adminTotals")?.innerText||"").replace(/\s+/g," ").trim();return {handled:true,answer:summary?"Painel atualizado. "+summary.slice(0,850):"Solicitei a atualização do painel. Confira o status na tela."};}
-    if(/\b(financeiro|pagamentos|pedidos|recebimentos)\b/.test(q))return await goTo("adminOrders","financeiro e pagamentos");
-    if(/\b(anuncios|classificados|estoque)\b/.test(q))return await goTo("adminListings","anúncios recentes");
-    if(/\b(parceiros|inscricoes|fundadores|campanha)\b/.test(q))return await goTo("adminPartners","solicitações de parceiros");
-    if(/\b(captacao|captadores|leads|crm)\b/.test(q))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
-    if(/\b(central 24|agentes|tarefas dos agentes|equipe)\b/.test(q))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
-    if(/\b(resumo|indicadores|numeros|metricas|como esta o giro)\b/.test(q)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
+    if(has(/\\b(painel|administrativo|administracao)\\b/)&&openIntent){$("adminOpen")?.click();return {handled:true,answer:"Abrindo o painel administrativo e atualizando os indicadores."};}
+    if(has(/\\b(atualizar|atualiza|recarregar|recarrega)\\b.*\\b(painel|indicadores|dados)\\b/)){ownerVoiceSetStatus("Atualizando os dados do painel...");await loadAdminDashboard();const summary=($("adminTotals")?.innerText||"").replace(/\\s+/g," ").trim();return {handled:true,answer:summary?"Painel atualizado. "+summary.slice(0,850):"Solicitei a atualização do painel. Confira o status na tela."};}
+    if(has(/\\b(financeiro|pedidos|recebimentos)\\b/))return await goTo("adminOrders","financeiro e pagamentos");
+    if(has(/\\b(anuncios|classificados|estoque)\\b/))return await goTo("adminListings","anúncios recentes");
+    if(has(/\\b(parceiros|inscricoes|fundadores|campanha)\\b/))return await goTo("adminPartners","solicitações de parceiros");
+    if(has(/\\b(captacao|captadores|leads|crm)\\b/))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
+    if(has(/\\b(central 24|agentes|tarefas dos agentes|equipe)\\b/))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
+    if(has(/\\b(resumo|indicadores|numeros|metricas|como esta o giro)\\b/)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
     return {handled:false};
   }
   function ownerFallbackSpeak(message){
@@ -1515,7 +1538,15 @@ footer{color:#64748b;padding-bottom:100px}
       ownerVoiceChannel.addEventListener("message",event=>{
         try{
           const item=JSON.parse(event.data);
-          if(item.type==="conversation.item.input_audio_transcription.completed"&&item.transcript)ownerVoiceAddLine("Você",item.transcript);
+          if(item.type==="conversation.item.input_audio_transcription.completed"&&item.transcript){
+            ownerVoiceAddLine("Você",item.transcript);
+            executeOwnerVoiceCommand(item.transcript).then(command=>{
+              if(command?.handled&&ownerVoiceChannel?.readyState==="open"){
+                ownerVoiceAddLine("CHEFE",command.answer);
+                ownerVoiceChannel.send(JSON.stringify({type:"response.create",response:{instructions:"Responda em português brasileiro, por áudio, dizendo exatamente: "+command.answer+" Não acrescente explicações nem diga que não executou."}}));
+              }
+            }).catch(error=>{console.warn("Falha ao executar comando de navegação por voz",error);ownerVoiceSetStatus("Não consegui abrir essa seção. Tente novamente.",true);});
+          }
           else if(item.type==="response.output_audio_transcript.done"&&item.transcript)ownerVoiceAddLine("CHEFE",item.transcript);
           else if(item.type==="response.output_text.done"&&item.text)ownerVoiceAddLine("CHEFE",item.text);
           else if(item.type==="response.function_call_arguments.done")runOwnerVoiceToolCall(item);

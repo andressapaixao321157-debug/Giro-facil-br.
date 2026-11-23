@@ -392,9 +392,9 @@ check("Banco aceita cartão para planos recorrentes no Asaas",
 
 
 check("Consultas públicas da vitrine e do detalhe não solicitam colunas privadas de anúncios",
-  !/db\\.from\\("anuncios"\\)\\.select\\("\*"\\)/.test(html) &&
-  (html.match(/db\\.from\\("anuncios"\\)\\.select\\("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at"\\)/g) || []).length === 2);
-const publicGrant = publicListingMigration.match(/GRANT SELECT \\(([\\s\\S]*?)\\) ON TABLE public\\.anuncios TO anon, authenticated;/);
+  !/db\.from\("anuncios"\)\.select\("\*"\)/.test(html) &&
+  (html.match(/db\.from\("anuncios"\)\.select\("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at"\)/g) || []).length === 2);
+const publicGrant = publicListingMigration.match(/GRANT SELECT \(([\s\S]*?)\) ON TABLE public\.anuncios TO anon, authenticated;/);
 const publicColumns = publicGrant ? publicGrant[1].split(",").map(column => column.trim()) : [];
 check("Migração retira SELECT amplo e não concede leitura de WhatsApp ou status financeiro",
   publicListingMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&

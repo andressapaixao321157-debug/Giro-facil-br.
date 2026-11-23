@@ -164,7 +164,7 @@ check("A interface alerta para não enviar dados secretos",
 check("Central de agentes aparece dentro do painel administrativo",
   hasId("agentConsole") && hasId("adminAgentSelect") && hasId("adminAgentInput") && hasId("adminAgentSend") && hasId("adminAgentOutput"));
 check("Console envia agente selecionado ao backend existente sem alterar chat público",
-  html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:[]}}') &&
+  html.includes('db.functions.invoke("giro-assistant",{body:{agent,message,history:adminAgentHistory}}') &&
   html.includes('$("assistantSend").onclick=sendAssistantMessage'));
 check("Console interno disponibiliza os sete agentes independentes da equipe",
   html.includes('<option value="admin">') && html.includes('<option value="moderation">') &&
@@ -247,9 +247,9 @@ check("Assistente retorna erros sem expor credenciais",
   assistant.includes("Não foi possível gerar uma resposta agora"));
 
 
-check("Assistente usa a Responses API atual e modelo GPT-6.2 Astra por padrão",
+check("Assistente usa a Responses API atual e modelo GPT-6.2 Sol por padrão",
   assistant.includes('https://api.openai.com/v1/responses') &&
-  assistant.includes('"gpt-6.2-astra"') &&
+  assistant.includes('"gpt-6.2-sol"') &&
   assistant.includes("max_output_tokens"));
 check("Assistente desativa armazenamento de conversas na chamada de IA",
   assistant.includes("store: false"));

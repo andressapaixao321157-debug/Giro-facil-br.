@@ -1415,6 +1415,40 @@ footer{color:#64748b;padding-bottom:100px}
     if(has(/\b(captacao|captadores|leads|crm)\b/))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
     if(has(/\b(central 24|agentes|tarefas dos agentes|equipe)\b/))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
     if(has(/\b(resumo|indicadores|numeros|metricas|como esta o giro)\b/)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
+    // Executor semântico genérico: opera somente controles visíveis e identificáveis
+    // pela interface atual; não inventa ações nem contorna permissões.
+    const norm=(v)=>String(v||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    const visible=(el)=>!!(el&&el.isConnected&&el.getClientRects().length&&!el.disabled&&el.getAttribute("aria-hidden")!=="true");
+    const labelOf=(el)=>norm([el.innerText,el.getAttribute("aria-label"),el.getAttribute("title"),el.getAttribute("placeholder"),el.value].filter(Boolean).join(" "));
+    const risky=/\b(excluir|apagar|deletar|remover|cancelar|aprovar|rejeitar|banir|bloquear|suspender|pagar|comprar|contratar|enviar|publicar|confirmar|estornar)\b/;
+    const targetText=(q.match(/(?:clique em|clica em|aperte|pressione|selecione|escolha|abra|abrir|mostrar|mostre|entre em|acessar|acesse)\s+(?:o|a|os|as|no|na|nos|nas)?\s*(.+)$/)||[])[1];
+    const controls=[...document.querySelectorAll("button,a,[role='button'],[role='tab'],input[type='button'],input[type='submit']")].filter(visible);
+    if(targetText){
+      const wanted=norm(targetText.replace(/\b(por favor|pra mim|para mim|agora)\b/g,""));
+      const exact=controls.find(el=>labelOf(el)===wanted);
+      const partial=exact||controls.find(el=>{const label=labelOf(el);return wanted.length>=3&&(label.includes(wanted)||wanted.includes(label));});
+      if(partial){
+        const actionLabel=(partial.innerText||partial.getAttribute("aria-label")||partial.title||"controle").trim().slice(0,90);
+        if(risky.test(norm(actionLabel))||risky.test(q))return {handled:true,answer:"Encontrei "+actionLabel+", mas essa ação altera dados ou envia algo. Para sua segurança, confirme diretamente no botão da tela."};
+        partial.click();return answer(actionLabel);
+      }
+    }
+    const fillMatch=q.match(/(?:digite|escreva|preencha|coloque)\s+["“]?(.+?)["”]?\s+(?:no|na|em|dentro do|dentro da)\s+(?:campo|caixa|busca|pesquisa)\s+(.+)$/);
+    if(fillMatch){
+      const value=String(transcript).match(/(?:digite|escreva|preencha|coloque)\s+["“]?(.+?)["”]?\s+(?:no|na|em|dentro do|dentro da)\s+(?:campo|caixa|busca|pesquisa)\s+(.+)$/i);
+      const wanted=norm(fillMatch[2]);
+      const fields=[...document.querySelectorAll("input:not([type=hidden]):not([type=password]),textarea,[contenteditable=true]")].filter(visible);
+      const field=fields.find(el=>labelOf(el).includes(wanted)||norm(el.id)===wanted||norm(el.name)===wanted);
+      if(!field)return {handled:true,answer:"Não encontrei um campo visível chamado "+fillMatch[2]+". Diga o nome que aparece na tela."};
+      const textValue=value?.[1]?.trim()||fillMatch[1];
+      if(field.isContentEditable)field.textContent=textValue;else {const setter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(field),"value")?.set;if(setter)setter.call(field,textValue);else field.value=textValue;}
+      field.dispatchEvent(new Event("input",{bubbles:true}));field.dispatchEvent(new Event("change",{bubbles:true}));field.focus();
+      return {handled:true,answer:"Preenchi o campo "+fillMatch[2]+". Confira o conteúdo antes de enviar."};
+    }
+    if(has(/\b(voltar|pagina anterior|tela anterior)\b/)){history.back();return {handled:true,answer:"Voltando para a tela anterior."};}
+    if(has(/\b(rolar|descer|ir para baixo)\b/)){window.scrollBy({top:Math.max(350,window.innerHeight*.75),behavior:"smooth"});return {handled:true,answer:"Rolei a página para baixo."};}
+    if(has(/\b(subir|rolar para cima|topo da pagina)\b/)){window.scrollTo({top:0,behavior:"smooth"});return {handled:true,answer:"Voltei ao topo da página."};}
+    if(has(/\b(parar de rolar|parar)\b/)){window.scrollTo({top:window.scrollY,behavior:"instant"});return {handled:true,answer:"Certo, parei."};}
     return {handled:false};
   }
   function ownerFallbackSpeak(message){

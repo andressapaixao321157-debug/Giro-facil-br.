@@ -493,19 +493,21 @@ check("Botão flutuante inicia a sessão de voz diretamente sem depender da pala
   html.includes('startOwnerVoiceConversation();') &&
   html.includes('Microfone automático do CHEFE') &&
   !html.includes('launcher.onclick=()=>{\\n        armOwnerWakeWord();'));
-check("Permissão do microfone é solicitada antes da credencial de voz",
-  html.indexOf('navigator.mediaDevices.getUserMedia({audio:') < html.indexOf('db.functions.invoke("owner-voice-session"'));
+check("Permissão do microfone e credencial de voz são solicitadas em paralelo após toque",
+  html.includes("const [voiceStream,tokenResult]=await Promise.all") &&
+  html.includes('navigator.mediaDevices.getUserMedia({audio:') &&
+  html.includes('db.functions.invoke("owner-voice-session",{body:{}})'));
 check("Erro de permissão do microfone apresenta orientação clara no Android",
   html.includes('Acesso ao microfone bloqueado. Nas configurações do Android'));
 
-check("Assistente inicia microfone automaticamente após validar a conta proprietária",
-  html.includes("ownerAutoVoiceStarted") &&
-  html.includes('document.body.dataset.isAdmin==="true"') &&
-  html.includes("startOwnerVoiceConversation();"));
+check("Assistente inicia microfone somente após toque do proprietário",
+  html.includes('launcher.onclick=()=>{') &&
+  html.includes("startOwnerVoiceConversation();") &&
+  !html.includes("ownerAutoVoiceStarted=true;"));
 check("Captação de áudio ativa cancelamento de eco, redução de ruído e ganho automático",
   html.includes("echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1"));
 check("Detecção de fala usa limiar mais sensível e pausa curta",
-  fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 500') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
+  fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

@@ -456,6 +456,25 @@ check("CHEFE abre a conversa correspondente após o proprietário informar o nom
   html.includes('Abri a conversa com "+target.name'));
 
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
+check("Ativação de voz não solicita microfone automaticamente fora de um toque do usuário",
+  html.includes("Toque no ícone do CHEFE para ativar o microfone") &&
+  !html.includes("startOwnerVoiceConversation();\n          }\n        },900)"));
+check("Inicialização de voz solicita microfone e token em paralelo",
+  html.includes("const [voiceStream,tokenResult]=await Promise.all") &&
+  html.includes("navigator.mediaDevices.getUserMedia") &&
+  html.includes('db.functions.invoke("owner-voice-session",{body:{}})'));
+check("Modo de voz nativo começa a ouvir sem esperar saudação falada",
+  html.includes('ownerVoiceSetStatus("Ativando o microfone agora. Pode falar...")') &&
+  html.includes("ownerFallbackStartListening();"));
+check("Abertura por voz mostra os detalhes completos do anúncio próprio, inclusive pendente",
+  html.includes("async function openOwnerListingDetail") &&
+  html.includes('.eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle()') &&
+  html.includes("Detalhes do seu anúncio"));
+check("Comando ambíguo de anúncio pergunta título e aceita primeira, segunda ou terceira opção",
+  html.includes("ownerVoicePendingListingLookup") &&
+  html.includes("primeiro, segundo ou terceiro") &&
+  html.includes("Vou abrir o escolhido"));
+
 
 // Regressão: navegação por voz do CHEFE deve acionar as telas reais do app.
 check("Comando por voz abre Meus classificados pela ação existente do botão",html.includes('$("myListingsOpen")?.click()')&&html.includes("meus? anuncios|meus? classificados|meu estoque|meus produtos|meus anuncios publicados|meus itens"));

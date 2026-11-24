@@ -106,7 +106,7 @@ Ações financeiras, exclusões, aprovações, envio de mensagens externas e mud
             input: {
               noise_reduction: { type: "near_field" },
               transcription: { model: "gpt-4o-mini-transcribe", language: "pt" },
-              turn_detection: { type: "server_vad", threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 500, create_response: true, interrupt_response: true },
+              turn_detection: { type: "server_vad", threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400, create_response: true, interrupt_response: true },
             },
             output: { voice: "cedar", speed: 1.4 },
           },

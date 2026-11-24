@@ -34,7 +34,7 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Check inline JavaScript syntax
         run: |
           node -e "const fs=require('fs');const html=fs.readFileSync('index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());if(!scripts.length)throw new Error('No inline scripts found');fs.writeFileSync('/tmp/giro-inline.js',scripts.join('\\n'));"

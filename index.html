@@ -1809,7 +1809,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }catch(error){
       if(ownerFallbackActive){
         const detail=String(error?.message||error||"");
-        if(/permission|denied|not authorized|permiss[aã]o|negad[ao]/i.test(detail)){ownerVoiceSetStatus("Permissão de reconhecimento negada. Libere o microfone e a permissão de fala nas configurações do Android.",true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;return;}
+        if(/permission|denied|not authorized|permiss[aã]o|negad[ao]/i.test(detail)){await stopOwnerVoiceConversation();ownerVoiceSetStatus("Permissão de reconhecimento negada. Libere o microfone e a permissão de fala nas configurações do Android.",true);return;}
         ownerNativeSpeechDisabled=true;
         ownerVoiceSetStatus("O reconhecimento nativo falhou. Tentando o modo alternativo...",true);
         ownerFallbackStartListening();
@@ -1839,7 +1839,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone: "+(error?.message||"erro desconhecido"),true);}
   }
   function startOwnerFallbackVoice(){
-    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
+    ownerNativeSpeechDisabled=false;ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
     const launcher=$( "giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
     $( "ownerVoiceStart").disabled=true;$( "ownerVoiceStop").disabled=false;
     ownerVoiceSetStatus("Inicializando reconhecimento de voz nativo do Android...");

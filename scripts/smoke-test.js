@@ -420,7 +420,7 @@ check("Ações sensíveis exigem confirmação na interface e não são acionada
 check("CHEFE pergunta qual comprador antes de abrir uma conversa por voz",
   html.includes("ownerVoicePendingChatLookup") &&
   html.includes("De qual comprador você quer abrir a mensagem?") &&
-  html.includes('has(/\\\\b(mensagem|mensagens|conversa|conversas|chat)\\\\b/)'));
+  html.includes('has(/\\b(mensagem|mensagens|conversa|conversas|chat)\\b/)'));
 check("Inbox identifica o comprador pelo nome do perfil e associa a conversa ao ID correto",
   html.includes('from("perfis").select("id,nome").in("id",peerIds)') &&
   html.includes('b.dataset.conversationId=conv.id') &&

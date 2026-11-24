@@ -408,6 +408,13 @@ check("Webhook libera plano fundador após checkout pago e encerra assinatura ca
 check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório", fs.readFileSync("docs/campanha-500-parceiros-fundadores.md", "utf8").includes("Nenhum sorteio, rifa, venda de números ou prêmio aleatório"));
 
 // CHEFE: comandos de voz do proprietário — testes de regressão.
+
+check("APK inclui reconhecimento nativo de fala compatível com Capacitor 7",
+  html.includes('window.Capacitor?.Plugins?.SpeechRecognition') &&
+  html.includes('native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false})') &&
+  html.includes('native.requestPermissions()') &&
+  html.includes('await native.stop()'));
+
 check("Assistente de voz do proprietário possui controles de iniciar e encerrar",hasId("ownerVoiceStart")&&hasId("ownerVoiceStop")&&hasId("ownerVoiceStatus")&&hasId("ownerVoiceTranscript"));
 check("Modo gratuito usa reconhecimento e síntese de voz pt-BR do navegador",html.includes("window.SpeechRecognition||window.webkitSpeechRecognition")&&html.includes("new SpeechSynthesisUtterance(message)")&&html.includes('utterance.lang="pt-BR"'));
 check("Modo gratuito interrompe reconhecimento e fala ao encerrar",html.includes("ownerFallbackRecognition.abort()")&&html.includes("window.speechSynthesis.cancel()"));

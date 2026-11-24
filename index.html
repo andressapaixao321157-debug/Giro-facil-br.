@@ -2430,58 +2430,81 @@ footer{color:#64748b;padding-bottom:100px}
   <!-- APK rebuild: owner voice assistant Realtime v9 -->
 
 <style id="admin-separated-screens">
-#adminPanel .admin-screen-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0}
-#adminPanel .admin-screen-nav button{background:#203958;color:#eaf2ff;border:1px solid #496487;text-align:left;min-height:58px;padding:11px 13px;border-radius:12px}
-#adminPanel .admin-screen-nav button[aria-current="page"]{background:#ff8a24;color:#172033;border-color:#ffb15b}
-#adminPanel .admin-screen-nav small{display:block;font-size:11px;font-weight:500;opacity:.85;margin-top:4px}
+#adminPanel .admin-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+#adminPanel .admin-home-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;min-height:118px;padding:18px;background:linear-gradient(145deg,#1b3557,#10233f);color:#f4f7fc;border:1px solid #35577f;border-radius:16px;box-shadow:0 8px 22px #06152b25}
+#adminPanel .admin-home-card .admin-home-icon{font-size:25px}
+#adminPanel .admin-home-card strong{font-size:15px}
+#adminPanel .admin-home-card small{font-size:12px;font-weight:500;color:#c2d0e2;line-height:1.4}
 #adminPanel .admin-screen{display:none;min-width:0}
 #adminPanel .admin-screen.active{display:block}
-#adminPanel .admin-screen>.panel:first-child{margin-top:0}
-#adminPanel .admin-screen-title{color:#fff;font-size:22px;margin:6px 0 16px}
-@media(max-width:600px){#adminPanel .admin-screen-nav{grid-template-columns:repeat(2,minmax(0,1fr))}#adminPanel .admin-screen-nav button{font-size:13px;padding:10px}}
+#adminPanel .admin-screen-top{display:flex;align-items:center;gap:12px;margin:14px 0 22px;padding-bottom:16px;border-bottom:1px solid #ffffff25}
+#adminPanel .admin-screen-back{flex:0 0 auto;background:#263e5f;color:#fff;border:1px solid #527198;padding:11px 15px;border-radius:11px}
+#adminPanel .admin-screen-top h3{margin:0!important;padding:0!important;border:0!important;color:#fff;font-size:23px}
+#adminPanel .admin-screen-top p{margin:5px 0 0;color:#bdcbe2;font-size:13px}
+#adminPanel .admin-screen-body{display:grid;gap:14px;min-width:0}
+#adminPanel .admin-screen-body>h3{margin:12px 0 0}
+#adminPanel .admin-screen-body>.panel{margin:0}
+#adminPanel .admin-screen-body>div,#adminPanel .admin-screen-body>textarea{min-width:0;max-width:100%}
+#adminPanel .admin-home{display:block}
+#adminPanel .admin-home.hidden{display:none}
+@media(max-width:760px){#adminPanel .admin-home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#adminPanel .admin-home-card{min-height:112px;padding:14px}}
+@media(max-width:380px){#adminPanel .admin-home-grid{grid-template-columns:1fr}}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {
  const init=()=>{
-  const panel=document.getElementById('adminPanel'); if(!panel||panel.dataset.separated==='1')return;
-  panel.dataset.separated='1';
+  const panel=document.getElementById('adminPanel');if(!panel||panel.dataset.separatedV2==='1')return;
+  panel.dataset.separatedV2='1';
   const status=document.getElementById('adminStatus');
-  const nav=document.createElement('nav');nav.className='admin-screen-nav';nav.setAttribute('aria-label','Seções do painel administrativo');
-  const screens=[
-   ['overview','Visão geral','Indicadores e boas-vindas',['ownerDashboard','adminTotals']],
-   ['voice','Assistente do proprietário','Comandos e conversa por voz',['ownerVoiceAssistant']],
-   ['operations','Central 24h','Equipe e tarefas automáticas',['ownerAgentControl']],
-   ['agents','Agentes inteligentes','Consultar os sete especialistas',['agentConsole']],
-   ['founders','Parceiros fundadores','Campanha e inscrições',['adminFounderCampaign']],
-   ['partners','Parceiros e captação','Solicitações e CRM nacional',['adminPartners','adminAcquisitionMetrics','adminAcquisitionLeads']],
-   ['finance','Financeiro','Pagamentos recentes',['adminOrders']],
-   ['listings','Anúncios','Anúncios recentes e moderação',['adminListings']],
-   ['stock','Estoque próprio','Cadastro em lote da conta proprietária',['adminBulkInput','adminBulkSubmit']]
+  const home=document.createElement('section');home.className='admin-home';home.innerHTML='<div class="admin-console-head"><h2>Central do proprietário</h2><p class="hint">Escolha uma área. Cada função abre em sua própria tela, sem misturar ferramentas.</p></div><div class="admin-home-grid" aria-label="Módulos administrativos"></div>';
+  const grid=home.querySelector('.admin-home-grid');
+  const modules=[
+   ['overview','▦','Visão geral','Indicadores principais',['ownerDashboard','adminTotals']],
+   ['voice','🎙','Assistente do proprietário','Comandos e voz',['ownerVoiceAssistant']],
+   ['operations','◷','Central 24h','Equipe e tarefas automáticas',['ownerAgentControl']],
+   ['agents','✦','Agentes inteligentes','Sete especialistas',['agentConsole']],
+   ['founders','♛','Parceiros fundadores','Campanha e inscrições',['adminFounderCampaign']],
+   ['partners','♧','Parceiros','Solicitações recebidas',['adminPartners']],
+   ['acquisition','◎','Captação nacional','Indicadores e CRM de interessados',['adminAcquisitionMetrics','adminAcquisitionLeads']],
+   ['finance','R$','Financeiro','Pagamentos e pedidos',['adminOrders']],
+   ['listings','▤','Anúncios','Anúncios recentes e gestão',['adminListings']],
+   ['stock','＋','Estoque próprio','Cadastro em lote',['adminBulkInput','adminBulkSubmit']]
   ];
-  const screensHost=document.createElement('div');screensHost.className='admin-screens';
-  const nodes={};
-  for(const [key,title,desc,ids] of screens){
+  const host=document.createElement('div');host.className='admin-screens';
+  function makeScreen(key,title,desc,ids){
    const section=document.createElement('section');section.className='admin-screen';section.dataset.screen=key;
-   const heading=document.createElement('h3');heading.className='admin-screen-title';heading.textContent=title;section.appendChild(heading);
-   for(const id of ids){const el=document.getElementById(id);if(!el)continue;
+   const top=document.createElement('div');top.className='admin-screen-top';
+   const back=document.createElement('button');back.type='button';back.className='admin-screen-back';back.textContent='← Menu principal';back.addEventListener('click',showHome);
+   const titleWrap=document.createElement('div');titleWrap.innerHTML='<h3>'+title+'</h3><p>'+desc+'</p>';
+   top.append(back,titleWrap);section.appendChild(top);
+   const body=document.createElement('div');body.className='admin-screen-body';
+   for(const id of ids){
+    const el=document.getElementById(id);if(!el)continue;
     if(id==='adminPartners'||id==='adminOrders'||id==='adminListings'||id==='adminAcquisitionLeads'){
-      const prev=el.previousElementSibling;if(prev&&prev.tagName==='H3'&&prev.parentElement===panel)section.appendChild(prev);
+      const prev=el.previousElementSibling;if(prev&&prev.tagName==='H3'&&prev.parentElement===panel)body.appendChild(prev);
     }
-    section.appendChild(el);
+    if(id==='adminBulkInput'){
+      const p=el.previousElementSibling;if(p&&p.tagName==='P'&&p.parentElement===panel)body.appendChild(p);
+      const heading=p?.previousElementSibling;if(heading&&heading.tagName==='H3'&&heading.parentElement===panel)body.appendChild(heading);
+    }
+    body.appendChild(el);
    }
-   screensHost.appendChild(section);nodes[key]=section;
-   const b=document.createElement('button');b.type='button';b.dataset.target=key;b.innerHTML='<strong>'+title+'</strong><small>'+desc+'</small>';
-   b.addEventListener('click',()=>show(key));nav.appendChild(b);
+   section.appendChild(body);host.appendChild(section);
+   const card=document.createElement('button');card.type='button';card.className='admin-home-card';card.innerHTML='<span class="admin-home-icon">'+keyIcon(key)+'</span><strong>'+title+'</strong><small>'+desc+'</small>';card.addEventListener('click',()=>showScreen(key));
+   grid.appendChild(card);
   }
-  function show(key){
-   for(const s of screensHost.children)s.classList.toggle('active',s.dataset.screen===key);
-   for(const b of nav.children){if(b.dataset.target===key)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
-   panel.dataset.activeScreen=key;
-   const top=panel.getBoundingClientRect().top+window.scrollY-12;window.scrollTo({top,behavior:'smooth'});
+  function keyIcon(k){const m=modules.find(x=>x[0]===k);return m?m[1]:'•';}
+  modules.forEach(([key,icon,title,desc,ids])=>makeScreen(key,title,desc,ids));
+  function showHome(){
+   home.classList.remove('hidden');host.querySelectorAll('.admin-screen').forEach(s=>s.classList.remove('active'));
+   panel.dataset.activeScreen='home';window.scrollTo({top:panel.getBoundingClientRect().top+window.scrollY-12,behavior:'smooth'});
   }
-  if(status)status.after(nav);else panel.prepend(nav);
-  panel.appendChild(screensHost);
-  show('overview');
+  function showScreen(key){
+   home.classList.add('hidden');host.querySelectorAll('.admin-screen').forEach(s=>s.classList.toggle('active',s.dataset.screen===key));
+   panel.dataset.activeScreen=key;window.scrollTo({top:panel.getBoundingClientRect().top+window.scrollY-12,behavior:'smooth'});
+  }
+  if(status)status.after(home);else panel.prepend(home);
+  panel.appendChild(host);showHome();
  };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

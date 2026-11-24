@@ -2428,5 +2428,64 @@ footer{color:#64748b;padding-bottom:100px}
 </script>
   <!-- Build validation trigger: Giro Facil BR Android APK -->
   <!-- APK rebuild: owner voice assistant Realtime v9 -->
+
+<style id="admin-separated-screens">
+#adminPanel .admin-screen-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0}
+#adminPanel .admin-screen-nav button{background:#203958;color:#eaf2ff;border:1px solid #496487;text-align:left;min-height:58px;padding:11px 13px;border-radius:12px}
+#adminPanel .admin-screen-nav button[aria-current="page"]{background:#ff8a24;color:#172033;border-color:#ffb15b}
+#adminPanel .admin-screen-nav small{display:block;font-size:11px;font-weight:500;opacity:.85;margin-top:4px}
+#adminPanel .admin-screen{display:none;min-width:0}
+#adminPanel .admin-screen.active{display:block}
+#adminPanel .admin-screen>.panel:first-child{margin-top:0}
+#adminPanel .admin-screen-title{color:#fff;font-size:22px;margin:6px 0 16px}
+@media(max-width:600px){#adminPanel .admin-screen-nav{grid-template-columns:repeat(2,minmax(0,1fr))}#adminPanel .admin-screen-nav button{font-size:13px;padding:10px}}
+</style>
+<script id="admin-separated-screens-script">
+(()=> {
+ const init=()=>{
+  const panel=document.getElementById('adminPanel'); if(!panel||panel.dataset.separated==='1')return;
+  panel.dataset.separated='1';
+  const status=document.getElementById('adminStatus');
+  const nav=document.createElement('nav');nav.className='admin-screen-nav';nav.setAttribute('aria-label','Seções do painel administrativo');
+  const screens=[
+   ['overview','Visão geral','Indicadores e boas-vindas',['ownerDashboard','adminTotals']],
+   ['voice','Assistente do proprietário','Comandos e conversa por voz',['ownerVoiceAssistant']],
+   ['operations','Central 24h','Equipe e tarefas automáticas',['ownerAgentControl']],
+   ['agents','Agentes inteligentes','Consultar os sete especialistas',['agentConsole']],
+   ['founders','Parceiros fundadores','Campanha e inscrições',['adminFounderCampaign']],
+   ['partners','Parceiros e captação','Solicitações e CRM nacional',['adminPartners','adminAcquisitionMetrics','adminAcquisitionLeads']],
+   ['finance','Financeiro','Pagamentos recentes',['adminOrders']],
+   ['listings','Anúncios','Anúncios recentes e moderação',['adminListings']],
+   ['stock','Estoque próprio','Cadastro em lote da conta proprietária',['adminBulkInput','adminBulkSubmit']]
+  ];
+  const screensHost=document.createElement('div');screensHost.className='admin-screens';
+  const nodes={};
+  for(const [key,title,desc,ids] of screens){
+   const section=document.createElement('section');section.className='admin-screen';section.dataset.screen=key;
+   const heading=document.createElement('h3');heading.className='admin-screen-title';heading.textContent=title;section.appendChild(heading);
+   for(const id of ids){const el=document.getElementById(id);if(!el)continue;
+    if(id==='adminPartners'||id==='adminOrders'||id==='adminListings'||id==='adminAcquisitionLeads'){
+      const prev=el.previousElementSibling;if(prev&&prev.tagName==='H3'&&prev.parentElement===panel)section.appendChild(prev);
+    }
+    section.appendChild(el);
+   }
+   screensHost.appendChild(section);nodes[key]=section;
+   const b=document.createElement('button');b.type='button';b.dataset.target=key;b.innerHTML='<strong>'+title+'</strong><small>'+desc+'</small>';
+   b.addEventListener('click',()=>show(key));nav.appendChild(b);
+  }
+  function show(key){
+   for(const s of screensHost.children)s.classList.toggle('active',s.dataset.screen===key);
+   for(const b of nav.children){if(b.dataset.target===key)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
+   panel.dataset.activeScreen=key;
+   const top=panel.getBoundingClientRect().top+window.scrollY-12;window.scrollTo({top,behavior:'smooth'});
+  }
+  if(status)status.after(nav);else panel.prepend(nav);
+  panel.appendChild(screensHost);
+  show('overview');
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
 </body>
 </html>

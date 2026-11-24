@@ -113,12 +113,16 @@ Deno.serve(async (req) => {
     if (body?.action === "admin_support_thread") {
       const conversationId = String(body.conversationId ?? "");
       if (!uuid(conversationId)) return reply({ error: "Conversa inválida." }, 400);
-      const { data, error } = await admin.from("mensagens").select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em,entregue_em")
-        .eq("conversa_id", conversationId).order("criada_em", { ascending: true }).limit(300);
-      if (error) throw error;
       const { data: conversation, error: convError } = await admin.from("conversas").select("id").eq("id", conversationId).maybeSingle();
       if (convError) throw convError;
       if (!conversation) return reply({ error: "Conversa não encontrada." }, 404);
+      const readAt = new Date().toISOString();
+      const { error: receiptError } = await admin.from("mensagens").update({ entregue_em: readAt, lida_em: readAt })
+        .eq("conversa_id", conversationId).neq("remetente_id", userId).is("lida_em", null);
+      if (receiptError) throw receiptError;
+      const { data, error } = await admin.from("mensagens").select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em,entregue_em")
+        .eq("conversa_id", conversationId).order("criada_em", { ascending: true }).limit(300);
+      if (error) throw error;
       return reply({ success: true, messages: data || [] });
     }
 

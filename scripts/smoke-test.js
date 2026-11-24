@@ -445,9 +445,10 @@ check("Ações financeiras e destrutivas não são executadas sem confirmação 
   html.includes("const risky=") && html.includes("confirme diretamente no botão da tela"));
  
 check("Botão flutuante inicia a sessão de voz diretamente sem depender da palavra-chave do navegador",
+  html.includes('launcher.onclick=()=>') &&
   html.includes('startOwnerVoiceConversation();') &&
-  html.includes('Toque no microfone para iniciar a conversa') &&
-  !html.includes('setTimeout(()=>{if(document.body.dataset.isAdmin==="true"&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer)armOwnerWakeWord();},250)'));
+  html.includes('Microfone automático do CHEFE') &&
+  !html.includes('launcher.onclick=()=>{\\n        armOwnerWakeWord();'));
 check("Permissão do microfone é solicitada antes da credencial de voz",
   html.indexOf('navigator.mediaDevices.getUserMedia({audio:') < html.indexOf('db.functions.invoke("owner-voice-session"'));
 check("Erro de permissão do microfone apresenta orientação clara no Android",

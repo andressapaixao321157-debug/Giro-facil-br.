@@ -2429,7 +2429,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       if(touchThreadError)throw touchThreadError;
       // Comandos locais de leitura/navegação não dependem de créditos da IA.
       // Compartilha o mesmo executor do CHEFE por voz no site e no APK.
-      const safeOwnerCommand=/^(?:abr[ae]|abrir|entrar|entra|mostrar|mostra|ver|visualizar|acessar|acesse|ir|vai|voltar|buscar|pesquisar|procura|rolar|descer|subir|parar|clique em|clica em|aperte|pressione|selecione|escolha|meus?\s+(?:an[uú]ncios|classificados)|painel|central|planos|favoritos|mensagens|chat|in[ií]cio)\b/i.test(message)
+      const safeOwnerCommand=/(?:\b(?:abr[ae]|abrir|entrar|entra|mostrar|mostra|ver|visualizar|acessar|acesse|ir|vai|voltar|buscar|pesquisar|procura|rolar|descer|subir|parar|clique em|clica em|aperte|pressione|selecione|escolha)\b|\bmeus?\s+(?:an[uú]ncios|classificados)\b|\b(?:painel|central|planos|favoritos|mensagens|chat|in[ií]cio)\b)/i.test(message)
         && !/(?:excluir|apagar|deletar|remover|cancelar|aprovar|rejeitar|banir|bloquear|suspender|pagar|comprar|contratar|enviar|publicar|confirmar|estornar|editar|alterar|mudar|modificar|vendido)/i.test(message);
       if(document.body.dataset.isAdmin==="true"&&safeOwnerCommand){
         const localCommand=await executeOwnerVoiceCommand(message);

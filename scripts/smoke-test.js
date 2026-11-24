@@ -442,6 +442,27 @@ check("Área administrativa continua protegida por verificação de papel",
 check("Ações financeiras e destrutivas não são executadas sem confirmação explícita",
   html.includes("const risky=") && html.includes("confirme diretamente no botão da tela"));
  
+
+const listingPrivacyMigrationPath = "supabase/migrations/20261124020000_restrict_public_listing_private_columns.sql";
+const listingPrivacyMigration = fs.existsSync(listingPrivacyMigrationPath) ? fs.readFileSync(listingPrivacyMigrationPath, "utf8") : "";
+const paymentInsertMigrationPath = "supabase/migrations/20261124020100_restrict_client_payment_status_insert.sql";
+const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
+const publicListingGrant = listingPrivacyMigration.split("GRANT SELECT (")[1] || "";
+const clientInsertGrant = paymentInsertMigration.split("GRANT INSERT (")[1] || "";
+check("Vitrine e detalhes de anúncios usam projeções explícitas sem SELECT estrela",
+  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)/.test(html) &&
+  html.includes('db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at")'));
+check("Migração de privacidade revoga leitura ampla e libera somente colunas públicas",
+  listingPrivacyMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
+  publicListingGrant.includes("updated_at") &&
+  !publicListingGrant.includes("whatsapp") &&
+  !publicListingGrant.includes("pagamento_status"));
+check("Migração financeira impede INSERT cliente de pagamento_status",
+  paymentInsertMigration.includes("REVOKE INSERT ON TABLE public.anuncios FROM authenticated;") &&
+  paymentInsertMigration.includes("REVOKE INSERT (pagamento_status)") &&
+  clientInsertGrant.includes("updated_at") &&
+  !clientInsertGrant.includes("pagamento_status"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

@@ -1498,20 +1498,17 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       launcher=document.createElement("button");launcher.id="giroOwnerLauncher";launcher.type="button";launcher.title="Toque e diga: Bora chefe";launcher.setAttribute("aria-label","Ativar escuta do comando Bora chefe");launcher.textContent="✦";document.body.appendChild(launcher);
       dock=document.createElement("section");dock.id="giroOwnerDock";dock.setAttribute("aria-label","Assistente do proprietário");document.body.appendChild(dock);
       launcher.onclick=()=>{
-        if(ownerFallbackActive||ownerVoicePeer||ownerWakeArmed){stopOwnerVoiceConversation();stopOwnerWakeWord();launcher.classList.remove("voice-active","wake-armed");launcher.textContent="✦";launcher.title="Toque e diga: Bora chefe";ownerWakeStatus("Assistente pausado.");return;}
-        armOwnerWakeWord();
+        if(ownerFallbackActive||ownerVoicePeer||ownerVoiceStream||ownerWakeArmed){stopOwnerVoiceConversation();stopOwnerWakeWord();launcher.classList.remove("voice-active","wake-armed");launcher.textContent="✦";launcher.title="Toque para conversar com o CHEFE";ownerWakeStatus("Assistente pausado.");return;}
+        startOwnerVoiceConversation();
       };
       giroOwnerDockReady=true;
     }
     launcher.classList.toggle("visible",!!isOwner);
     if(!isOwner){stopOwnerWakeWord();ownerWakeAutoAttempted=false;launcher.classList.remove("wake-armed","voice-active");return;}
-    launcher.title="Microfone ativo: diga Bora chefe (toque para pausar)";
+    launcher.title="Toque para conversar com o CHEFE";
     if(!ownerWakeAutoAttempted&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer){
       ownerWakeAutoAttempted=true;
-      ownerWakeStatus("Olá, meu chefe! Preparando a escuta de “Bora chefe”. Se o navegador pedir, autorize o microfone uma vez.");
-      setTimeout(()=>{if(document.body.dataset.isAdmin==="true"&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer)armOwnerWakeWord();},250);
-    }else if(ownerWakeArmed){
-      ownerWakeStatus("Estou na escuta, meu chefe. Diga: Bora chefe.");
+      ownerWakeStatus("Olá, meu chefe! Toque no microfone para iniciar a conversa e autorizar o acesso ao microfone.");
     }
   }
   function stopOwnerWakeWord(){
@@ -1853,11 +1850,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){ownerVoiceSetStatus("Este navegador não oferece suporte à chamada de voz. Atualize o Chrome ou use o site em HTTPS.",true);return;}
     start.disabled=true;ownerVoiceSetStatus("Solicitando acesso ao microfone e preparando a conexão segura...");
     try{
+      ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+      ownerVoiceSetStatus("Microfone autorizado. Preparando conexão segura...");
       const {data:tokenData,error:tokenError}=await db.functions.invoke("owner-voice-session",{body:{}});
       if(tokenError)throw new Error(tokenError.message||"Não foi possível autorizar a sessão de voz.");
       const ephemeralKey=tokenData?.value;
       if(!ephemeralKey)throw new Error(tokenData?.error||"O servidor não retornou a credencial temporária de voz.");
-      ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
       ownerVoicePeer=new RTCPeerConnection();
       ownerVoiceAudio=document.createElement("audio");ownerVoiceAudio.autoplay=true;ownerVoiceAudio.playsInline=true;ownerVoiceAudio.style.display="none";document.body.appendChild(ownerVoiceAudio);
       ownerVoicePeer.ontrack=event=>{ownerVoiceAudio.srcObject=event.streams[0];ownerVoiceAudio.play().catch(()=>ownerVoiceSetStatus("Toque na tela para liberar o áudio do assistente."));};
@@ -1899,6 +1897,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }catch(error){
       console.error("Falha ao iniciar assistente de voz",error);
       let detail=String(error?.message||error||"");
+       if(error?.name==="NotAllowedError"||error?.name==="PermissionDeniedError")detail="Acesso ao microfone bloqueado. Nas configurações do Android, permita o microfone para Giro Fácil BR e tente novamente.";
+       else if(error?.name==="NotFoundError")detail="Nenhum microfone foi encontrado no aparelho.";
       const statusCode=error?.context?.status||error?.status||0;
       try{if(error?.context?.clone)detail+=" "+await error.context.clone().text();}catch(readError){}
       await stopOwnerVoiceConversation();

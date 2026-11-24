@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       if (key === "public_notice" && (typeof value !== "string" || value.length > 500)) return reply({ error: "O aviso público deve ter até 500 caracteres." }, 400);
       if (key !== "public_notice" && typeof value !== "boolean") return reply({ error: "Valor de configuração inválido." }, 400);
       const { data, error } = await admin.from("platform_settings").upsert({
-        setting_key: key, setting_value: JSON.stringify(value), updated_at: new Date().toISOString(), updated_by: userId,
+        setting_key: key, setting_value: value, updated_at: new Date().toISOString(), updated_by: userId,
         description: key === "support_chat_enabled" ? "Habilita o atendimento por chat dentro da plataforma" : key === "new_registrations_enabled" ? "Permite novos cadastros de usuários" : "Aviso público exibido no site",
       }, { onConflict: "setting_key" }).select("setting_key,setting_value,updated_at").single();
       if (error) throw error;

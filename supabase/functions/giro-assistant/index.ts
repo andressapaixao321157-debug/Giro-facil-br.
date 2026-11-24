@@ -27,6 +27,7 @@ function corsHeadersFor(origin: string | null) {
 
 const instructions = `Você é o assistente virtual inteligente do Giro Fácil BR, marketplace brasileiro.
 Responda em português brasileiro natural, com agilidade, simpatia e precisão. Seja direto: responda primeiro ao que a pessoa perguntou; evite introduções, repetições, listas longas e perguntas desnecessárias. Use linguagem conversacional, como um atendente experiente; varie a forma de começar, não soe como texto pronto e normalmente responda em 1 a 4 frases.
+Leia o histórico antes de responder. Nunca repita a mesma saudação, abertura, lista de capacidades ou pergunta genérica em mensagens consecutivas. Se já respondeu algo parecido, reconheça brevemente e avance com informação nova ou um próximo passo concreto. Não ofereça sempre a mesma lista de assuntos. Responda ao conteúdo específico da última mensagem; se não souber, diga exatamente o que falta e faça uma pergunta objetiva. Evite frases prontas e varie naturalmente o vocabulário, sem inventar dados.
 Entenda o contexto da conversa e não peça novamente informações que o cliente já forneceu. Se faltar algo essencial, faça apenas uma pergunta objetiva.
 Ajude compradores e vendedores com cadastro, anúncios, busca, conversas, pagamentos, segurança e uso da plataforma. Explique passos simples e práticos, especialmente no celular.
 No chat, sugira: "Oi, tudo bem? Esse item ainda está disponível. Se quiser, envio mais fotos e detalhes por aqui." Adapte item para carro, moto, imóvel ou produto conforme o anúncio.
@@ -77,8 +78,8 @@ Não invente contatos, empresas, métricas ou resultados. Não faça spam, não 
 };
 const allowedAgents = new Set(Object.keys(agentProfiles));
 
-function localAgentAnswer(agent: string, message: string): string {
-  if (agent === "customer") return localAnswer(message);
+function localAgentAnswer(agent: string, message: string, history: Array<{ role: string; content: string }> = []): string {
+  if (agent === "customer") return localAnswer(message, history);
   const q = message.toLocaleLowerCase("pt-BR");
   const request = message.trim().slice(0, 700);
   if (agent === "acquisition_buyers") {
@@ -137,23 +138,57 @@ function json(data: unknown, status = 200, headers = corsHeadersFor(null)) {
   });
 }
 
-function localAnswer(message: string): string {
+function localAnswer(message: string, history: Array<{ role: string; content: string }> = []): string {
   const q = message.toLocaleLowerCase("pt-BR");
-  if (/\b(oi|olá|ola|bom dia|boa tarde|boa noite|ajuda)\b/.test(q))
-    return "Olá! Sou o assistente virtual do Giro Fácil BR. Posso orientar sobre cadastro, anúncios, fotos, mensagens, planos, pagamentos e painel administrativo. O que você precisa resolver?";
+  const previous = [...history].reverse().find((item) => item.role === "assistant")?.content?.trim() ?? "";
+  const choose = (answers: string[]) => answers.find((answer) => answer !== previous) ?? answers[0];
+  if (/\\b(oi|olá|ola|bom dia|boa tarde|boa noite|ajuda)\\b/.test(q))
+    return choose([
+      "Oi! Que bom falar com você. Me conta o que está tentando fazer no Giro Fácil que eu te guio.",
+      "Fala! Estou aqui para ajudar. Qual etapa você quer resolver agora?",
+      "Olá! Pode mandar sua dúvida direto — vou focar no que você precisa, sem rodeios."
+    ]);
   if (/cadastro|conta|senha|entrar|login|recuperar/.test(q))
-    return "Para acessar o Giro Fácil BR, toque em Entrar / Minha conta e informe seu e-mail e senha. Se ainda não tem conta, escolha a opção de cadastro. Nunca envie sua senha ou código de verificação pelo chat.";
+    return choose([
+      "Para entrar, abra Minha conta e toque em Entrar. Se ainda não tiver cadastro, escolha Criar conta. Por segurança, não envie sua senha nem código aqui.",
+      "Vamos resolver seu acesso: na página inicial, abra Minha conta e selecione Entrar ou Criar conta. Se aparecer um erro, me diga o texto exato que aparece na tela.",
+      "O acesso é feito pelo botão Minha conta. Escolha Entrar se já tem cadastro; caso contrário, faça seu registro. Se travar, me diga em qual etapa."
+    ]);
   if (/anúncio|anuncio|publicar|vender|veículo|veiculo|imóvel|imovel|foto/.test(q))
-    return "Para anunciar, entre na sua conta e toque em Anunciar. Preencha os dados, envie fotos JPG, PNG, WEBP ou GIF de até 5 MB cada e envie o anúncio. Ele fica pendente até a análise administrativa. Depois escolha a modalidade de pagamento disponível.";
+    return choose([
+      "Para publicar, entre na conta, toque em Anunciar, preencha os dados e envie as fotos. Depois acompanhe a análise em Meus classificados. Qual categoria você vai anunciar?",
+      "O caminho é Minha conta → Anunciar. Complete as informações, adicione as imagens e envie para análise. Se você já começou, me diga em qual campo ficou com dúvida.",
+      "Consigo te orientar na publicação. Primeiro escolha Anunciar, selecione a categoria e preencha os detalhes do produto. Você está anunciando carro, moto, imóvel ou outra coisa?"
+    ]);
   if (/mensagem|comprador|vendedor|conversa|chat/.test(q))
-    return "Para falar com comprador ou vendedor, abra Mensagens e selecione uma conversa. Para falar comigo, use o botão laranja 'Conversar com o assistente virtual'. O envio de mensagens de anúncio depende de uma conversa existente.";
+    return choose([
+      "Abra Mensagens para ver as conversas disponíveis e toque no comprador ou vendedor desejado. Se me disser o nome ou o anúncio, ajudo a identificar a conversa certa.",
+      "As conversas ficam na área Mensagens. Procure pelo anúncio ou pela pessoa e abra o chat correspondente. Está procurando uma conversa específica?",
+      "Vamos localizar isso: entre em Mensagens e veja a lista de conversas. Me diga o nome do comprador ou o título do anúncio para orientar o próximo passo."
+    ]);
   if (/pix|boleto|pagamento|plano|asaas|turbinar|loja/.test(q))
-    return "Abra Minha conta e escolha Planos e pagamentos. Selecione anúncio avulso, plano mensal, destaque ou plano de loja, quando disponível, e escolha PIX ou boleto. A cobrança só deve ser considerada paga após a confirmação do provedor.";
+    return choose([
+      "Acesse Minha conta → Planos e pagamentos para consultar as opções disponíveis. O pagamento só fica confirmado depois do retorno do provedor. Você quer ver plano, anúncio avulso ou turbo?",
+      "Na área Planos e pagamentos você encontra as modalidades habilitadas para sua conta. Me diga qual cobrança está tentando fazer e o que aparece na tela.",
+      "Vamos conferir a cobrança certa: abra Planos e pagamentos dentro de Minha conta. Você está com dúvida sobre PIX, boleto, mensalidade ou destaque?"
+    ]);
   if (/admin|administrador|painel|aprovar|moderar/.test(q))
-    return "O Painel administrativo é separado de Planos e pagamentos e aparece somente para contas autorizadas como administradoras. Nele é possível acompanhar indicadores, pagamentos e moderar anúncios pendentes. Se o botão não aparecer, a equipe precisa confirmar o papel de administrador da conta.";
+    return choose([
+      "O Painel administrativo aparece apenas para contas com permissão de administrador. Se você já entrou como proprietário e não vê o botão, me diga o que aparece no menu.",
+      "Para a gestão, procure Painel administrativo no menu da conta autorizada. Posso te ajudar a localizar indicadores, pagamentos ou anúncios pendentes. Qual deles você quer abrir?",
+      "O painel de gestão é separado de Planos e pagamentos e exige perfil administrativo. Você está tentando acessar o painel ou executar alguma tarefa nele?"
+    ]);
   if (/seguran|golpe|fraude|cartão|cartao|código|codigo/.test(q))
-    return "Por segurança, não compartilhe senhas, códigos de acesso, número completo de cartão ou dados bancários no chat. Confira o anúncio e use somente os meios oficiais de pagamento da plataforma.";
-  return "Posso ajudar com cadastro e acesso, publicação de anúncios e fotos, mensagens, planos e pagamentos ou painel administrativo. Diga qual etapa está apresentando problema e descreva a mensagem que aparece.";
+    return choose([
+      "Não compartilhe senhas, códigos de acesso ou dados completos de cartão. Prefira manter a negociação e as mensagens dentro do Giro Fácil e confirme pagamentos pelo status oficial.",
+      "Se suspeitar de golpe, não faça pagamento nem envie códigos. Confira os dados do anúncio e mantenha o contato pelo chat interno. O que aconteceu exatamente?",
+      "Vamos priorizar sua segurança: não envie documentos sensíveis, senhas ou códigos pelo chat. Descreva o sinal suspeito e ajudo a avaliar os próximos passos."
+    ]);
+  return choose([
+    "Quero entender o ponto exato para te orientar bem. O que você tentou fazer e em qual etapa travou?",
+    "Me dá só mais um detalhe: qual resultado você esperava e o que aconteceu na tela?",
+    "Certo — vamos por partes. Descreva a última ação que fez e a mensagem que apareceu; assim consigo indicar o próximo passo certo."
+  ]);
 }
 
 Deno.serve(async (req: Request) => {
@@ -340,7 +375,7 @@ Deno.serve(async (req: Request) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       return respond({
-        answer: localAgentAnswer(agent, message) + (trustedContext ? "\n\n" + trustedContext : ""),
+        answer: localAgentAnswer(agent, message, conversationHistory) + (trustedContext ? "\n\n" + trustedContext : ""),
         mode: "ajuda-basica",
         agent,
         notice: "O atendimento básico está ativo. A IA avançada depende da chave OPENAI_API_KEY configurada com segurança no Supabase.",
@@ -386,7 +421,7 @@ Deno.serve(async (req: Request) => {
       // or temporarily unavailable. Do not expose upstream 429/5xx to the app.
       if (response.status === 429 || response.status >= 500) {
         return respond({
-          answer: localAgentAnswer(agent, message),
+          answer: localAgentAnswer(agent, message, conversationHistory),
           mode: "ajuda-basica",
           agent,
           notice: "A resposta inteligente está temporariamente indisponível. O atendimento básico continua funcionando.",

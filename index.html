@@ -1840,7 +1840,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!("speechSynthesis" in window))ownerFallbackStartListening();
   }
   async function stopOwnerVoiceConversation(){
-    ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}
+    ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}const native=ownerNativeSpeech();if(native)await native.stop();if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}
     try{if(ownerVoiceChannel){ownerVoiceChannel.close();ownerVoiceChannel=null;}if(ownerVoicePeer){ownerVoicePeer.close();ownerVoicePeer=null;}if(ownerVoiceStream){ownerVoiceStream.getTracks().forEach(t=>t.stop());ownerVoiceStream=null;}if(ownerVoiceAudio){ownerVoiceAudio.pause();ownerVoiceAudio.srcObject=null;ownerVoiceAudio.remove();ownerVoiceAudio=null;}}
     finally{$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;const launcher=$("giroOwnerLauncher");if(launcher){launcher.classList.remove("voice-active");launcher.textContent="✦";launcher.title="Toque e diga: Bora chefe";}ownerVoiceSetStatus("Conversa encerrada. O microfone foi desligado.");}
   }

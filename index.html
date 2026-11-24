@@ -1097,6 +1097,7 @@ footer{color:#64748b;padding-bottom:100px}
         db.from("partner_accounts").select("status,business_name").eq("user_id",currentUser.id).maybeSingle()
       ]);
       document.body.dataset.isAdmin=profile?.papel==="admin"?"true":"false";
+      setOwnerAssistantPresence(profile?.papel==="admin");
       if(profile?.papel==="admin"){
         $("adminOpen").classList.remove("hidden");
         if(ADMIN_ENTRY_REQUESTED){
@@ -1357,15 +1358,29 @@ footer{color:#64748b;padding-bottom:100px}
     loadAdminDashboard();
     greetOwnerOnEntry();
   };
+  let giroOwnerDockReady=false;
+  function setOwnerAssistantPresence(isOwner){
+    let launcher=$("giroOwnerLauncher"),dock=$("giroOwnerDock");
+    if(!launcher){
+      launcher=document.createElement("button");launcher.id="giroOwnerLauncher";launcher.type="button";launcher.title="Assistente do proprietário";launcher.setAttribute("aria-label","Abrir assistente do proprietário");launcher.textContent="✦";document.body.appendChild(launcher);
+      dock=document.createElement("section");dock.id="giroOwnerDock";dock.setAttribute("aria-label","Assistente global do proprietário");
+      dock.innerHTML='<div class="giro-dock-head"><div><div class="giro-dock-title">CHEFE · Assistente do proprietário</div><div class="giro-dock-presence">● Proprietário reconhecido · pronto para ajudar</div></div><button id="giroDockClose" type="button" class="secondary" style="flex:0 0 auto;min-height:34px;padding:5px 10px">Fechar</button></div><div id="giroDockStatus" class="giro-dock-status" role="status">Olá, meu chefe! Estou pronto. Toque em “Falar agora” para liberar o microfone e dar seus comandos em qualquer tela.</div><div class="giro-dock-actions"><button id="giroDockStart" type="button">🎙️ Falar agora</button><button id="giroDockStop" type="button" disabled>Encerrar</button></div><div id="giroDockTranscript" aria-live="polite"></div>';
+      document.body.appendChild(dock);
+      launcher.onclick=()=>dock.classList.toggle("visible");
+      $("giroDockClose").onclick=()=>dock.classList.remove("visible");
+      $("giroDockStart").onclick=()=>{dock.classList.add("visible");if(!$("ownerVoiceStart"))return;const adminPanel=$("adminPanel");if(adminPanel?.classList.contains("hidden")){$("adminOpen")?.click();}setTimeout(()=>{const voice=$("ownerVoiceAssistant");voice?.scrollIntoView({behavior:"smooth",block:"nearest"});$("ownerVoiceStart")?.click();},180);};
+      $("giroDockStop").onclick=()=>$("ownerVoiceStop")?.click();
+      giroOwnerDockReady=true;
+    }
+    launcher.classList.toggle("visible",!!isOwner);
+    if(!isOwner){dock.classList.remove("visible");$("giroDockStatus").textContent="Assistente disponível somente na conta proprietária.";return;}
+    $("giroDockStatus").textContent="Olá, meu chefe! Reconheci sua conta de proprietário. Estou pronto em todas as telas. Toque em “Falar agora” para autorizar o microfone.";
+  }
   function ownerVoiceSetStatus(message,isError=false){
-    const el=$("ownerVoiceStatus");if(!el)return;el.textContent=message;el.style.borderColor=isError?"#a04b56":"#45658d";el.style.color=isError?"#ffd4d4":"#c9dcf6";
+    const el=$("ownerVoiceStatus");if(el){el.textContent=message;el.style.borderColor=isError?"#a04b56":"#45658d";el.style.color=isError?"#ffd4d4":"#c9dcf6";}const dockStatus=$("giroDockStatus");if(dockStatus)dockStatus.textContent=message;
   }
   function ownerVoiceAddLine(speaker,message){
-    const box=$("ownerVoiceTranscript");if(!box||!message)return;
-    const p=document.createElement("p");p.className="owner-voice-line";
-    const strong=document.createElement("strong");strong.textContent=speaker+": ";
-    p.append(strong,document.createTextNode(message));box.appendChild(p);box.scrollTop=box.scrollHeight;
-    while(box.children.length>24)box.removeChild(box.firstChild);
+    const box=$("ownerVoiceTranscript");if(box&&message){const p=document.createElement("p");p.className="owner-voice-line";const strong=document.createElement("strong");strong.textContent=speaker+": ";p.append(strong,document.createTextNode(message));box.appendChild(p);box.scrollTop=box.scrollHeight;while(box.children.length>24)box.removeChild(box.firstChild);}const dockBox=$("giroDockTranscript");if(dockBox&&message){const line=document.createElement("div");line.textContent=speaker+": "+message;dockBox.appendChild(line);dockBox.scrollTop=dockBox.scrollHeight;while(dockBox.children.length>8)dockBox.removeChild(dockBox.firstChild);}if(!message)return;
   }
   let ownerGreetingPlayed=false;
   function greetOwnerOnEntry(){
@@ -2639,6 +2654,22 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* Assistente global do proprietário: disponível em todas as telas após validação da conta */
+#giroOwnerDock{position:fixed;z-index:120;right:14px;bottom:calc(92px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 28px));padding:14px;border:1px solid #397078;border-radius:18px;background:linear-gradient(145deg,#183653,#10243b);color:#f3f8fb;box-shadow:0 16px 42px #07152655;display:none}
+#giroOwnerDock.visible{display:block}
+#giroOwnerDock .giro-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#giroOwnerDock .giro-dock-title{font-weight:850;font-size:14px}
+#giroOwnerDock .giro-dock-presence{font-size:11px;color:#8ee0d7;margin-top:3px}
+#giroOwnerDock .giro-dock-status{font-size:12px;line-height:1.4;color:#d6e6ef;margin:10px 0}
+#giroOwnerDock .giro-dock-actions{display:flex;gap:8px}
+#giroOwnerDock button{flex:1;min-height:42px;padding:9px 12px;border-radius:11px}
+#giroOwnerDock #giroDockStart{background:#0e9f9a;color:white}
+#giroOwnerDock #giroDockStop{background:#29445f;color:#f3f8fb}
+#giroOwnerDock #giroDockTranscript{max-height:112px;overflow:auto;margin-top:8px;font-size:12px;line-height:1.4;color:#d5e2ec}
+#giroOwnerLauncher{position:fixed;z-index:119;right:16px;bottom:calc(164px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:2px solid #8de0d8;background:linear-gradient(145deg,#20b9b0,#087b78);color:white;font-size:23px;box-shadow:0 8px 25px #07152655;display:none}
+#giroOwnerLauncher.visible{display:grid;place-items:center}
+@media(max-width:760px){#giroOwnerDock{bottom:calc(82px + env(safe-area-inset-bottom));right:10px;width:calc(100vw - 20px)}#giroOwnerLauncher{bottom:calc(145px + env(safe-area-inset-bottom));right:13px}}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {

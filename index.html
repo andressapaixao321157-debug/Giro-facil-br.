@@ -1958,16 +1958,19 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       ownerVoiceChannel.addEventListener("message",event=>{
         try{
           const item=JSON.parse(event.data);
-          if(item.type==="conversation.item.input_audio_transcription.completed"&&item.transcript){
+          if(item.type==="input_audio_buffer.speech_started")ownerVoiceSetStatus("Estou ouvindo seu comando...");
+          else if(item.type==="conversation.item.input_audio_transcription.completed"&&item.transcript){
             ownerVoiceAddLine("Você",item.transcript);
+            ownerVoiceSetStatus("Entendi: "+item.transcript+". Executando...");
             executeOwnerVoiceCommand(item.transcript).then(command=>{
-              if(command?.handled&&ownerVoiceChannel?.readyState==="open"){
-                ownerVoiceChannel.send(JSON.stringify({type:"response.cancel"}));
+              if(ownerVoiceChannel?.readyState!=="open")return;
+              if(command?.handled){
                 ownerVoiceAddLine("CHEFE",command.answer);
                 ownerVoiceChannel.send(JSON.stringify({type:"response.create",response:{instructions:"Responda em português brasileiro, por áudio, dizendo exatamente: "+command.answer+" Não acrescente explicações nem diga que não executou."}}));
-              }
-            }).catch(error=>{console.warn("Falha ao executar comando de navegação por voz",error);ownerVoiceSetStatus("Não consegui abrir essa seção. Tente novamente.",true);});
+              }else ownerVoiceChannel.send(JSON.stringify({type:"response.create"}));
+            }).catch(error=>{console.warn("Falha ao executar comando de navegação por voz",error);ownerVoiceSetStatus("Não consegui executar: "+(error?.message||"erro interno"),true);if(ownerVoiceChannel?.readyState==="open")ownerVoiceChannel.send(JSON.stringify({type:"response.create",response:{instructions:"Informe em português brasileiro que ocorreu um erro ao executar o comando e peça para tentar novamente."}}));});
           }
+          else if(item.type==="conversation.item.input_audio_transcription.failed")ownerVoiceSetStatus("Não consegui transcrever sua fala. Fale mais perto do microfone e tente novamente.",true);
           else if(item.type==="response.output_audio_transcript.done"&&item.transcript)ownerVoiceAddLine("CHEFE",item.transcript);
           else if(item.type==="response.output_text.done"&&item.text)ownerVoiceAddLine("CHEFE",item.text);
           else if(item.type==="response.function_call_arguments.done")runOwnerVoiceToolCall(item);

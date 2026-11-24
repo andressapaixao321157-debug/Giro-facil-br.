@@ -1358,23 +1358,61 @@ footer{color:#64748b;padding-bottom:100px}
     loadAdminDashboard();
     greetOwnerOnEntry();
   };
-  let giroOwnerDockReady=false;
+  let giroOwnerDockReady=false,ownerWakeRecognition=null,ownerWakeArmed=false,ownerWakeStarting=false;
+  function ownerWakeStatus(message){const el=$("ownerVoiceStatus");if(el)el.textContent=message;const dock=$("giroDockStatus");if(dock)dock.textContent=message;}
   function setOwnerAssistantPresence(isOwner){
     let launcher=$("giroOwnerLauncher"),dock=$("giroOwnerDock");
     if(!launcher){
-      launcher=document.createElement("button");launcher.id="giroOwnerLauncher";launcher.type="button";launcher.title="Assistente do proprietário";launcher.setAttribute("aria-label","Abrir assistente do proprietário");launcher.textContent="✦";document.body.appendChild(launcher);
-      dock=document.createElement("section");dock.id="giroOwnerDock";dock.setAttribute("aria-label","Assistente global do proprietário");
-      dock.innerHTML='<div class="giro-dock-head"><div><div class="giro-dock-title">CHEFE · Assistente do proprietário</div><div class="giro-dock-presence">● Proprietário reconhecido · pronto para ajudar</div></div><button id="giroDockClose" type="button" class="secondary" style="flex:0 0 auto;min-height:34px;padding:5px 10px">Fechar</button></div><div id="giroDockStatus" class="giro-dock-status" role="status">Olá, meu chefe! Estou pronto. Toque em “Falar agora” para liberar o microfone e dar seus comandos em qualquer tela.</div><div class="giro-dock-actions"><button id="giroDockStart" type="button">🎙️ Falar agora</button><button id="giroDockStop" type="button" disabled>Encerrar</button></div><div id="giroDockTranscript" aria-live="polite"></div>';
-      document.body.appendChild(dock);
-      launcher.onclick=()=>dock.classList.toggle("visible");
-      $("giroDockClose").onclick=()=>dock.classList.remove("visible");
-      $("giroDockStart").onclick=()=>{dock.classList.add("visible");if(!$("ownerVoiceStart"))return;const adminPanel=$("adminPanel");if(adminPanel?.classList.contains("hidden")){$("adminOpen")?.click();}setTimeout(()=>{const voice=$("ownerVoiceAssistant");voice?.scrollIntoView({behavior:"smooth",block:"nearest"});$("ownerVoiceStart")?.click();},180);};
-      $("giroDockStop").onclick=()=>$("ownerVoiceStop")?.click();
+      launcher=document.createElement("button");launcher.id="giroOwnerLauncher";launcher.type="button";launcher.title="Toque e diga: Bora chefe";launcher.setAttribute("aria-label","Ativar escuta do comando Bora chefe");launcher.textContent="✦";document.body.appendChild(launcher);
+      dock=document.createElement("section");dock.id="giroOwnerDock";dock.setAttribute("aria-label","Assistente do proprietário");document.body.appendChild(dock);
+      launcher.onclick=()=>{
+        if(ownerFallbackActive||ownerVoicePeer||ownerWakeArmed){stopOwnerVoiceConversation();stopOwnerWakeWord();launcher.classList.remove("voice-active","wake-armed");launcher.textContent="✦";launcher.title="Toque e diga: Bora chefe";ownerWakeStatus("Assistente pausado.");return;}
+        armOwnerWakeWord();
+      };
       giroOwnerDockReady=true;
     }
     launcher.classList.toggle("visible",!!isOwner);
-    if(!isOwner){dock.classList.remove("visible");$("giroDockStatus").textContent="Assistente disponível somente na conta proprietária.";return;}
-    $("giroDockStatus").textContent="Olá, meu chefe! Reconheci sua conta de proprietário. Estou pronto em todas as telas. Toque em “Falar agora” para autorizar o microfone.";
+    if(!isOwner){stopOwnerWakeWord();launcher.classList.remove("wake-armed","voice-active");return;}
+    launcher.title="Toque uma vez e diga: Bora chefe";
+    ownerWakeStatus("Olá, meu chefe! Toque no ícone discreto e diga “Bora chefe” para iniciar a conversa por voz.");
+  }
+  function stopOwnerWakeWord(){
+    ownerWakeArmed=false;ownerWakeStarting=false;
+    try{if(ownerWakeRecognition){ownerWakeRecognition.onend=null;ownerWakeRecognition.abort();ownerWakeRecognition=null;}}catch(e){}
+    const launcher=$("giroOwnerLauncher");if(launcher)launcher.classList.remove("wake-armed");
+  }
+  function armOwnerWakeWord(){
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!Recognition){ownerWakeStatus("Seu navegador não oferece ativação por palavra-chave. Toque no botão de voz do assistente no painel.");return;}
+    if(!window.isSecureContext){ownerWakeStatus("A ativação por voz exige conexão HTTPS.");return;}
+    ownerWakeArmed=true;ownerWakeStarting=false;
+    const launcher=$("giroOwnerLauncher");if(launcher){launcher.classList.add("wake-armed");launcher.textContent="🎙";launcher.title="Escutando: diga Bora chefe"; }
+    ownerWakeStatus("Estou na escuta, meu chefe. Diga: Bora chefe.");
+    const listen=()=>{
+      if(!ownerWakeArmed||ownerWakeStarting)return;
+      try{
+        ownerWakeRecognition=new Recognition();
+        ownerWakeRecognition.lang="pt-BR";ownerWakeRecognition.continuous=true;ownerWakeRecognition.interimResults=true;ownerWakeRecognition.maxAlternatives=1;
+        ownerWakeRecognition.onresult=event=>{
+          let heard="";
+          for(let i=event.resultIndex;i<event.results.length;i++)heard+=" "+(event.results[i][0]?.transcript||"");
+          const normalized=heard.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+          if(/\bbora\s+(?:meu\s+)?chefe\b/.test(normalized)||/\bola\s+chefe\b/.test(normalized)){
+            ownerWakeStarting=true;stopOwnerWakeWord();
+            ownerWakeStatus("Comando reconhecido! Iniciando seu assistente...");
+            const l=$("giroOwnerLauncher");if(l){l.classList.remove("wake-armed");l.classList.add("voice-active");l.textContent="●";}
+            startOwnerVoiceConversation();
+          }
+        };
+        ownerWakeRecognition.onerror=event=>{
+          if(!ownerWakeArmed)return;
+          if(event.error==="not-allowed"||event.error==="service-not-allowed"){stopOwnerWakeWord();ownerWakeStatus("Libere o microfone nas permissões do navegador e toque no ícone novamente.");}
+        };
+        ownerWakeRecognition.onend=()=>{ownerWakeRecognition=null;if(ownerWakeArmed&&!ownerWakeStarting)setTimeout(listen,500);};
+        ownerWakeRecognition.start();
+      }catch(error){if(ownerWakeArmed){ownerWakeStatus("Não consegui ativar o microfone. Confira a permissão e tente novamente.");stopOwnerWakeWord();}}
+    };
+    listen();
   }
   function ownerVoiceSetStatus(message,isError=false){
     const el=$("ownerVoiceStatus");if(el){el.textContent=message;el.style.borderColor=isError?"#a04b56":"#45658d";el.style.color=isError?"#ffd4d4":"#c9dcf6";}const dockStatus=$("giroDockStatus");if(dockStatus)dockStatus.textContent=message;
@@ -1552,7 +1590,7 @@ footer{color:#64748b;padding-bottom:100px}
       ownerVoiceSetStatus("Este navegador não oferece voz gratuita integrada. Use o Chrome atualizado ou o chat por texto.",true);
       $("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;return;
     }
-    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
+    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;const launcher=$("giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
     $("ownerVoiceStart").disabled=true;$("ownerVoiceStop").disabled=false;
     ownerVoiceSetStatus("Ativando modo gratuito de voz...");
     ownerFallbackSpeak("Fala, meu chefe! A IA avançada está sem créditos, mas o modo gratuito está na escuta. O que vamos resolver?");
@@ -1560,7 +1598,7 @@ footer{color:#64748b;padding-bottom:100px}
   async function stopOwnerVoiceConversation(){
     ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}
     try{if(ownerVoiceChannel){ownerVoiceChannel.close();ownerVoiceChannel=null;}if(ownerVoicePeer){ownerVoicePeer.close();ownerVoicePeer=null;}if(ownerVoiceStream){ownerVoiceStream.getTracks().forEach(t=>t.stop());ownerVoiceStream=null;}if(ownerVoiceAudio){ownerVoiceAudio.pause();ownerVoiceAudio.srcObject=null;ownerVoiceAudio.remove();ownerVoiceAudio=null;}}
-    finally{$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;ownerVoiceSetStatus("Conversa encerrada. O microfone foi desligado.");}
+    finally{$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;const launcher=$("giroOwnerLauncher");if(launcher){launcher.classList.remove("voice-active");launcher.textContent="✦";launcher.title="Toque e diga: Bora chefe";}ownerVoiceSetStatus("Conversa encerrada. O microfone foi desligado.");}
   }
   async function runOwnerVoiceToolCall(item){
     if(item?.name!=="get_owner_dashboard_summary"||!item?.call_id)return;
@@ -2670,6 +2708,15 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
 #giroOwnerLauncher{position:fixed;z-index:119;right:16px;bottom:calc(164px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:2px solid #8de0d8;background:linear-gradient(145deg,#20b9b0,#087b78);color:white;font-size:23px;box-shadow:0 8px 25px #07152655;display:none}
 #giroOwnerLauncher.visible{display:grid;place-items:center}
 @media(max-width:760px){#giroOwnerDock{bottom:calc(82px + env(safe-area-inset-bottom));right:10px;width:calc(100vw - 20px)}#giroOwnerLauncher{bottom:calc(145px + env(safe-area-inset-bottom));right:13px}}
+
+/* Assistente discreto: somente um ícone flutuante, sem painel sobre o conteúdo */
+#giroOwnerDock{display:none!important}
+#giroOwnerLauncher{position:fixed;z-index:119;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;border:1px solid #72d5cd;background:linear-gradient(145deg,#183653,#10243b);color:#8ee0d7;font-size:21px;box-shadow:0 5px 18px #07152655;display:none;place-items:center;opacity:.94}
+#giroOwnerLauncher.visible{display:grid}
+#giroOwnerLauncher.wake-armed{background:linear-gradient(145deg,#0e9f9a,#087b78);color:white;box-shadow:0 0 0 4px #0e9f9a35,0 5px 18px #07152655;animation:giroWakePulse 1.8s ease-in-out infinite}
+#giroOwnerLauncher.voice-active{background:#0b705e;color:white;border:2px solid #8ee0d7}
+@keyframes giroWakePulse{0%,100%{box-shadow:0 0 0 3px #0e9f9a22,0 5px 18px #07152655}50%{box-shadow:0 0 0 7px #0e9f9a12,0 5px 18px #07152655}}
+@media(max-width:760px){#giroOwnerLauncher{right:12px;bottom:calc(91px + env(safe-area-inset-bottom));width:44px;height:44px}}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {

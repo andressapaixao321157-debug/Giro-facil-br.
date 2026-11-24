@@ -85,6 +85,15 @@ check("Assistente desabilita botão durante envio e restaura ao finalizar",
 check("Chat público recebe respostas incrementais por streaming",
   html.includes("stream:true") && html.includes("response.output_text.delta") &&
   assistant.includes("stream: wantsStream") && assistant.includes('"text/event-stream; charset=utf-8"'));
+check("Assistente recupera histórico persistente por usuário com RLS",
+  html.includes('from("assistant_threads")') && html.includes('from("assistant_messages")') &&
+  html.includes('thread_id:threadId,user_id:currentUser.id,role:"user"') &&
+  assistant.includes('eq("user_id", authData.user.id)'));
+check("Contexto de anúncios é limitado à conta autenticada",
+  assistant.includes('.from("anuncios")') && assistant.includes('.eq("usuario_id", authData.user.id)'));
+check("Contexto de conversas usa apenas conversas e mensagens acessíveis ao usuário",
+  assistant.includes('.from("conversas")') && assistant.includes('comprador_id.eq.') &&
+  assistant.includes('.from("mensagens")') && assistant.includes('.in("conversa_id", chatIds)'));
 check("Erro do assistente preserva a mensagem para nova tentativa",
   html.includes('input.value=message;') &&
   html.includes("Falha no envio. Confira sua conexão"));

@@ -1,0 +1,62 @@
+name: Voice fallback regression and Android APK
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "scripts/smoke-test.js"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.json"
+      - ".github/workflows/voice-fallback-ci.yml"
+  push:
+    branches: [fix/voice-fallback-resilience-20261124]
+    paths:
+      - "index.html"
+      - "scripts/smoke-test.js"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.json"
+      - ".github/workflows/voice-fallback-ci.yml"
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check inline JavaScript syntax
+        run: |
+          node -e "const fs=require('fs');const html=fs.readFileSync('index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim());if(!scripts.length)throw new Error('No inline scripts found');fs.writeFileSync('/tmp/giro-inline.js',scripts.join('\\n'));"
+          node --check /tmp/giro-inline.js
+      - name: Run marketplace and voice regression tests
+        run: npm test
+      - name: Build Android debug APK
+        run: |
+          npm run build
+          npx cap add android
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cd ..
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='br.com.girofacil.app'"
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: giro-facil-br-voice-fallback-test-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

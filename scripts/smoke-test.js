@@ -470,6 +470,15 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 350, silence_duration_ms: 650'));
 
+// Regressão: contingência do reconhecimento de voz no Android.
+check("Reconhecimento nativo indisponível aciona fallback do navegador",html.includes('if(!native){ownerVoiceSetStatus("Reconhecimento nativo indisponível. Tentando o reconhecimento alternativo...",true);ownerFallbackStartListening();return;}'));
+check("Serviço nativo indisponível não encerra a conversa por voz",html.includes('if(!availability?.available){ownerNativeSpeechDisabled=true;')&&html.includes('ownerFallbackStartListening();return;}'));
+check("Falha nativa transitória tenta reconhecimento alternativo",html.includes('ownerNativeSpeechDisabled=true;')&&html.includes('Tentando o modo alternativo...')&&html.includes('ownerFallbackStartListening();'));
+check("Permissão de microfone negada informa o usuário e encerra com segurança",html.includes('Permissão de reconhecimento negada.')&&html.includes('ownerFallbackActive=false')&&html.includes('ownerVoiceStop").disabled=true'));
+check("Fallback não tenta reabrir plugin nativo que já falhou",html.includes('ownerNativeSpeechDisabled?null:'));
+check("Nova sessão de voz permite nova tentativa do reconhecimento nativo",html.includes("function startOwnerFallbackVoice(){\n    ownerNativeSpeechDisabled=false;"));
+check("Permissão negada encerra e limpa corretamente a sessão de voz",html.includes("await stopOwnerVoiceConversation();ownerVoiceSetStatus(\"Permissão de reconhecimento negada."));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

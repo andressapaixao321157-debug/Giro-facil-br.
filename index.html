@@ -2903,12 +2903,12 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   const modules=[
    ['overview','▦','Visão geral','Indicadores e resumo do negócio',['ownerDashboard','adminTotals']],
    ['marketplace','▤','Marketplace e anúncios','Anúncios, estoque próprio e publicação em lote',['adminListings','adminBulkInput','adminBulkSubmit']],
-   ['users','♙','Usuários e atendimento','Diretório de usuários, solicitações de parceiros e suporte',['adminUsers','adminPartners']],
+   ['users','♙','Usuários e atendimento','Diretório de usuários, parceiros e atendimento administrativo',['adminUsers','adminPartners','adminSupportInbox']],
    ['finance','R$','Financeiro','Pagamentos, pedidos e receita',['adminOrders']],
    ['growth','♧','Parceiros e crescimento','Campanha de fundadores, parceiros e CRM nacional',['adminFounderCampaign','adminAcquisitionMetrics','adminAcquisitionLeads']],
    ['intelligence','✦','Inteligência artificial e voz','Assistente CHEFE e agentes especialistas',['ownerVoiceAssistant','agentConsole']],
    ['operations','◷','Operações e monitoramento','Central 24h, tarefas e relatórios da equipe',['ownerAgentControl']],
-   ['settings','⚙','Configurações e saúde técnica','Diagnóstico de conectividade das áreas principais',['adminHealth']]
+   ['settings','⚙','Configurações e saúde técnica','Diagnóstico e controles operacionais do site',['adminHealth','adminSettings']]
   ];
   const host=document.createElement('div');host.className='admin-screens';
   function makeScreen(key,title,desc,ids){

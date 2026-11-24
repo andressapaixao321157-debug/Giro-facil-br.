@@ -1359,6 +1359,7 @@ footer{color:#64748b;padding-bottom:100px}
     greetOwnerOnEntry();
   };
   let giroOwnerDockReady=false,ownerWakeRecognition=null,ownerWakeArmed=false,ownerWakeStarting=false;
+  let ownerWakeAutoAttempted=false;
   function ownerWakeStatus(message){const el=$("ownerVoiceStatus");if(el)el.textContent=message;const dock=$("giroDockStatus");if(dock)dock.textContent=message;}
   function setOwnerAssistantPresence(isOwner){
     let launcher=$("giroOwnerLauncher"),dock=$("giroOwnerDock");
@@ -1372,9 +1373,15 @@ footer{color:#64748b;padding-bottom:100px}
       giroOwnerDockReady=true;
     }
     launcher.classList.toggle("visible",!!isOwner);
-    if(!isOwner){stopOwnerWakeWord();launcher.classList.remove("wake-armed","voice-active");return;}
-    launcher.title="Toque uma vez e diga: Bora chefe";
-    ownerWakeStatus("Olá, meu chefe! Toque no ícone discreto e diga “Bora chefe” para iniciar a conversa por voz.");
+    if(!isOwner){stopOwnerWakeWord();ownerWakeAutoAttempted=false;launcher.classList.remove("wake-armed","voice-active");return;}
+    launcher.title="Microfone ativo: diga Bora chefe (toque para pausar)";
+    if(!ownerWakeAutoAttempted&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer){
+      ownerWakeAutoAttempted=true;
+      ownerWakeStatus("Olá, meu chefe! Preparando a escuta de “Bora chefe”. Se o navegador pedir, autorize o microfone uma vez.");
+      setTimeout(()=>{if(document.body.dataset.isAdmin==="true"&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer)armOwnerWakeWord();},250);
+    }else if(ownerWakeArmed){
+      ownerWakeStatus("Estou na escuta, meu chefe. Diga: Bora chefe.");
+    }
   }
   function stopOwnerWakeWord(){
     ownerWakeArmed=false;ownerWakeStarting=false;

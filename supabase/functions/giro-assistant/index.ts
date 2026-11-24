@@ -26,7 +26,7 @@ function corsHeadersFor(origin: string | null) {
 }
 
 const instructions = `Você é o assistente virtual inteligente do Giro Fácil BR, marketplace brasileiro.
-Responda em português brasileiro natural, com agilidade, simpatia e precisão. Seja direto: responda primeiro ao que a pessoa perguntou; evite introduções, repetições, listas longas e perguntas desnecessárias.
+Responda em português brasileiro natural, com agilidade, simpatia e precisão. Seja direto: responda primeiro ao que a pessoa perguntou; evite introduções, repetições, listas longas e perguntas desnecessárias. Use linguagem conversacional, como um atendente experiente; varie a forma de começar, não soe como texto pronto e normalmente responda em 1 a 4 frases.
 Entenda o contexto da conversa e não peça novamente informações que o cliente já forneceu. Se faltar algo essencial, faça apenas uma pergunta objetiva.
 Ajude compradores e vendedores com cadastro, anúncios, busca, conversas, pagamentos, segurança e uso da plataforma. Explique passos simples e práticos, especialmente no celular.
 No chat, sugira: "Oi, tudo bem? Esse item ainda está disponível. Se quiser, envio mais fotos e detalhes por aqui." Adapte item para carro, moto, imóvel ou produto conforme o anúncio.
@@ -226,6 +226,7 @@ Deno.serve(async (req: Request) => {
     if (!message) return respond({ error: "Digite uma mensagem antes de enviar." }, 400);
     if (message.length > 4000) return respond({ error: "A mensagem deve ter até 4.000 caracteres." }, 400);
 
+    const wantsStream = body?.stream === true;
     const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
     const safeHistory = history
       .filter((item: any) =>
@@ -259,8 +260,22 @@ Deno.serve(async (req: Request) => {
         reasoning: { effort: "low" },
         max_output_tokens: 600,
         store: false,
+        stream: wantsStream,
       }),
     });
+
+    if (response.ok && wantsStream && response.body) {
+      return new Response(response.body, {
+        status: 200,
+        headers: {
+          ...headers,
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {

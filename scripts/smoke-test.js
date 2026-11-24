@@ -476,10 +476,10 @@ check("Serviço nativo indisponível não encerra a conversa por voz",html.inclu
 check("Falha nativa transitória tenta reconhecimento alternativo",html.includes('ownerNativeSpeechDisabled=true;')&&html.includes('Tentando o modo alternativo...')&&html.includes('ownerFallbackStartListening();'));
 check("Permissão de microfone negada informa o usuário e encerra com segurança",html.includes('Permissão de reconhecimento negada.')&&html.includes('ownerFallbackActive=false')&&html.includes('ownerVoiceStop").disabled=true'));
 check("Fallback não tenta reabrir plugin nativo que já falhou",html.includes('ownerNativeSpeechDisabled?null:'));
-check("Nova sessão de voz permite nova tentativa do reconhecimento nativo",html.includes("function startOwnerFallbackVoice(){\\n    ownerNativeSpeechDisabled=false;"));
+check("Nova sessão de voz permite nova tentativa do reconhecimento nativo",html.includes("function startOwnerFallbackVoice(){\n    ownerNativeSpeechDisabled=false;"));
 check("Permissão negada encerra e limpa corretamente a sessão de voz",html.includes("await stopOwnerVoiceConversation();ownerVoiceSetStatus(\"Permissão de reconhecimento negada."));
 
-//const failed = checks.filter(item => !item.ok);
+const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");
 if (failed.length) {

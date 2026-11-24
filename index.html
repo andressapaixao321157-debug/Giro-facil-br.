@@ -2285,9 +2285,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   let assistantThreadId=null;
   let assistantLoadedFor=null;
   let assistantLoading=false;
+  let assistantLoadPromise=null;
   async function loadAssistantThread(){
-    if(!db||!currentUser||assistantLoading||assistantLoadedFor===currentUser.id)return;
+    if(!db||!currentUser||assistantLoadedFor===currentUser.id)return;
+    if(assistantLoadPromise)return assistantLoadPromise;
     assistantLoading=true;
+    assistantLoadPromise=(async()=>{
     try{
       const {data:thread,error}=await db.from("assistant_threads")
         .select("id").eq("user_id",currentUser.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
@@ -2309,8 +2312,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       }
       assistantLoadedFor=currentUser.id;
     }catch(error){
+      assistantThreadId=null;
+      assistantHistory=[];
       status("assistantStatus","Não consegui recuperar seu histórico salvo. "+(error?.message||""),"err");
-    }finally{assistantLoading=false;}
+    }finally{
+      assistantLoading=false;
+      assistantLoadPromise=null;
+    }
+    })();
+    return assistantLoadPromise;
   }
   async function ensureAssistantThread(firstMessage){
     if(assistantThreadId)return assistantThreadId;

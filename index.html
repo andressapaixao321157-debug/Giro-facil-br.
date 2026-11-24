@@ -1754,11 +1754,32 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(has(/\b(parar de rolar|parar)\b/)){window.scrollTo({top:window.scrollY,behavior:"instant"});return {handled:true,answer:"Certo, parei."};}
     return {handled:false};
   }
+  const ownerNativeSpeech=()=>window.Capacitor?.Plugins?.SpeechRecognition||window.Capacitor?.registerPlugin?.("SpeechRecognition");
+  async function ownerFallbackHandleTranscript(transcript){
+    if(!transcript||!ownerFallbackActive)return;
+    ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Vou verificar seu comando...");
+    try{
+      const command=await executeOwnerVoiceCommand(transcript);
+      if(command.handled){ownerVoiceAddLine("CHEFE",command.answer);ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:command.answer});ownerFallbackBusy=false;ownerFallbackSpeak(command.answer);return;}
+      ownerVoiceSetStatus("Preparando uma resposta...");
+      const history=ownerFallbackHistory.slice(-6);
+      const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}});
+      if(error)throw error;
+      const answer=data?.answer||data?.error||"Não consegui montar uma resposta agora. Tente falar de outro jeito.";
+      ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:answer});
+      ownerVoiceAddLine("CHEFE",answer);
+      ownerVoiceSetStatus(data?.mode==="ajuda-basica"?"Modo gratuito de contingência ativo. Pode continuar falando.":"Assistente pronto. Pode continuar falando.");
+      ownerFallbackBusy=false;ownerFallbackSpeak(answer);
+    }catch(error){
+      ownerFallbackBusy=false;ownerVoiceSetStatus("Não consegui consultar o assistente básico. Confira a internet e tente novamente.",true);
+      ownerFallbackSpeak("Meu chefe, perdi a conexão com o atendimento. Confira a internet e tente de novo.");
+    }
+  }
   function ownerFallbackSpeak(message){
-    if(!("speechSynthesis" in window)||!message)return;
+    if(!("speechSynthesis" in window)||!message){if(ownerFallbackActive)ownerFallbackStartListening();return;}
     window.speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(message);
-    utterance.lang="pt-BR";utterance.rate=1.18;utterance.pitch=1.02;
+    utterance.lang="pt-BR";utterance.rate=1.08;utterance.pitch=1.02;
     const voices=window.speechSynthesis.getVoices();
     const pt=voices.find(v=>/^pt-BR/i.test(v.lang))||voices.find(v=>/^pt/i.test(v.lang));
     if(pt)utterance.voice=pt;
@@ -1766,55 +1787,62 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     utterance.onerror=()=>{if(ownerFallbackActive&&!ownerFallbackBusy)ownerFallbackStartListening();};
     window.speechSynthesis.speak(utterance);
   }
+  async function ownerNativeSpeechLoop(){
+    const native=ownerNativeSpeech();
+    if(!native){ownerVoiceSetStatus("Reconhecimento nativo do Android não está disponível nesta instalação.",true);ownerFallbackActive=false;return;}
+    try{
+      const permission=await native.checkPermissions();
+      if(permission?.speechRecognition!=="granted"){
+        const requested=await native.requestPermissions();
+        if(requested?.speechRecognition!=="granted")throw new Error("Permissão de reconhecimento de voz não autorizada.");
+      }
+      const availability=await native.available();
+      if(!availability?.available)throw new Error("O serviço de reconhecimento de voz do Android não está disponível. Ative o serviço de voz do Google nas configurações.");
+      ownerVoiceSetStatus("Microfone Android ativo. Fale seu comando; estou ouvindo...");
+      while(ownerFallbackActive){
+        ownerFallbackBusy=false;
+        const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
+        if(!ownerFallbackActive)break;
+        const transcript=result?.matches?.[0]?.trim();
+        if(transcript)await ownerFallbackHandleTranscript(transcript);
+        else ownerVoiceSetStatus("Não captei a fala. Continuo ouvindo; pode repetir.");
+        if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)ownerVoiceSetStatus("Estou ouvindo, meu chefe. Pode falar.");
+        if(ownerFallbackBusy)await new Promise(resolve=>{const check=()=>{if(!ownerFallbackBusy||!ownerFallbackActive)resolve();else setTimeout(check,150);};check();});
+      }
+    }catch(error){
+      if(ownerFallbackActive){ownerVoiceSetStatus("Falha no reconhecimento nativo: "+(error?.message||"erro do Android"),true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;}
+    }
+  }
   function ownerFallbackStartListening(){
     if(!ownerFallbackActive||ownerFallbackBusy||window.speechSynthesis?.speaking)return;
+    const native=ownerNativeSpeech();
+    if(native){ownerNativeSpeechLoop();return;}
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!Recognition){ownerVoiceSetStatus("Seu navegador não oferece reconhecimento de voz. Use o Chrome atualizado ou o chat por texto.",true);return;}
+    if(!Recognition){ownerVoiceSetStatus("Este Android não disponibilizou reconhecimento de voz. Atualize o aplicativo Google e habilite a digitação por voz.",true);return;}
     try{
       ownerFallbackRecognition=new Recognition();
       ownerFallbackRecognition.lang="pt-BR";ownerFallbackRecognition.continuous=false;ownerFallbackRecognition.interimResults=false;ownerFallbackRecognition.maxAlternatives=1;
-      ownerFallbackRecognition.onresult=async event=>{
-        const transcript=event.results?.[0]?.[0]?.transcript?.trim();if(!transcript)return;
-        ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Vou verificar seu comando...");
-        try{
-          const command=await executeOwnerVoiceCommand(transcript);
-          if(command.handled){ownerVoiceAddLine("CHEFE",command.answer);ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:command.answer});ownerFallbackBusy=false;ownerFallbackSpeak(command.answer);return;}
-          ownerVoiceSetStatus("Preparando uma resposta...");
-          const history=ownerFallbackHistory.slice(-6);
-          const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}});
-          if(error)throw error;
-          const answer=data?.answer||data?.error||"Não consegui montar uma resposta agora. Tente falar de outro jeito.";
-          ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:answer});
-          ownerVoiceAddLine("CHEFE",answer);
-          ownerVoiceSetStatus(data?.mode==="ajuda-basica"?"Modo gratuito de contingência ativo. Pode continuar falando.":"Assistente pronto. Pode continuar falando.");
-          ownerFallbackBusy=false;ownerFallbackSpeak(answer);
-        }catch(error){
-          ownerFallbackBusy=false;ownerVoiceSetStatus("Não consegui consultar o assistente básico. Confira a internet e tente novamente.",true);
-          ownerFallbackSpeak("Meu chefe, perdi a conexão com o atendimento. Confira a internet e tente de novo.");
-        }
-      };
+      ownerFallbackRecognition.onresult=event=>{const transcript=event.results?.[0]?.[0]?.transcript?.trim();if(transcript)ownerFallbackHandleTranscript(transcript);};
       ownerFallbackRecognition.onerror=event=>{
         if(!ownerFallbackActive)return;
         if(event.error==="not-allowed"||event.error==="service-not-allowed"){
-          ownerVoiceSetStatus("Permita o microfone no Chrome para conversar por voz.",true);
-          ownerFallbackActive=false;$("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;
-        }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+"). Toque em iniciar para tentar novamente.",true);
+          ownerVoiceSetStatus("Permita o microfone nas configurações do Android.",true);
+          ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;
+        }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+").",true);
       };
       ownerFallbackRecognition.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)setTimeout(ownerFallbackStartListening,350);};
       ownerFallbackRecognition.start();
-      ownerVoiceSetStatus("Modo gratuito ativo. Fale normalmente; a voz será sintetizada pelo seu celular.");
-    }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone. Feche e abra a conversa e tente novamente.",true);}
+      ownerVoiceSetStatus("Modo de voz do navegador ativo. Fale normalmente.");
+    }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone: "+(error?.message||"erro desconhecido"),true);}
   }
   function startOwnerFallbackVoice(){
-    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!Recognition||!("speechSynthesis" in window)){
-      ownerVoiceSetStatus("Este navegador não oferece voz gratuita integrada. Use o Chrome atualizado ou o chat por texto.",true);
-      $("ownerVoiceStart").disabled=false;$("ownerVoiceStop").disabled=true;return;
-    }
-    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;const launcher=$("giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
-    $("ownerVoiceStart").disabled=true;$("ownerVoiceStop").disabled=false;
-    ownerVoiceSetStatus("Ativando modo gratuito de voz...");
-    ownerFallbackSpeak("Fala, meu chefe! A IA avançada está sem créditos, mas o modo gratuito está na escuta. O que vamos resolver?");
+    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
+    const launcher=$( "giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
+    $( "ownerVoiceStart").disabled=true;$( "ownerVoiceStop").disabled=false;
+    ownerVoiceSetStatus("Inicializando reconhecimento de voz nativo do Android...");
+    ownerFallbackSpeak("Fala, meu chefe! Estou ativando o microfone. Pode falar comigo.");
+    if(ownerNativeSpeech())setTimeout(()=>{if(ownerFallbackActive&&!ownerFallbackBusy)ownerFallbackStartListening();},500);
+    else if(!("speechSynthesis" in window))ownerFallbackStartListening();
   }
   async function stopOwnerVoiceConversation(){
     ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}

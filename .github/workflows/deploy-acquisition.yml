@@ -30,7 +30,13 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+          if [[ -n "$SUPABASE_DB_URL" ]]; then
+            # Use Supavisor Session mode (IPv4-compatible) on GitHub-hosted runners.
+            supabase db push --db-url "$SUPABASE_DB_URL"
+          else
+            echo "::warning::SUPABASE_DB_URL ausente; migrações não serão enviadas nesta execução. As funções serão publicadas normalmente."
+          fi
           supabase functions deploy admin-dashboard --project-ref "$SUPABASE_PROJECT_REF"

@@ -1798,17 +1798,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       }
       const availability=await native.available();
       if(!availability?.available)throw new Error("O serviço de reconhecimento de voz do Android não está disponível. Ative o serviço de voz do Google nas configurações.");
+      if(!ownerFallbackActive||ownerFallbackBusy)return;
       ownerVoiceSetStatus("Microfone Android ativo. Fale seu comando; estou ouvindo...");
-      while(ownerFallbackActive){
-        ownerFallbackBusy=false;
-        const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
-        if(!ownerFallbackActive)break;
-        const transcript=result?.matches?.[0]?.trim();
-        if(transcript)await ownerFallbackHandleTranscript(transcript);
-        else ownerVoiceSetStatus("Não captei a fala. Continuo ouvindo; pode repetir.");
-        if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)ownerVoiceSetStatus("Estou ouvindo, meu chefe. Pode falar.");
-        if(ownerFallbackBusy)await new Promise(resolve=>{const check=()=>{if(!ownerFallbackBusy||!ownerFallbackActive)resolve();else setTimeout(check,150);};check();});
-      }
+      const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
+      if(!ownerFallbackActive)return;
+      const transcript=result?.matches?.[0]?.trim();
+      if(transcript)await ownerFallbackHandleTranscript(transcript);
+      else {ownerVoiceSetStatus("Não captei a fala. Vou continuar ouvindo.");ownerFallbackStartListening();}
     }catch(error){
       if(ownerFallbackActive){ownerVoiceSetStatus("Falha no reconhecimento nativo: "+(error?.message||"erro do Android"),true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;}
     }
@@ -1841,8 +1837,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     $( "ownerVoiceStart").disabled=true;$( "ownerVoiceStop").disabled=false;
     ownerVoiceSetStatus("Inicializando reconhecimento de voz nativo do Android...");
     ownerFallbackSpeak("Fala, meu chefe! Estou ativando o microfone. Pode falar comigo.");
-    if(ownerNativeSpeech())setTimeout(()=>{if(ownerFallbackActive&&!ownerFallbackBusy)ownerFallbackStartListening();},500);
-    else if(!("speechSynthesis" in window))ownerFallbackStartListening();
+    if(!("speechSynthesis" in window))ownerFallbackStartListening();
   }
   async function stopOwnerVoiceConversation(){
     ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}

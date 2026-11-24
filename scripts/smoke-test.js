@@ -444,6 +444,15 @@ check("Área administrativa continua protegida por verificação de papel",
 check("Ações financeiras e destrutivas não são executadas sem confirmação explícita",
   html.includes("const risky=") && html.includes("confirme diretamente no botão da tela"));
  
+check("Botão flutuante inicia a sessão de voz diretamente sem depender da palavra-chave do navegador",
+  html.includes('startOwnerVoiceConversation();') &&
+  html.includes('Toque no microfone para iniciar a conversa') &&
+  !html.includes('setTimeout(()=>{if(document.body.dataset.isAdmin==="true"&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer)armOwnerWakeWord();},250)'));
+check("Permissão do microfone é solicitada antes da credencial de voz",
+  html.indexOf('navigator.mediaDevices.getUserMedia({audio:') < html.indexOf('db.functions.invoke("owner-voice-session"'));
+check("Erro de permissão do microfone apresenta orientação clara no Android",
+  html.includes('Acesso ao microfone bloqueado. Nas configurações do Android'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

@@ -1060,9 +1060,27 @@ footer{color:#64748b;padding-bottom:100px}
   function configured(){
     return SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COLE_AQUI") && SUPABASE_ANON_KEY.length>30 && !SUPABASE_ANON_KEY.includes("COLE_AQUI");
   }
+  let supportChatEnabled=true;
+  async function applyPublicPlatformSettings(){
+    if(!db)return;
+    try{
+      const {data,error}=await db.from("platform_settings").select("setting_key,setting_value").in("setting_key",["support_chat_enabled","public_notice"]);
+      if(error)throw error;
+      const settings=Object.fromEntries((data||[]).map(row=>[row.setting_key,row.setting_value]));
+      supportChatEnabled=settings.support_chat_enabled!==false;
+      ["navMessages","headerMessages"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("hidden",!supportChatEnabled);});
+      const notice=typeof settings.public_notice==="string"?settings.public_notice.trim():"";
+      let banner=$("giroPublicNotice");
+      if(notice){
+        if(!banner){banner=document.createElement("div");banner.id="giroPublicNotice";banner.style.cssText="padding:10px 16px;text-align:center;background:#fff3df;color:#7c3d08;font-weight:700;border-bottom:1px solid #f2d5aa";const header=document.querySelector("header.app-header");if(header)header.insertAdjacentElement("afterend",banner);}
+        if(banner)banner.textContent=notice;
+      }else if(banner)banner.remove();
+    }catch(error){console.warn("Não foi possível carregar as configurações públicas do Giro Fácil.",error);}
+  }
   if(configured() && window.supabase){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; updateAccount(); syncChatInboxRealtime(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
+    applyPublicPlatformSettings();
+    db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; applyPublicPlatformSettings(); updateAccount(); syncChatInboxRealtime(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
     db.auth.onAuthStateChange((event,session)=>{
       currentUser=session?.user||null;
       syncChatInboxRealtime();
@@ -1944,6 +1962,7 @@ footer{color:#64748b;padding-bottom:100px}
     });
   }
   function showMessagesPage(view="chat"){
+    if(view==="chat"&&!supportChatEnabled){status("chatStatus","O atendimento por chat está temporariamente pausado pela administração.","err");return;}
     if(view!=="chat")stopChatPresence();
     $("marketMain").classList.add("hidden");
     $("messagesMain").classList.remove("hidden");
@@ -2115,6 +2134,7 @@ footer{color:#64748b;padding-bottom:100px}
   }
   // Mensagens e confirmações de leitura são atualizadas pelo Supabase Realtime; sem polling.
   async function startListingChat(listingId,title,sellerId){
+    if(!supportChatEnabled){status("chatStatus","O atendimento por chat está temporariamente pausado pela administração.","err");return;}
     if(!currentUser){openAuth();status("authStatus","Entre ou crie uma conta para conversar com o anunciante.");return;}
     if(sellerId===currentUser.id){status("chatStatus","Este é seu próprio anúncio. As mensagens recebidas aparecem na sua caixa de entrada.");await openChat();return;}
     const {data:existing,error:findErr}=await db.from("conversas").select("id").eq("anuncio_id",listingId).eq("comprador_id",currentUser.id).maybeSingle();

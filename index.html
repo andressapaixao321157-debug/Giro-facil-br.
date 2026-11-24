@@ -2535,6 +2535,110 @@ hr{border:0;border-top:1px solid var(--giro-line)}
  .bottom-nav{padding-left:8px!important;padding-right:8px!important}
  .bottom-nav button{font-size:10px!important}
 }
+
+/* GIRO FÁCIL BR — acabamento de experiência: clareza, conforto e conversão */
+:root{
+ color-scheme:light;
+ --giro-radius:16px;
+ --giro-shadow:0 8px 26px rgba(16,36,59,.075);
+ --giro-shadow-hover:0 14px 32px rgba(16,36,59,.13);
+}
+*{-webkit-tap-highlight-color:transparent}
+html{overflow-x:hidden;scroll-padding-top:18px}
+body{overflow-x:hidden;min-height:100vh;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+header{position:relative;z-index:20;box-shadow:0 3px 18px rgba(7,21,38,.12)}
+.brand{line-height:1.12}
+.brand span{color:#c9a653}
+main{width:min(100%,1180px);padding:clamp(16px,3vw,30px) clamp(14px,3vw,24px)}
+.hero{position:relative;overflow:hidden;border:1px solid #31516d;box-shadow:0 14px 34px rgba(16,36,59,.15)}
+.hero:after{content:"";position:absolute;right:-90px;bottom:-130px;width:280px;height:280px;border-radius:50%;border:1px solid rgba(114,213,205,.24);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.search{align-items:stretch}
+.search input,.search select{min-height:48px;border-radius:12px}
+.search button{min-height:48px;padding-inline:20px}
+.categories{gap:12px}
+.cat{min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:16px;box-shadow:0 4px 14px rgba(16,36,59,.045);transition:transform .18s,border-color .18s,box-shadow .18s}
+.cat:hover{transform:translateY(-2px);border-color:#8ccbc6;box-shadow:var(--giro-shadow)}
+.cat .emoji{line-height:1.1}
+.section-head{margin-top:34px}
+.section-head h2{color:var(--giro-navy);font-weight:850;letter-spacing:-.025em}
+.grid{align-items:stretch}
+.card{display:flex;flex-direction:column;min-width:0;border:1px solid var(--giro-line);box-shadow:var(--giro-shadow);transition:transform .18s,box-shadow .18s,border-color .18s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--giro-shadow-hover);border-color:#b6d9d6}
+.card .card-body{display:flex;flex:1;flex-direction:column;align-items:stretch;min-width:0}
+.card h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;color:var(--giro-navy)}
+.card .meta{line-height:1.45}
+.card .price{font-weight:850;letter-spacing:-.02em}
+.vehicle-img{overflow:hidden;background:linear-gradient(135deg,#eaf0f4,#dce7ed)}
+.vehicle-img img{transition:transform .3s ease}
+.card:hover .vehicle-img img{transform:scale(1.025)}
+.panel{padding:clamp(16px,2.5vw,24px);box-shadow:var(--giro-shadow)}
+.panel h2,.panel h3{color:var(--giro-navy)}
+.form-grid{align-items:start}
+.field{min-width:0}
+.field label{line-height:1.35}
+input,select,textarea{min-height:46px}
+textarea{min-height:110px;resize:vertical}
+button,.btn{min-height:44px;border-radius:12px;font-weight:750}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+button:not(:disabled):active,.btn:active{transform:scale(.985)}
+.status{border-radius:12px;line-height:1.45}
+.sponsor-slot{border-style:solid}
+.bottom-nav{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.bottom-nav button{min-width:0;white-space:nowrap}
+.bottom-nav .nav-publish{font-weight:800}
+#adminPanel{margin-top:20px}
+#adminPanel .admin-screen-body{min-width:0}
+#adminPanel .admin-screen-body .panel{overflow-x:auto}
+#adminPanel table{border-collapse:separate;border-spacing:0}
+#adminPanel th:first-child{border-top-left-radius:9px}
+#adminPanel th:last-child{border-top-right-radius:9px}
+#adminPanel td,#adminPanel th{vertical-align:middle}
+#myListingsPanel,#partnerPanel,#paymentPanel,#chatPanel,#assistantPanel{scroll-margin-top:18px}
+#myListingsMetrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px}
+#myListingsList{display:grid;gap:12px}
+#chatConversationList{min-width:0}
+#chatMessages{overflow-wrap:anywhere}
+#chatMessageInput,#assistantInput{min-height:48px}
+@media(max-width:760px){
+ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+ header{padding:14px 16px;gap:10px}
+ .brand{font-size:21px}
+ main{padding:16px 13px}
+ .hero{grid-template-columns:1fr;gap:12px;padding:22px 18px}
+ .hero-art{font-size:54px}
+ .categories{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ .cat{min-height:100px;padding:12px 8px;font-size:13px}
+ .cat .emoji{font-size:28px}
+ .section-head{align-items:flex-end;margin:26px 0 13px}
+ .section-head h2{font-size:20px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .vehicle-img{height:clamp(118px,34vw,160px)}
+ .card-body{padding:11px}
+ .card h3{font-size:14px}
+ .card .price{font-size:17px}
+ .meta{font-size:11px}
+ .form-grid{grid-template-columns:1fr}
+ .field.full{grid-column:auto}
+ .panel{margin-top:16px}
+ #adminTotals{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #adminPanel{padding:14px;border-radius:17px}
+ #adminPanel .admin-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #adminPanel .admin-home-card{min-height:108px}
+ #adminPanel .admin-screen-body{gap:12px}
+ #adminPanel table{font-size:12px}
+ .bottom-nav{gap:2px;padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
+ .bottom-nav button{min-height:54px;padding:4px 1px;font-size:10px}
+ .bottom-nav button .nav-icon{font-size:20px}
+}
+@media(max-width:370px){
+ .grid{grid-template-columns:1fr}
+ .categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bottom-nav button{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {

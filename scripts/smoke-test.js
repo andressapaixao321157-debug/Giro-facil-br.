@@ -99,6 +99,14 @@ check("Contexto de anúncios é limitado à conta autenticada",
 check("Contexto de conversas usa apenas conversas e mensagens acessíveis ao usuário",
   assistant.includes('.from("conversas")') && assistant.includes('comprador_id.eq.') &&
   assistant.includes('.from("mensagens")') && assistant.includes('.in("conversa_id", chatIds)'));
+check("Comandos seguros por texto reutilizam o executor local do CHEFE sem depender de créditos da IA",
+  html.includes("const safeOwnerCommand=") &&
+  html.includes("executeOwnerVoiceCommand(message)") &&
+  html.includes('document.body.dataset.isAdmin==="true"'));
+check("Falha de créditos do Realtime ativa fallback de voz local",
+  html.includes("credit_balance_exhausted") &&
+  html.includes("startOwnerFallbackVoice();"));
+
 check("Erro do assistente preserva a mensagem para nova tentativa",
   html.includes('input.value=message;') &&
   html.includes("Falha no envio. Confira sua conexão"));

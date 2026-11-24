@@ -1490,7 +1490,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     greetOwnerOnEntry();
   };
   let giroOwnerDockReady=false,ownerWakeRecognition=null,ownerWakeArmed=false,ownerWakeStarting=false;
-  let ownerWakeAutoAttempted=false;
+  let ownerWakeAutoAttempted=false,ownerAutoVoiceStarted=false;
   function ownerWakeStatus(message){const el=$("ownerVoiceStatus");if(el)el.textContent=message;const dock=$("giroDockStatus");if(dock)dock.textContent=message;}
   function setOwnerAssistantPresence(isOwner){
     let launcher=$("giroOwnerLauncher"),dock=$("giroOwnerDock");
@@ -1505,10 +1505,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
     launcher.classList.toggle("visible",!!isOwner);
     if(!isOwner){stopOwnerWakeWord();ownerWakeAutoAttempted=false;launcher.classList.remove("wake-armed","voice-active");return;}
-    launcher.title="Toque para conversar com o CHEFE";
+    launcher.title="Microfone automático do CHEFE";
     if(!ownerWakeAutoAttempted&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer){
       ownerWakeAutoAttempted=true;
-      ownerWakeStatus("Olá, meu chefe! Toque no microfone para iniciar a conversa e autorizar o acesso ao microfone.");
+      ownerWakeStatus("Olá, meu chefe! Ativando o microfone. Se o Android pedir, permita o acesso.");
+      if(!ownerAutoVoiceStarted){
+        ownerAutoVoiceStarted=true;
+        setTimeout(()=>{
+          if(document.body.dataset.isAdmin==="true"&&!ownerFallbackActive&&!ownerVoicePeer&&!ownerVoiceStream){
+            startOwnerVoiceConversation();
+          }
+        },900);
+      }
     }
   }
   function stopOwnerWakeWord(){
@@ -1850,7 +1858,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){ownerVoiceSetStatus("Este navegador não oferece suporte à chamada de voz. Atualize o Chrome ou use o site em HTTPS.",true);return;}
     start.disabled=true;ownerVoiceSetStatus("Solicitando acesso ao microfone e preparando a conexão segura...");
     try{
-      ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+      ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});
       ownerVoiceSetStatus("Microfone autorizado. Preparando conexão segura...");
       const {data:tokenData,error:tokenError}=await db.functions.invoke("owner-voice-session",{body:{}});
       if(tokenError)throw new Error(tokenError.message||"Não foi possível autorizar a sessão de voz.");

@@ -470,6 +470,30 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 350, silence_duration_ms: 650'));
 
+
+const listingPrivacyMigrationPath = "supabase/migrations/20261124020000_restrict_public_listing_private_columns.sql";
+const listingPrivacyMigration = fs.existsSync(listingPrivacyMigrationPath) ? fs.readFileSync(listingPrivacyMigrationPath, "utf8") : "";
+const paymentInsertMigrationPath = "supabase/migrations/20261124020100_restrict_client_payment_status_insert.sql";
+const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
+const publicListingGrant = listingPrivacyMigration.split("GRANT SELECT (")[1] || "";
+const clientInsertGrant = paymentInsertMigration.split("GRANT INSERT (")[1] || "";
+const publicProjection = 'db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at")';
+check("Vitrine e detalhes usam projeção explícita e não consultam todas as colunas",
+  html.split(publicProjection).length - 1 === 2 &&
+  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)/.test(html));
+check("Migração de privacidade revoga leitura ampla e libera apenas campos públicos",
+  listingPrivacyMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
+  publicListingGrant.includes("updated_at") &&
+  !publicListingGrant.includes("whatsapp") &&
+  !publicListingGrant.includes("pagamento_status") &&
+  !listingPrivacyMigration.includes("service_role"));
+check("Migração impede cliente de inserir status de pagamento e preserva o servidor confiável",
+  paymentInsertMigration.includes("REVOKE INSERT ON TABLE public.anuncios FROM authenticated;") &&
+  paymentInsertMigration.includes("REVOKE INSERT (pagamento_status)") &&
+  clientInsertGrant.includes("updated_at") &&
+  !clientInsertGrant.includes("pagamento_status") &&
+  !paymentInsertMigration.includes("service_role"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

@@ -288,6 +288,12 @@ check("Configuração exige JWT para assistente e painel",
 check("Formulário nacional de captação e consentimento LGPD", hasId("acquisitionPanel") && hasId("acqConsent") && hasId("acqSubmit"));
 check("Painel administrativo mostra métricas e lista de interessados", hasId("adminAcquisitionMetrics") && hasId("adminAcquisitionLeads") && html.includes("data-acq-status"));
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
+check("Eventos de aquisição registram UF explícita do filtro, anúncio ou cadastro",
+  html.includes("function normalizeAcqState(value)") &&
+  html.includes("region_state:selectedState") &&
+  html.includes('data-listing-state="${escapeHtml(item.estado||"")}"') &&
+  html.includes('trackAcqEvent("listing_view",b.dataset.listingId,b.dataset.listingState)') &&
+  html.includes('trackAcqEvent("partner_lead",null,payload.state)'));
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 const listingStatusMigrationPath = "supabase/migrations/20261120140058_listing_analytics_and_advertiser_dashboard.sql";

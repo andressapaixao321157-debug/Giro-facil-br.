@@ -84,6 +84,28 @@ Deno.serve(async (req) => {
 
     if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403);
 
+    if (body?.action === "list_users") {
+      const { data, error, count } = await admin.from("perfis")
+        .select("id,nome,telefone,cidade,estado,papel,plano_status,criado_em", { count: "exact" })
+        .order("criado_em", { ascending: false }).limit(200);
+      if (error) throw error;
+      return reply({ success: true, total: count || 0, users: data || [] });
+    }
+
+    if (body?.action === "system_health") {
+      const checks = await Promise.all([
+        admin.from("perfis").select("id", { count: "exact", head: true }),
+        admin.from("anuncios").select("id", { count: "exact", head: true }),
+        admin.from("payment_orders").select("id", { count: "exact", head: true }),
+        admin.from("conversas").select("id", { count: "exact", head: true }),
+        admin.from("mensagens").select("id", { count: "exact", head: true }),
+        admin.from("owner_agent_reports").select("id", { count: "exact", head: true }),
+      ]);
+      const names = ["Usuários","Anúncios","Pedidos de pagamento","Conversas","Mensagens","Relatórios dos agentes"];
+      const services = checks.map((item, i) => ({ name: names[i], ok: !item.error, count: item.count || 0, detail: item.error ? "Falha ao consultar" : "Conexão e consulta funcionando" }));
+      return reply({ success: services.every(x => x.ok), checkedAt: new Date().toISOString(), services });
+    }
+
     if (body?.action === "review_partner_application") {
       const applicationId = String(body.applicationId ?? "");
       const decision = String(body.decision ?? "");

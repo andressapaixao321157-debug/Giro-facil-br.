@@ -2282,6 +2282,46 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   }
   $("chatClose").onclick=hideMessagesPage;
   let assistantHistory=[];
+  let assistantThreadId=null;
+  let assistantLoadedFor=null;
+  let assistantLoading=false;
+  async function loadAssistantThread(){
+    if(!db||!currentUser||assistantLoading||assistantLoadedFor===currentUser.id)return;
+    assistantLoading=true;
+    try{
+      const {data:thread,error}=await db.from("assistant_threads")
+        .select("id").eq("user_id",currentUser.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
+      if(error)throw error;
+      assistantThreadId=thread?.id||null;
+      assistantHistory=[];
+      $("assistantMessages").innerHTML="";
+      if(assistantThreadId){
+        const {data:messages,error:messagesError}=await db.from("assistant_messages")
+          .select("role,content").eq("thread_id",assistantThreadId)
+          .order("created_at",{ascending:false}).limit(40);
+        if(messagesError)throw messagesError;
+        (messages||[]).reverse().forEach(item=>{
+          if(!["user","assistant"].includes(item.role)||typeof item.content!=="string")return;
+          addAssistantBubble(item.content,item.role==="user");
+          assistantHistory.push({role:item.role,content:item.content});
+        });
+        assistantHistory=assistantHistory.slice(-12);
+      }
+      assistantLoadedFor=currentUser.id;
+    }catch(error){
+      status("assistantStatus","Não consegui recuperar seu histórico salvo. "+(error?.message||""),"err");
+    }finally{assistantLoading=false;}
+  }
+  async function ensureAssistantThread(firstMessage){
+    if(assistantThreadId)return assistantThreadId;
+    const {data,error}=await db.from("assistant_threads")
+      .insert({user_id:currentUser.id,title:firstMessage.slice(0,80)||"Conversa com o assistente"})
+      .select("id").single();
+    if(error)throw error;
+    assistantThreadId=data.id;
+    assistantLoadedFor=currentUser.id;
+    return assistantThreadId;
+  }
   function addAssistantBubble(content, mine=false){
     const bubble=document.createElement("div");
     bubble.className="chat-bubble"+(mine?" mine":"");
@@ -2293,6 +2333,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   $("assistantOpen").onclick=()=>{
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para conversar com o assistente virtual.");return;}
     showMessagesPage("assistant");
+    loadAssistantThread();
     $("assistantInput").focus();
   };
   $("assistantClose").onclick=()=>showMessagesPage("chat");
@@ -2304,6 +2345,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!db){status("assistantStatus","O serviço ainda não está conectado. Atualize a página e tente novamente.","err");return;}
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para usar o assistente virtual.");return;}
     if(sendButton.disabled)return;
+    await loadAssistantThread();
     sendButton.disabled=true;
     sendButton.textContent="Respondendo...";
     input.value="";
@@ -2315,6 +2357,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       if(sessionError)throw sessionError;
       const accessToken=sessionData?.session?.access_token;
       if(!accessToken)throw new Error("Sua sessão expirou. Entre novamente.");
+      const threadId=await ensureAssistantThread(message);
+      const {error:saveUserError}=await db.from("assistant_messages").insert({
+        thread_id:threadId,user_id:currentUser.id,role:"user",content:message
+      });
+      if(saveUserError)throw saveUserError;
+      const {error:touchThreadError}=await db.from("assistant_threads").update({updated_at:new Date().toISOString()})
+        .eq("id",threadId).eq("user_id",currentUser.id);
+      if(touchThreadError)throw touchThreadError;
       const response=await fetch(SUPABASE_URL+"/functions/v1/giro-assistant",{
         method:"POST",
         headers:{
@@ -2323,7 +2373,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
           "Content-Type":"application/json",
           "Accept":"text/event-stream, application/json"
         },
-        body:JSON.stringify({message,history:assistantHistory,stream:true})
+        body:JSON.stringify({message,history:assistantHistory,thread_id:threadId,stream:true})
       });
       if(!response.ok){
         const failure=await response.json().catch(()=>({}));
@@ -2369,8 +2419,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
         replyBubble.textContent=answer+(data.mode==="ajuda-basica"?"\n\n"+(data.notice||"Atendimento básico ativo; IA avançada ainda não configurada."):"");
       }
       if(!answer.trim())throw new Error("O assistente não conseguiu concluir a resposta.");
-      assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:answer}].slice(-10);
-      $("assistantStatus").classList.add("hidden");
+      assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:answer}].slice(-12);
+      const {error:saveAssistantError}=await db.from("assistant_messages").insert({
+        thread_id:assistantThreadId,user_id:currentUser.id,role:"assistant",content:answer.slice(0,4000)
+      });
+      if(saveAssistantError)status("assistantStatus","Resposta recebida, mas não consegui salvar no histórico. "+saveAssistantError.message,"err");
+      else{
+        await db.from("assistant_threads").update({updated_at:new Date().toISOString()})
+          .eq("id",assistantThreadId).eq("user_id",currentUser.id);
+        $("assistantStatus").classList.add("hidden");
+      }
     }catch(err){
       const messageError=err?.message||"Não foi possível conectar ao assistente. Tente novamente.";
       if(replyBubble.textContent==="Estou pensando...")replyBubble.textContent="Não consegui responder agora: "+messageError;

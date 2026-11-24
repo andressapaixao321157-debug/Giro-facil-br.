@@ -168,6 +168,52 @@ Deno.serve(async (req) => {
       return reply({ success: true, total: count || 0, users: data || [] });
     }
 
+
+    if (body?.action === "assistant_context") {
+      if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403);
+      const [users, listings, pending, active, sold, rejected, payments, conversations, messages, leads, agentTasks, recentListings] = await Promise.all([
+        admin.from("perfis").select("id", { count: "exact", head: true }),
+        admin.from("anuncios").select("id", { count: "exact", head: true }),
+        admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "pendente"),
+        admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "ativo"),
+        admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "vendido"),
+        admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "rejeitado"),
+        admin.from("payment_orders").select("id,status,amount,kind,created_at", { count: "exact" }).order("created_at", { ascending: false }).limit(10),
+        admin.from("conversas").select("id", { count: "exact", head: true }),
+        admin.from("mensagens").select("id", { count: "exact", head: true }),
+        admin.from("acquisition_leads").select("id,status", { count: "exact" }).limit(200),
+        admin.from("owner_agent_tasks").select("id,status,priority", { count: "exact" }).limit(500),
+        admin.from("anuncios").select("id,titulo,categoria,preco,cidade,estado,status,updated_at").order("updated_at", { ascending: false }).limit(5),
+      ]);
+      const results = [users,listings,pending,active,sold,rejected,payments,conversations,messages,leads,agentTasks,recentListings];
+      if (results.some(x => x.error)) return reply({ error: "Não foi possível reunir todos os indicadores do painel agora." }, 503);
+      const countBy = (rows, key) => (rows || []).reduce((acc, row) => {
+        const value = String(row[key] ?? "desconhecido");
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+      return reply({
+        success: true,
+        checkedAt: new Date().toISOString(),
+        metrics: {
+          users: users.count || 0,
+          listings: listings.count || 0,
+          listingsByStatus: { pending: pending.count || 0, active: active.count || 0, sold: sold.count || 0, rejected: rejected.count || 0 },
+          paymentOrders: payments.count || 0,
+          recentPaymentStatuses: countBy(payments.data, "status"),
+          conversations: conversations.count || 0,
+          messages: messages.count || 0,
+          acquisitionLeads: leads.count || 0,
+          leadsByStatus: countBy(leads.data, "status"),
+          agentTasks: agentTasks.count || 0,
+          agentTasksByStatus: countBy(agentTasks.data, "status"),
+          agentTasksByPriority: countBy(agentTasks.data, "priority"),
+        },
+        recentListings: recentListings.data || [],
+        recentPayments: (payments.data || []).map(({ id, status, amount, kind, created_at }) => ({ id, status, amount, kind, created_at })),
+      });
+    }
+
     if (body?.action === "system_health") {
       const checks = await Promise.all([
         admin.from("perfis").select("id", { count: "exact", head: true }),

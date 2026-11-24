@@ -482,7 +482,8 @@ check("Comandos por voz reconhecem as seis áreas da navegação inferior",
   ["navHome","navSearch","navAnnounce","navFavorites","navMessages","navAccount"].every(id=>html.includes('clickNav("'+id+'"')));
 check("Navegação por voz também é executada na transcrição do modo Realtime",
   html.includes('executeOwnerVoiceCommand(item.transcript).then') &&
-  html.includes('type:"response.cancel"'));
+  html.includes('type:"response.create"') &&
+  html.includes('input_audio_buffer.speech_started'));
 check("Área administrativa continua protegida por verificação de papel",
   html.includes('if(document.body.dataset.isAdmin!=="true")return {handled:false};'));
 check("Ações financeiras e destrutivas não são executadas sem confirmação explícita",

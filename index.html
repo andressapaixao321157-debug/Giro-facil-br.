@@ -690,6 +690,50 @@ footer{color:#64748b;padding-bottom:100px}
       .conversation-avatar{width:50px;height:50px;flex-basis:50px}
       .conversation-items>button{min-height:76px}
     }
+
+/* Identidade visual unificada Giro Fácil BR — azul institucional + laranja */
+:root{
+ --navy:#102b50;--navy2:#183d68;--orange:#f28a1a;
+ --ink:#17283f;--muted:#64748b;--bg:#f4f6f9;--line:#e1e7ef;
+ --brand-blue:#102b50;--brand-orange:#f28a1a;
+}
+body{background:#f4f6f9!important;color:#17283f}
+.app-header,header{background:linear-gradient(112deg,#102744 0%,#183d68 100%)!important;color:#fff}
+.app-header:after{background:linear-gradient(90deg,#f28a1a,#ffc078,transparent)!important}
+.brand span,.price,.section-head h2{color:#e87912}
+button,.btn{background:#f28a1a;color:#17283f}
+button.secondary{background:#244568;color:#fff}
+button.ghost{background:transparent;color:#fff;border-color:#7890ad}
+input,select,textarea{border:1px solid #d7e0ea;color:#17283f;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset:1px;border-color:#e98a26}
+.card,.panel,.cat,.trust-item,.owner-listing{border-color:#e1e7ef;box-shadow:0 4px 16px rgba(16,43,80,.06)}
+.bottom-nav{background:#fff;border-top:1px solid #e1e7ef}
+.bottom-nav button{color:#52647b}
+.bottom-nav button.active{color:#b95c08;background:#fff3e6}
+.bottom-nav .nav-publish .nav-icon{background:#e87912;color:#fff}
+.owner-dashboard{background:linear-gradient(120deg,#102744,#1c4777)!important}
+.owner-voice-card{background:linear-gradient(145deg,#102744,#1c4777)!important;border-color:#385b82!important}
+.owner-voice-orb{background:radial-gradient(circle,#ffc078,#e87912)!important;color:#fff!important}
+.owner-voice-status,.owner-voice-transcript{background:#0c2039!important;border-color:#385b82!important}
+.owner-voice-status,.owner-voice-transcript p{color:#e5edf7!important}
+#giroOwnerLauncher{background:linear-gradient(145deg,#f6a23a,#d96d0b)!important;border:2px solid #fff!important;color:#fff!important;box-shadow:0 6px 20px rgba(16,43,80,.28)!important}
+#giroOwnerLauncher.wake-armed,#giroOwnerLauncher.voice-active{background:linear-gradient(145deg,#183d68,#102744)!important;border-color:#ffc078!important;color:#fff!important}
+#adminPanel{background:linear-gradient(145deg,#102744,#173b65)!important;border:1px solid #294d75!important;color:#f3f7fc!important}
+#adminPanel .admin-console-head h2,#adminPanel h3{color:#fff!important}
+#adminPanel .admin-screen-body>.panel{background:#fff!important;color:#17283f!important;border:1px solid #e1e7ef!important}
+#adminPanel .admin-screen-body>.panel h3{color:#183d68!important}
+#adminPanel button:not(.secondary){background:#f28a1a;color:#17283f}
+#adminPanel button.secondary{background:#294d75;color:#fff;border-color:#527092}
+#adminPanel textarea,#adminPanel input,#adminPanel select{background:#fff!important;color:#17283f!important;border-color:#cbd6e3!important}
+#adminPanel textarea::placeholder,#adminPanel input::placeholder{color:#718096!important}
+#adminPanel table{background:#fff!important;border-color:#dce4ee!important}
+#adminPanel th{background:#eaf0f7!important;color:#183d68!important}
+#adminPanel td{color:#26384f!important;border-color:#e6ebf2!important}
+.status{border:1px solid #f2d5ad}
+.status.ok{background:#eaf6ef;color:#17633e}
+.status.err{background:#fff0f0;color:#9b2525}
+@media(prefers-reduced-motion:no-preference){button,.btn,.card,.cat{transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}}
+
 </style>
 </head>
 <body>

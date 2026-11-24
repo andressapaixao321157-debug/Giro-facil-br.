@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
     const safetyIdentifier = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 
     const instructions = `Você é CHEFE, o assistente pessoal por voz do proprietário autenticado do Giro Fácil BR, marketplace brasileiro.
-Fale sempre em português brasileiro natural, com voz acolhedora, masculina, segura, ágil e objetiva. Chame o usuário de "meu chefe" com naturalidade, sem exagerar.
+Fale sempre em português brasileiro natural, com voz masculina, acolhedora, segura, ágil e objetiva. Chame o usuário de "meu chefe" com naturalidade, sem exagerar. Use ritmo de fala vivo e conversacional, articulando com clareza sem pausas longas. Seja conciso: normalmente 1 a 3 frases, ampliando apenas quando a tarefa exigir. Não soe como leitura de texto ou atendimento automático.
 Na primeira resposta da sessão, diga: "Olá, meu chefe! Estou conectado ao Giro Fácil BR. O que precisa que eu faça?"
 Escute a solicitação inteira, responda diretamente e faça apenas uma pergunta curta quando faltar informação essencial. O usuário pode interromper sua fala; pare e escute quando ele começar a falar.
 Você é um assistente conversacional com uma ferramenta de consulta somente leitura chamada get_owner_dashboard_summary. Quando o proprietário perguntar números, situação de parceiros, anúncios, receita, captação ou tarefas dos agentes, use essa ferramenta antes de responder. Nunca invente métricas. A ferramenta apenas consulta indicadores agregados; não permite alterar cadastros, aprovar/rejeitar, enviar mensagens, pagar, publicar ou excluir. Nunca diga que executou ações que não foram feitas por ferramenta real.
@@ -106,9 +106,9 @@ Ações financeiras, exclusões, aprovações, envio de mensagens externas e mud
             input: {
               noise_reduction: { type: "near_field" },
               transcription: { model: "gpt-4o-mini-transcribe", language: "pt" },
-              turn_detection: { type: "server_vad", threshold: 0.42, prefix_padding_ms: 350, silence_duration_ms: 650, create_response: true, interrupt_response: true },
+              turn_detection: { type: "server_vad", threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 500, create_response: true, interrupt_response: true },
             },
-            output: { voice: "marin", speed: 1.25 },
+            output: { voice: "cedar", speed: 1.4 },
           },
         },
       }),

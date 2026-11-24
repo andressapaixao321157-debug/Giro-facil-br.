@@ -734,6 +734,40 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
 .status.err{background:#fff0f0;color:#9b2525}
 @media(prefers-reduced-motion:no-preference){button,.btn,.card,.cat{transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}}
 
+
+/* Correção definitiva de contraste do painel administrativo */
+#adminPanel.panel:not(.hidden){
+ background:linear-gradient(145deg,#07152f 0%,#0b2045 55%,#102b58 100%)!important;
+ color:#edf3ff!important;border:1px solid #294574!important;
+}
+#adminPanel.panel:not(.hidden) .admin-console-head h2,
+#adminPanel.panel:not(.hidden) h3,
+#adminPanel.panel:not(.hidden) .section-head h3{color:#fff!important}
+#adminPanel.panel:not(.hidden) .hint,
+#adminPanel.panel:not(.hidden) p{color:#bdcbe2!important}
+#adminPanel.panel:not(.hidden) .admin-console-head{border-bottom-color:#ffffff24!important}
+#adminPanel.panel:not(.hidden) .section-head,
+#adminPanel.panel:not(.hidden)>.section-head{color:#fff!important}
+#adminPanel.panel:not(.hidden) .panel{
+ background:linear-gradient(145deg,#142e59,#0d2144)!important;
+ color:#edf3ff!important;border-color:#35517d!important;
+}
+#adminPanel.panel:not(.hidden) input,
+#adminPanel.panel:not(.hidden) select,
+#adminPanel.panel:not(.hidden) textarea{
+ background:#0a1a37!important;color:#fff!important;border-color:#3b5680!important;
+}
+#adminPanel.panel:not(.hidden) input::placeholder,
+#adminPanel.panel:not(.hidden) textarea::placeholder{color:#9fb1ca!important}
+#adminPanel.panel:not(.hidden) button:not(.secondary){background:#f28a1a!important;color:#17283f!important}
+#adminPanel.panel:not(.hidden) button.secondary{background:#294568!important;color:#fff!important;border:1px solid #527092!important}
+#adminPanel.panel:not(.hidden) table{background:#0d2140!important}
+#adminPanel.panel:not(.hidden) th{background:#18345f!important;color:#ffc078!important}
+#adminPanel.panel:not(.hidden) td{color:#e1eafa!important;border-color:#263e65!important}
+#adminPanel.panel:not(.hidden) .partner-card{background:#10284f!important;color:#fff!important;border-color:#35517d!important}
+#adminPanel.panel:not(.hidden) .partner-card strong{color:#fff!important}
+#adminPanel.panel:not(.hidden) .partner-card small{color:#bdcbe2!important}
+
 </style>
 </head>
 <body>

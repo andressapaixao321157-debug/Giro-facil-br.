@@ -2808,6 +2808,18 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
 #giroOwnerLauncher.voice-active{background:#0b705e;color:white;border:2px solid #8ee0d7}
 @keyframes giroWakePulse{0%,100%{box-shadow:0 0 0 3px #0e9f9a22,0 5px 18px #07152655}50%{box-shadow:0 0 0 7px #0e9f9a12,0 5px 18px #07152655}}
 @media(max-width:760px){#giroOwnerLauncher{right:12px;bottom:calc(91px + env(safe-area-inset-bottom));width:44px;height:44px}}
+
+/* Central do proprietário: oito áreas principais */
+#adminPanel .admin-home-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+#adminPanel .admin-home-card{min-height:132px;padding:18px}
+#adminPanel .admin-home-card .admin-home-icon{font-size:27px;color:#72d5cd}
+#adminPanel .admin-home-card strong{font-size:15px;line-height:1.25}
+#adminPanel .admin-home-card small{font-size:12px;line-height:1.45}
+#adminPanel .admin-screen-body{display:grid;gap:16px}
+#adminPanel .admin-screen-body>.panel{background:#fff;color:#182638}
+#adminPanel .admin-screen-body>.panel h3{color:#10243b}
+@media(max-width:900px){#adminPanel .admin-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){#adminPanel .admin-home-grid{grid-template-columns:1fr}}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {
@@ -2818,16 +2830,14 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   const home=document.createElement('section');home.className='admin-home';home.innerHTML='<div class="admin-console-head"><h2>Central do proprietário</h2><p class="hint">Escolha uma área. Cada função abre em sua própria tela, sem misturar ferramentas.</p></div><div class="admin-home-grid" aria-label="Módulos administrativos"></div>';
   const grid=home.querySelector('.admin-home-grid');
   const modules=[
-   ['overview','▦','Visão geral','Indicadores principais',['ownerDashboard','adminTotals']],
-   ['voice','🎙','Assistente do proprietário','Comandos e voz',['ownerVoiceAssistant']],
-   ['operations','◷','Central 24h','Equipe e tarefas automáticas',['ownerAgentControl']],
-   ['agents','✦','Agentes inteligentes','Sete especialistas',['agentConsole']],
-   ['founders','♛','Parceiros fundadores','Campanha e inscrições',['adminFounderCampaign']],
-   ['partners','♧','Parceiros','Solicitações recebidas',['adminPartners']],
-   ['acquisition','◎','Captação nacional','Indicadores e CRM de interessados',['adminAcquisitionMetrics','adminAcquisitionLeads']],
-   ['finance','R$','Financeiro','Pagamentos e pedidos',['adminOrders']],
-   ['listings','▤','Anúncios','Anúncios recentes e gestão',['adminListings']],
-   ['stock','＋','Estoque próprio','Cadastro em lote',['adminBulkInput','adminBulkSubmit']]
+   ['overview','▦','Visão geral','Indicadores e resumo do negócio',['ownerDashboard','adminTotals']],
+   ['marketplace','▤','Marketplace e anúncios','Anúncios, estoque próprio e publicação em lote',['adminListings','adminBulkInput','adminBulkSubmit']],
+   ['users','♙','Usuários e atendimento','Solicitações de parceiros e acesso às mensagens',['adminPartners']],
+   ['finance','R$','Financeiro','Pagamentos, pedidos e receita',['adminOrders']],
+   ['growth','♧','Parceiros e crescimento','Campanha de fundadores, parceiros e CRM nacional',['adminFounderCampaign','adminAcquisitionMetrics','adminAcquisitionLeads']],
+   ['intelligence','✦','Inteligência artificial e voz','Assistente CHEFE e agentes especialistas',['ownerVoiceAssistant','agentConsole']],
+   ['operations','◷','Operações e monitoramento','Central 24h, tarefas e relatórios da equipe',['ownerAgentControl']],
+   ['settings','⚙','Configurações e saúde técnica','Orientações de operação e diagnóstico do ambiente',[]]
   ];
   const host=document.createElement('div');host.className='admin-screens';
   function makeScreen(key,title,desc,ids){
@@ -2854,6 +2864,8 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   }
   function keyIcon(k){const m=modules.find(x=>x[0]===k);return m?m[1]:'•';}
   modules.forEach(([key,icon,title,desc,ids])=>makeScreen(key,title,desc,ids));
+  const settingsScreen=host.querySelector('[data-screen="settings"] .admin-screen-body');
+  if(settingsScreen){const info=document.createElement('section');info.className='panel';info.innerHTML="<h3>Saúde técnica e configurações</h3><p>Área reservada para acompanhar disponibilidade do site, versão do aplicativo, integrações, banco de dados e preferências administrativas.</p><p><a href='https://girofacilbr.com.br' target='_blank' rel='noopener'>Abrir site oficial</a></p><p>Não exponha chaves privadas no aplicativo. Alterações críticas devem ser testadas antes da publicação.</p>";settingsScreen.appendChild(info);}
   function showHome(){
    home.classList.remove('hidden');host.querySelectorAll('.admin-screen').forEach(s=>s.classList.remove('active'));
    panel.dataset.activeScreen='home';window.scrollTo({top:panel.getBoundingClientRect().top+window.scrollY-12,behavior:'smooth'});

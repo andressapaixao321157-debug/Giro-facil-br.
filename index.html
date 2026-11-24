@@ -1754,7 +1754,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(has(/\b(parar de rolar|parar)\b/)){window.scrollTo({top:window.scrollY,behavior:"instant"});return {handled:true,answer:"Certo, parei."};}
     return {handled:false};
   }
-  const ownerNativeSpeech=()=>window.Capacitor?.Plugins?.SpeechRecognition||window.Capacitor?.registerPlugin?.("SpeechRecognition");
+  let ownerNativeSpeechDisabled=false;
+  const ownerNativeSpeech=()=>ownerNativeSpeechDisabled?null:(window.Capacitor?.Plugins?.SpeechRecognition||window.Capacitor?.registerPlugin?.("SpeechRecognition"));
   async function ownerFallbackHandleTranscript(transcript){
     if(!transcript||!ownerFallbackActive)return;
     ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Vou verificar seu comando...");
@@ -1789,7 +1790,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   }
   async function ownerNativeSpeechLoop(){
     const native=ownerNativeSpeech();
-    if(!native){ownerVoiceSetStatus("Reconhecimento nativo do Android não está disponível nesta instalação.",true);ownerFallbackActive=false;return;}
+    if(!native){ownerVoiceSetStatus("Reconhecimento nativo indisponível. Tentando o reconhecimento alternativo...",true);ownerFallbackStartListening();return;}
     try{
       const permission=await native.checkPermissions();
       if(permission?.speechRecognition!=="granted"){
@@ -1797,7 +1798,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
         if(requested?.speechRecognition!=="granted")throw new Error("Permissão de reconhecimento de voz não autorizada.");
       }
       const availability=await native.available();
-      if(!availability?.available)throw new Error("O serviço de reconhecimento de voz do Android não está disponível. Ative o serviço de voz do Google nas configurações.");
+      if(!availability?.available){ownerNativeSpeechDisabled=true;ownerVoiceSetStatus("Serviço nativo indisponível. Alternando para o reconhecimento compatível do navegador...");ownerFallbackStartListening();return;}
       if(!ownerFallbackActive||ownerFallbackBusy)return;
       ownerVoiceSetStatus("Microfone Android ativo. Fale seu comando; estou ouvindo...");
       const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
@@ -1806,7 +1807,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       if(transcript)await ownerFallbackHandleTranscript(transcript);
       else {ownerVoiceSetStatus("Não captei a fala. Vou continuar ouvindo.");ownerFallbackStartListening();}
     }catch(error){
-      if(ownerFallbackActive){ownerVoiceSetStatus("Falha no reconhecimento nativo: "+(error?.message||"erro do Android"),true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;}
+      if(ownerFallbackActive){
+        const detail=String(error?.message||error||"");
+        if(/permission|denied|not authorized|permiss[aã]o|negad[ao]/i.test(detail)){ownerVoiceSetStatus("Permissão de reconhecimento negada. Libere o microfone e a permissão de fala nas configurações do Android.",true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;return;}
+        ownerNativeSpeechDisabled=true;
+        ownerVoiceSetStatus("O reconhecimento nativo falhou. Tentando o modo alternativo...",true);
+        ownerFallbackStartListening();
+      }
     }
   }
   function ownerFallbackStartListening(){

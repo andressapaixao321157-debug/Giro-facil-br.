@@ -411,6 +411,8 @@ check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório
 check("Assistente de voz do proprietário possui controles de iniciar e encerrar",hasId("ownerVoiceStart")&&hasId("ownerVoiceStop")&&hasId("ownerVoiceStatus")&&hasId("ownerVoiceTranscript"));
 check("Modo gratuito usa reconhecimento e síntese de voz pt-BR do navegador",html.includes("window.SpeechRecognition||window.webkitSpeechRecognition")&&html.includes("new SpeechSynthesisUtterance(message)")&&html.includes('utterance.lang="pt-BR"'));
 check("Modo gratuito interrompe reconhecimento e fala ao encerrar",html.includes("ownerFallbackRecognition.abort()")&&html.includes("window.speechSynthesis.cancel()"));
+check("Normalização de nomes falados remove acentos corretamente",html.includes('const normVoiceName=')&&html.includes('replace(/[\\u0300-\\u036f]/g,"")'));
+check("Comando para abrir mensagens de compradores reconhece palavras com limites corretos",html.includes('has(/\\b(mensagem|mensagens|conversa|conversas|chat)\\b/)&&has(/\\b(comprador|cliente|compradores|clientes)\\b/)'));
 check("Comandos de voz executáveis exigem sessão e papel de administrador",html.includes("async function executeOwnerVoiceCommand")&&html.includes('document.body.dataset.isAdmin!=="true"'));
 check("Executor de voz contextual opera controles visíveis, campos e navegação",html.includes("Executor semântico genérico")&&html.includes("document.querySelectorAll")&&html.includes("field.dispatchEvent")&&html.includes("history.back()"));
 check("Comandos reconhecem português sem acentos e identificam os comandos financeiros",html.includes('normalize("NFD")')&&html.includes("financeiro|pagamentos|pedidos|recebimentos"));

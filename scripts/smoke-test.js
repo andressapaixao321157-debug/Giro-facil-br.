@@ -450,7 +450,7 @@ const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.re
 const publicListingGrant = listingPrivacyMigration.split("GRANT SELECT (")[1] || "";
 const clientInsertGrant = paymentInsertMigration.split("GRANT INSERT (")[1] || "";
 check("Vitrine e detalhes de anúncios usam projeções explícitas sem SELECT estrela",
-  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)/.test(html) &&
+  !/db\.from\(["']anuncios["']\)\.select\(["']\*["']\)/.test(html) &&
   html.includes('db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at")'));
 check("Migração de privacidade revoga leitura ampla e libera somente colunas públicas",
   listingPrivacyMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&

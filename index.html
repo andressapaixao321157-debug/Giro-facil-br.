@@ -979,6 +979,9 @@ footer{color:#64748b;padding-bottom:100px}
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
     <h3>Diretório de usuários</h3><p class="hint">Consulta administrativa somente leitura. Dados pessoais visíveis apenas após validação de administrador.</p><div id="adminUsers" style="overflow:auto"></div>
     <h3>Saúde técnica do sistema</h3><p class="hint">Verificação de conectividade e leitura das áreas principais do banco.</p><div id="adminHealth" class="form-grid"></div>
+    <h3>Atendimento administrativo</h3><p class="hint">Caixa de entrada centralizada das conversas de compradores e vendedores. As respostas aparecem na conversa original do aplicativo.</p>
+    <div id="adminSupportInbox" class="admin-support-layout"><div id="adminSupportList" class="admin-support-list"></div><section class="admin-support-thread"><div id="adminSupportThread" class="hint">Selecione uma conversa para visualizar as mensagens.</div><div class="chat-compose"><textarea id="adminSupportReply" rows="2" maxlength="4000" placeholder="Responder ao comprador ou vendedor..." disabled></textarea><button id="adminSupportSend" type="button" disabled>Enviar resposta</button></div></section></div>
+    <h3>Controles de configuração</h3><p class="hint">Controles operacionais aplicados no site: atendimento por chat e aviso público.</p><div id="adminSettings" class="form-grid"></div>
     <h3>Captação nacional — CRM</h3>
     <p class="hint">Interessados que chegaram pelo formulário público. Atualize a etapa do atendimento.</p>
     <div id="adminAcquisitionMetrics" class="form-grid"></div><div id="adminAcquisitionLeads" style="overflow:auto"></div>
@@ -1311,11 +1314,12 @@ footer{color:#64748b;padding-bottom:100px}
     const list=Array.isArray(items)?items:[];
     return list.length?'<ul style="padding-left:18px;color:#d8e5f6">'+list.map(x=>'<li style="margin:5px 0">'+escapeHtml(typeof x==="string"?x:JSON.stringify(x))+'</li>').join("")+'</ul>':'<p class="hint" style="color:#9fb4d1">Nenhum item registrado.</p>';
   }
+  let activeAdminSupportConversation=null;
   async function loadAdminDashboard(){
     if(!db||!currentUser)return;
     $("adminRefresh").disabled=true;
     try{
-      const requiredAdminIds=["adminStatus","adminRefresh","adminFounderStats","adminFounderProgress","adminFounderList","adminTotals","adminOrders","adminListings","adminPartners","adminUsers","adminHealth","adminAcquisitionMetrics","adminAcquisitionLeads"];
+      const requiredAdminIds=["adminStatus","adminRefresh","adminFounderStats","adminFounderProgress","adminFounderList","adminTotals","adminOrders","adminListings","adminPartners","adminUsers","adminHealth","adminSupportInbox","adminSupportList","adminSupportThread","adminSupportReply","adminSupportSend","adminSettings","adminAcquisitionMetrics","adminAcquisitionLeads"];
       const missingAdminIds=requiredAdminIds.filter(id=>!$(id));
       if(missingAdminIds.length)throw new Error("Painel incompleto nesta versão. Atualize a página para carregar: "+missingAdminIds.join(", "));
       const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
@@ -1332,6 +1336,21 @@ footer{color:#64748b;padding-bottom:100px}
       $("adminUsers").innerHTML=directory.length?'<table style="width:100%;border-collapse:collapse;min-width:720px"><tr><th>Nome</th><th>Telefone</th><th>Local</th><th>Perfil</th><th>Plano</th><th>Cadastro</th></tr>'+directory.map(u=>'<tr><td>'+escapeHtml(u.nome||"—")+'</td><td>'+escapeHtml(u.telefone||"—")+'</td><td>'+escapeHtml([u.cidade,u.estado].filter(Boolean).join("/ ")||"—")+'</td><td>'+escapeHtml(u.papel||"usuario")+'</td><td>'+escapeHtml(u.plano_status||"inativo")+'</td><td>'+ (u.criado_em?new Date(u.criado_em).toLocaleDateString("pt-BR"):"—")+'</td></tr>').join("")+'</table><p class="hint">'+(usersResult.data?.total||directory.length)+' usuários cadastrados · mostrando até 200 mais recentes.</p>':'<p class="hint">Nenhum perfil cadastrado.</p>';
       const health=healthResult.data||{};
       $("adminHealth").innerHTML='<div class="panel"><strong>Última verificação</strong><div style="font-size:15px;margin-top:8px">'+(health.checkedAt?new Date(health.checkedAt).toLocaleString("pt-BR"):"Não disponível")+'</div></div>'+ (health.services||[]).map(s=>'<div class="panel"><strong>'+escapeHtml(s.name)+'</strong><div style="font-size:20px;margin-top:8px">'+(s.ok?'✓ Operacional':'⚠ Atenção')+'</div><p class="hint">'+escapeHtml(s.detail)+' · '+s.count+' registros</p></div>').join("");
+      const [supportResult,settingsResult]=await Promise.all([
+        db.functions.invoke("admin-dashboard",{body:{action:"admin_support_inbox"}}),
+        db.functions.invoke("admin-dashboard",{body:{action:"get_platform_settings"}})
+      ]);
+      if(supportResult.error)throw supportResult.error;if(supportResult.data?.error)throw new Error(supportResult.data.error);
+      if(settingsResult.error)throw settingsResult.error;if(settingsResult.data?.error)throw new Error(settingsResult.data.error);
+      const supportConversations=supportResult.data?.conversations||[];
+      $("adminSupportList").innerHTML=supportConversations.length?supportConversations.map(conv=>'<button type="button" class="admin-support-item" data-support-conversation="'+conv.id+'"><strong>'+escapeHtml(conv.buyerName)+' ↔ '+escapeHtml(conv.sellerName)+'</strong><span>'+escapeHtml(conv.adTitle)+'</span><small>'+escapeHtml(conv.lastMessage)+' · '+(conv.lastMessageAt?new Date(conv.lastMessageAt).toLocaleString("pt-BR"):"")+'</small>'+(conv.unread?'<b>'+conv.unread+' não lida(s)</b>':'')+'</button>').join(""):'<p class="hint">Nenhuma conversa cadastrada.</p>';
+      $("adminSupportList").onclick=async(ev)=>{const btn=ev.target.closest("[data-support-conversation]");if(!btn)return;const conversationId=btn.dataset.supportConversation;activeAdminSupportConversation=conversationId;const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"admin_support_thread",conversationId}});if(error)throw error;if(data?.error)throw new Error(data.error);const rows=data.messages||[];$("adminSupportThread").innerHTML=rows.length?rows.map(m=>'<div class="admin-support-message"><small>'+(m.remetente_id===currentUser.id?'Você (admin)':'Cliente')+' · '+new Date(m.criada_em).toLocaleString("pt-BR")+'</small><p>'+escapeHtml(m.conteudo)+'</p></div>').join(""):'<p class="hint">Esta conversa ainda não tem mensagens.</p>';$("adminSupportReply").disabled=false;$("adminSupportSend").disabled=false;$("adminSupportThread").scrollTop=$("adminSupportThread").scrollHeight;};
+      const settingRows=settingsResult.data?.settings||[];
+      const settingMap=Object.fromEntries(settingRows.map(row=>[row.setting_key,row.setting_value]));
+      $("adminSettings").innerHTML='<div class="panel admin-setting-card"><strong>Atendimento por chat</strong><p class="hint">Permite ou pausa a entrada no chat do marketplace.</p><label><input id="settingSupportEnabled" type="checkbox" '+(settingMap.support_chat_enabled===true?'checked':'')+'> Atendimento habilitado</label></div><div class="panel admin-setting-card"><strong>Aviso público do site</strong><p class="hint">Texto exibido no topo do site para todos os visitantes. Deixe vazio para ocultar.</p><textarea id="settingPublicNotice" maxlength="500" rows="3" placeholder="Ex.: Estamos realizando melhorias no sistema.">'+escapeHtml(typeof settingMap.public_notice==="string"?settingMap.public_notice:"")+'</textarea><button id="savePublicNotice" type="button">Salvar aviso</button></div>';
+      $("settingSupportEnabled").onchange=async(ev)=>{ev.target.disabled=true;try{const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"update_platform_setting",key:"support_chat_enabled",value:ev.target.checked}});if(error)throw error;if(data?.error)throw new Error(data.error);status("adminStatus","Configuração do atendimento salva.","ok");}catch(err){ev.target.checked=!ev.target.checked;status("adminStatus",err.message||"Falha ao salvar configuração.","err");}finally{ev.target.disabled=false;}};
+      $("savePublicNotice").onclick=async()=>{const button=$("savePublicNotice");button.disabled=true;try{const value=$("settingPublicNotice").value.trim();const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"update_platform_setting",key:"public_notice",value}});if(error)throw error;if(data?.error)throw new Error(data.error);status("adminStatus","Aviso público salvo.","ok");}catch(err){status("adminStatus",err.message||"Falha ao salvar aviso.","err");}finally{button.disabled=false;}};
+      $("adminSupportSend").onclick=async()=>{const input=$("adminSupportReply"),button=$("adminSupportSend"),content=input.value.trim();if(!activeAdminSupportConversation||!content)return;button.disabled=true;try{const {data,error}=await db.functions.invoke("admin-dashboard",{body:{action:"admin_support_reply",conversationId:activeAdminSupportConversation,content}});if(error)throw error;if(data?.error)throw new Error(data.error);input.value="";const {data:thread,error:threadError}=await db.functions.invoke("admin-dashboard",{body:{action:"admin_support_thread",conversationId:activeAdminSupportConversation}});if(threadError)throw threadError;if(thread?.error)throw new Error(thread.error);$("adminSupportThread").innerHTML=(thread.messages||[]).map(m=>'<div class="admin-support-message"><small>'+(m.remetente_id===currentUser.id?'Você (admin)':'Cliente')+' · '+new Date(m.criada_em).toLocaleString("pt-BR")+'</small><p>'+escapeHtml(m.conteudo)+'</p></div>').join("");status("adminStatus","Resposta enviada na conversa original.","ok");}catch(err){status("adminStatus",err.message||"Não foi possível enviar a resposta.","err");}finally{button.disabled=false;}};
       const t=data.totals;
       const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores],["Parceiros ativos",t.activePartners],["Solicitações de parceria",t.pendingPartners]];
       const campaign=data.founderCampaign||{};const founderApps=data.partnerApplications||[];let activeFounderFilter="todos";
@@ -2585,6 +2604,21 @@ footer{color:#64748b;padding-bottom:100px}
   <!-- Build validation trigger: Giro Facil BR Android APK -->
   <!-- APK rebuild: owner voice assistant Realtime v9 -->
 
+<style id="admin-support-settings-style">
+#adminPanel .admin-support-layout{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(280px,1.2fr);gap:12px;margin:12px 0}
+#adminPanel .admin-support-list{display:grid;gap:8px;align-content:start;max-height:520px;overflow:auto}
+#adminPanel .admin-support-item{display:grid;gap:5px;text-align:left;background:#fff;border:1px solid var(--line);color:var(--ink);padding:12px;border-radius:12px}
+#adminPanel .admin-support-item span,#adminPanel .admin-support-item small{color:var(--muted);font-size:12px}
+#adminPanel .admin-support-item b{font-size:11px;color:#9a3412}
+#adminPanel .admin-support-thread{min-height:300px;max-height:520px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+#adminPanel .admin-support-message{background:#f3f6fa;border-radius:10px;padding:9px 11px;margin:8px 0;max-width:95%}
+#adminPanel .admin-support-message small{color:var(--muted);font-size:11px}
+#adminPanel .admin-support-message p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+#adminPanel .admin-setting-card{display:grid;gap:10px;align-content:start}
+#adminPanel .admin-setting-card label{display:flex;gap:8px;align-items:center}
+#adminPanel .admin-setting-card textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px}
+@media(max-width:700px){#adminPanel .admin-support-layout{grid-template-columns:1fr}#adminPanel .admin-support-thread{min-height:240px}}
+</style>
 <style id="admin-separated-screens">
 #adminPanel .admin-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
 #adminPanel .admin-home-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;min-height:118px;padding:18px;background:linear-gradient(145deg,#1b3557,#10233f);color:#f4f7fc;border:1px solid #35577f;border-radius:16px;box-shadow:0 8px 22px #06152b25}

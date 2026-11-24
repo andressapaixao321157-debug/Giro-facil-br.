@@ -1506,18 +1506,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     launcher.classList.toggle("visible",!!isOwner);
     if(!isOwner){stopOwnerWakeWord();ownerWakeAutoAttempted=false;launcher.classList.remove("wake-armed","voice-active");return;}
     launcher.title="Microfone automático do CHEFE";
-    if(!ownerWakeAutoAttempted&&!ownerWakeArmed&&!ownerFallbackActive&&!ownerVoicePeer){
-      ownerWakeAutoAttempted=true;
-      ownerWakeStatus("Olá, meu chefe! Ativando o microfone. Se o Android pedir, permita o acesso.");
-      if(!ownerAutoVoiceStarted){
-        ownerAutoVoiceStarted=true;
-        setTimeout(()=>{
-          if(document.body.dataset.isAdmin==="true"&&!ownerFallbackActive&&!ownerVoicePeer&&!ownerVoiceStream){
-            startOwnerVoiceConversation();
-          }
-        },900);
-      }
-    }
+    ownerWakeAutoAttempted=true;
+    ownerWakeStatus("Assistente pronto. Toque no ícone do CHEFE para ativar o microfone quando quiser.");
   }
   function stopOwnerWakeWord(){
     ownerWakeArmed=false;ownerWakeStarting=false;
@@ -1575,15 +1565,52 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
   }
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
+  let ownerNativeSpeechReady=null;
   const ownerFallbackHistory=[];
   let ownerVoicePendingChatLookup=null;
+  let ownerVoicePendingListingLookup=null;
   let ownerVoiceSelectedListingId=null;
+  async function openOwnerListingDetail(listingId){
+    const {data:item,error}=await db.from("anuncios").select("*").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
+    if(error)throw error;
+    if(!item)throw new Error("Não encontrei esse anúncio na sua conta.");
+    const photos=Array.isArray(item.fotos)?item.fotos:[];
+    const overlay=document.createElement("div");overlay.className="listing-detail-overlay";
+    const photoMarkup=photos.map((url,index)=>'<img src="'+escapeHtml(url)+'" alt="Foto '+(index+1)+' de '+escapeHtml(item.titulo)+'">').join("");
+    const location=[item.cidade,item.estado].filter(Boolean).map(escapeHtml).join(" / ");
+    const rows=[["Categoria",item.categoria],["Marca",item.marca],["Modelo",item.modelo],["Ano",item.ano],["Localização",location],["Status",item.status]].filter(pair=>pair[1]);
+    const published=formatListingDate(item.criado_em||item.created_at);
+    overlay.innerHTML='<section class="listing-detail-sheet" role="dialog" aria-modal="true" aria-label="Detalhes do seu anúncio"><button class="detail-close" type="button" aria-label="Fechar">✕</button><div class="detail-gallery">'+(photoMarkup||'<div class="detail-no-photo">Sem fotos disponíveis</div>')+'</div><div class="detail-content"><h2>'+escapeHtml(item.titulo)+'</h2><div class="detail-price">'+Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'</div><div class="detail-location">📍 '+(location||"Localização não informada")+'</div><div class="detail-location">Publicado em '+escapeHtml(published)+'</div><h3>Descrição</h3><p class="detail-description">'+escapeHtml(item.descricao||"Você não informou uma descrição.")+'</p><div class="detail-facts">'+rows.map(([k,v])=>'<div><strong>'+escapeHtml(k)+'</strong><span>'+escapeHtml(v)+'</span></div>').join("")+'</div></div></section>';
+    document.body.appendChild(overlay);document.body.style.overflow="hidden";
+    const close=()=>{overlay.remove();document.body.style.overflow="";};
+    overlay.querySelector(".detail-close").onclick=close;
+    overlay.addEventListener("click",event=>{if(event.target===overlay)close();});
+    ownerVoiceSelectedListingId=item.id;
+    return item;
+  }
   async function executeOwnerVoiceCommand(transcript){
     const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
     const has=(pattern)=>pattern.test(q);
     const openIntent=has(/\b(abrir|abre|abra|entrar|entra|mostrar|mostra|ir|vai|acessar|acessa|quero ver|ver|acessar|acessa)\b/);
     const answer=(label)=>({handled:true,answer:"Pronto, chefe. "+label+" está aberto."});
     const normVoiceName=(value)=>String(value||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    if(ownerVoicePendingListingLookup){
+      const pending=ownerVoicePendingListingLookup;
+      const ordinal=q.match(/\b(primeiro|primeira|um|1|segundo|segunda|dois|2|terceiro|terceira|tres|3)\b/);
+      const ordinalIndex=ordinal?({primeiro:0,primeira:0,um:0,"1":0,segundo:1,segunda:1,dois:1,"2":1,terceiro:2,terceira:2,tres:2,"3":2}[ordinal[1]]):-1;
+      const requested=normVoiceName(transcript);
+      const matches=pending.matches||[];
+      const chosen=ordinalIndex>=0&&matches[ordinalIndex]?[matches[ordinalIndex]]:matches.filter(item=>{
+        const title=normVoiceName(item.titulo);
+        return title===requested||title.includes(requested)||requested.includes(title);
+      });
+      if(chosen.length===1){
+        const item=chosen[0];ownerVoicePendingListingLookup=null;ownerVoiceSelectedListingId=item.id;
+        await openOwnerListingDetail(item.id);
+        return {handled:true,answer:"Abri o anúncio "+item.titulo+" para você."};
+      }
+      return {handled:true,answer:chosen.length>1?"Ainda há mais de um anúncio com esse nome. Diga o título completo.":"Não identifiquei qual anúncio você quis dizer. Diga uma parte maior do título ou o número da opção."};
+    }
     if(ownerVoicePendingChatLookup){
       const requested=normVoiceName(transcript);
       const matches=ownerVoicePendingChatLookup.matches||[];
@@ -1650,20 +1677,25 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     };
     const resolveVoiceListing=async()=>{
       const rows=await loadVoiceListings();
-      if(/\b(esse|este|deste|desse|atual|aberto)\b/.test(q)&&ownerVoiceSelectedListingId){
+      if(/\b(esse|este|deste|desse|atual|aberto|que mandei|que te mandei)\b/.test(q)&&ownerVoiceSelectedListingId){
         const selected=rows.find(x=>String(x.id)===String(ownerVoiceSelectedListingId));if(selected)return {item:selected,rows};
       }
       if(listingPhrase){
-        const wanted=norm(listingPhrase.replace(/\b(esse|este|meu|minha|o|a|atual|aberto)\b/g," "));
-        if(wanted.length>=3){
-          const matches=rows.filter(x=>norm(x.titulo).includes(wanted)||wanted.includes(norm(x.titulo)));
-          if(matches.length===1)return {item:matches[0],rows};
-          if(matches.length>1)return {matches,rows};
+        const wanted=norm(listingPhrase.replace(/\b(esse|este|meu|minha|o|a|atual|aberto|que|te|mandei|enviei|mostrei)\b/g," "));
+        const tokens=wanted.split(" ").filter(x=>x.length>2);
+        if(tokens.length){
+          const scored=rows.map(item=>{
+            const title=norm(item.titulo),overlap=tokens.filter(token=>title.includes(token)).length;
+            return {item,score:overlap/Math.max(tokens.length,1),exact:title.includes(wanted)||wanted.includes(title)};
+          }).filter(x=>x.exact||x.score>=0.6).sort((a,b)=>Number(b.exact)-Number(a.exact)||b.score-a.score);
+          if(scored.length===1)return {item:scored[0].item,rows};
+          if(scored.length>1&&scored[0].score>scored[1].score)return {item:scored[0].item,rows};
+          if(scored.length>1)return {matches:scored.slice(0,8).map(x=>x.item),rows};
         }
       }
       if(ownerVoiceSelectedListingId){const selected=rows.find(x=>String(x.id)===String(ownerVoiceSelectedListingId));if(selected)return {item:selected,rows};}
       if(rows.length===1)return {item:rows[0],rows};
-      return {matches:rows.slice(0,12),rows};
+      return {matches:rows.slice(0,8),rows};
     };
     if(listingIntent&&has(/\b(cliques|clique|visualizacoes|visualizacao|contatos|desempenho|metricas|estatisticas|quantos|quantas)\b/)){
       const resolved=await resolveVoiceListing();
@@ -1695,18 +1727,17 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       await loadMyListings();await loadListings();
       return {handled:true,answer:"Pronto, chefe. Atualizei "+item.titulo+". "+(patch.preco?"Novo preço: "+Number(patch.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". ":"")+(patch.titulo?"Novo título: "+patch.titulo+".":"")};
     }
-    if(listingIntent&&has(/\b(abrir|abra|abre|mostrar|mostra|ver|visualizar|entrar)\b/)){
+    if(listingIntent&&has(/\b(abrir|abra|abre|mostrar|mostra|ver|visualizar|entrar|acessar|acesse)\b/)){
       const resolved=await resolveVoiceListing();
       if(!resolved.item){
-        if(resolved.matches?.length)return {handled:true,answer:"Qual anúncio você quer abrir? Encontrei: "+resolved.matches.map(x=>x.titulo).join("; ")+". Diga o título."};
-        return {handled:true,answer:"Não encontrei anúncios seus para abrir."};
+        if(resolved.matches?.length){
+          ownerVoicePendingListingLookup={matches:resolved.matches};
+          return {handled:true,answer:"Encontrei mais de um anúncio seu. Diga o título ou fale primeiro, segundo ou terceiro: "+resolved.matches.slice(0,3).map((item,index)=>(index+1)+": "+item.titulo).join("; ")+". Vou abrir o escolhido."};
+        }
+        return {handled:true,answer:"Não encontrei anúncios seus para abrir. Diga uma parte do título do anúncio."};
       }
-      const item=resolved.item;ownerVoiceSelectedListingId=item.id;
-      const card=document.querySelector('[data-open-listing="'+CSS.escape(String(item.id))+'"]');
-      if(card){card.click();return {handled:true,answer:"Abrindo o anúncio "+item.titulo+"."};}
-      $("myListingsOpen")?.click();
-      setTimeout(()=>{const ownerCard=document.querySelector('[data-owner-listing="'+CSS.escape(String(item.id))+'"]');ownerCard?.scrollIntoView({behavior:"smooth",block:"center"});},250);
-      return {handled:true,answer:"Localizei "+item.titulo+" e abri seus classificados na posição dele. O anúncio está "+item.status+"."};
+      const item=await openOwnerListingDetail(resolved.item.id);
+      return {handled:true,answer:"Abri o anúncio "+item.titulo+". Ele está "+item.status+"."};
     }
     if(listingIntent&&has(/\b(vendido|marcar como vendido)\b/)){
       const resolved=await resolveVoiceListing();
@@ -1791,13 +1822,19 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const native=ownerNativeSpeech();
     if(!native){ownerVoiceSetStatus("Reconhecimento nativo do Android não está disponível nesta instalação.",true);ownerFallbackActive=false;return;}
     try{
-      const permission=await native.checkPermissions();
-      if(permission?.speechRecognition!=="granted"){
-        const requested=await native.requestPermissions();
-        if(requested?.speechRecognition!=="granted")throw new Error("Permissão de reconhecimento de voz não autorizada.");
+      if(!ownerNativeSpeechReady){
+        ownerNativeSpeechReady=(async()=>{
+          const permission=await native.checkPermissions();
+          if(permission?.speechRecognition!=="granted"){
+            const requested=await native.requestPermissions();
+            if(requested?.speechRecognition!=="granted")throw new Error("Permissão de reconhecimento de voz não autorizada.");
+          }
+          const availability=await native.available();
+          if(!availability?.available)throw new Error("O serviço de reconhecimento de voz do Android não está disponível. Ative o serviço de voz do Google nas configurações.");
+          return true;
+        })();
       }
-      const availability=await native.available();
-      if(!availability?.available)throw new Error("O serviço de reconhecimento de voz do Android não está disponível. Ative o serviço de voz do Google nas configurações.");
+      await ownerNativeSpeechReady;
       if(!ownerFallbackActive||ownerFallbackBusy)return;
       ownerVoiceSetStatus("Microfone Android ativo. Fale seu comando; estou ouvindo...");
       const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
@@ -1835,9 +1872,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
     const launcher=$( "giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
     $( "ownerVoiceStart").disabled=true;$( "ownerVoiceStop").disabled=false;
-    ownerVoiceSetStatus("Inicializando reconhecimento de voz nativo do Android...");
-    ownerFallbackSpeak("Fala, meu chefe! Estou ativando o microfone. Pode falar comigo.");
-    if(!("speechSynthesis" in window))ownerFallbackStartListening();
+    ownerVoiceSetStatus("Ativando o microfone agora. Pode falar...");
+    ownerFallbackStartListening();
   }
   async function stopOwnerVoiceConversation(){
     ownerFallbackActive=false;ownerFallbackBusy=false;try{if(ownerFallbackRecognition){ownerFallbackRecognition.onend=null;ownerFallbackRecognition.abort();ownerFallbackRecognition=null;}const native=ownerNativeSpeech();if(native)await native.stop();if("speechSynthesis" in window)window.speechSynthesis.cancel();}catch(e){}
@@ -1885,14 +1921,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
     start.disabled=true;ownerVoiceSetStatus("Solicitando acesso ao microfone e preparando a conexão segura...");
     try{
-      ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});
+      const [voiceStream,tokenResult]=await Promise.all([
+        navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}}),
+        db.functions.invoke("owner-voice-session",{body:{}})
+      ]);
+      ownerVoiceStream=voiceStream;
       const inputTrack=ownerVoiceStream.getAudioTracks()[0];
       if(!inputTrack||inputTrack.readyState!=="live")throw new Error("O Android autorizou a permissão, mas não disponibilizou um fluxo de áudio ativo.");
       inputTrack.onmute=()=>ownerVoiceSetStatus("O Android pausou a captura do microfone. Verifique se outro aplicativo está usando o áudio.",true);
       inputTrack.onended=()=>ownerVoiceSetStatus("A captura do microfone foi encerrada pelo Android.",true);
       ownerVoiceSetStatus("Microfone autorizado e fluxo de áudio ativo. Preparando conexão segura...");
 
-      const {data:tokenData,error:tokenError}=await db.functions.invoke("owner-voice-session",{body:{}});
+      const {data:tokenData,error:tokenError}=tokenResult;
       if(tokenError)throw new Error(tokenError.message||"Não foi possível autorizar a sessão de voz.");
       const ephemeralKey=tokenData?.value;
       if(!ephemeralKey)throw new Error(tokenData?.error||"O servidor não retornou a credencial temporária de voz.");

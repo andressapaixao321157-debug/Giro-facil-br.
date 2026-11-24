@@ -1974,7 +1974,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
           else if(item.type==="response.output_audio_transcript.done"&&item.transcript)ownerVoiceAddLine("CHEFE",item.transcript);
           else if(item.type==="response.output_text.done"&&item.text)ownerVoiceAddLine("CHEFE",item.text);
           else if(item.type==="response.function_call_arguments.done")runOwnerVoiceToolCall(item);
-          else if(item.type==="error")ownerVoiceSetStatus(item.error?.message||"A conversa encontrou um erro. Tente novamente.",true);
+          else if(item.type==="error"){
+            const detail=item.error?.message||"A conversa encontrou um erro. Tente novamente.";
+            ownerVoiceSetStatus(detail,true);
+            if(/credit_balance_exhausted|insufficient_quota|billing|429|quota/i.test(detail)&&!ownerFallbackActive){
+              stopOwnerVoiceConversation().then(()=>{
+                ownerVoiceSetStatus("A IA avançada está sem créditos. Ativei o modo local: comandos de navegação e consulta continuam disponíveis.");
+                startOwnerFallbackVoice();
+              }).catch(error=>console.warn("Não foi possível iniciar o modo local de voz",error));
+            }
+          }
         }catch(e){console.warn("Evento de voz inválido",e);}
       });
       ownerVoicePeer.onconnectionstatechange=()=>{
@@ -2418,6 +2427,24 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       const {error:touchThreadError}=await db.from("assistant_threads").update({updated_at:new Date().toISOString()})
         .eq("id",threadId).eq("user_id",currentUser.id);
       if(touchThreadError)throw touchThreadError;
+      // Comandos locais de leitura/navegação não dependem de créditos da IA.
+      // Compartilha o mesmo executor do CHEFE por voz no site e no APK.
+      const safeOwnerCommand=/^(?:abr[ae]|abrir|entrar|entra|mostrar|mostra|ver|visualizar|acessar|acesse|ir|vai|voltar|buscar|pesquisar|procura|rolar|descer|subir|parar|clique em|clica em|aperte|pressione|selecione|escolha|meus?\\s+(?:an[uú]ncios|classificados)|painel|central|planos|favoritos|mensagens|chat|in[ií]cio)\\b/i.test(message)
+        && !/\\b(?:excluir|apagar|deletar|remover|cancelar|aprovar|rejeitar|banir|bloquear|suspender|pagar|comprar|contratar|enviar|publicar|confirmar|estornar|editar|alterar|mudar|modificar|vendido)\\b/i.test(message);
+      if(document.body.dataset.isAdmin==="true"&&safeOwnerCommand){
+        const localCommand=await executeOwnerVoiceCommand(message);
+        if(localCommand?.handled){
+          const localAnswer=String(localCommand.answer||"Comando concluído.");
+          replyBubble.textContent=localAnswer;
+          assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:localAnswer}].slice(-12);
+          const {error:saveLocalAnswerError}=await db.from("assistant_messages").insert({
+            thread_id:threadId,user_id:currentUser.id,role:"assistant",content:localAnswer.slice(0,4000)
+          });
+          if(saveLocalAnswerError)status("assistantStatus","Comando executado, mas não consegui salvar a resposta no histórico. "+saveLocalAnswerError.message,"err");
+          else $("assistantStatus").classList.add("hidden");
+          return;
+        }
+      }
       const response=await fetch(SUPABASE_URL+"/functions/v1/giro-assistant",{
         method:"POST",
         headers:{

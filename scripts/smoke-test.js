@@ -7,6 +7,7 @@ const paymentPath = "supabase/functions/asaas-create-payment/index.ts";
 const assistantWorkflowPath = ".github/workflows/deploy-giro-assistant.yml";
 const configPath = "supabase/config.toml";
 const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, "utf8") : "";
+const adminDashboard = fs.existsSync("supabase/functions/admin-dashboard/index.ts") ? fs.readFileSync("supabase/functions/admin-dashboard/index.ts", "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
 const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
 const webhookPath = "supabase/functions/asaas-webhook/index.ts";
@@ -89,6 +90,10 @@ check("Assistente recupera histórico persistente por usuário com RLS",
   html.includes('from("assistant_threads")') && html.includes('from("assistant_messages")') &&
   html.includes('thread_id:threadId,user_id:currentUser.id,role:"user"') &&
   assistant.includes('eq("user_id", authData.user.id)'));
+check("Contexto administrativo exige admin e entrega indicadores reais somente por endpoint protegido",
+  adminDashboard.includes('body?.action === "assistant_context"') &&
+  adminDashboard.includes('if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403)') &&
+  assistant.includes('action: "assistant_context"'));
 check("Contexto de anúncios é limitado à conta autenticada",
   assistant.includes('.from("anuncios")') && assistant.includes('.eq("usuario_id", authData.user.id)'));
 check("Contexto de conversas usa apenas conversas e mensagens acessíveis ao usuário",

@@ -5,6 +5,7 @@ on:
     paths:
       - "index.html"
       - "scripts/smoke-test.js"
+      - "scripts/test-listing-privacy-migrations.sql"
       - "supabase/migrations/**"
       - ".github/workflows/listing-privacy-validation.yml"
   pull_request:
@@ -12,11 +13,26 @@ on:
     paths:
       - "index.html"
       - "scripts/smoke-test.js"
+      - "scripts/test-listing-privacy-migrations.sql"
       - "supabase/migrations/**"
       - ".github/workflows/listing-privacy-validation.yml"
 jobs:
   smoke-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: giro_privacy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d giro_privacy_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,3 +44,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run marketplace and privacy regression tests
         run: npm test
+      - name: Execute privacy migrations against isolated PostgreSQL 17
+        env:
+          PGPASSWORD: postgres
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/giro_privacy_test
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/test-listing-privacy-migrations.sql

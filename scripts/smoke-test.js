@@ -453,6 +453,15 @@ check("Permissão do microfone é solicitada antes da credencial de voz",
 check("Erro de permissão do microfone apresenta orientação clara no Android",
   html.includes('Acesso ao microfone bloqueado. Nas configurações do Android'));
 
+check("Assistente inicia microfone automaticamente após validar a conta proprietária",
+  html.includes("ownerAutoVoiceStarted") &&
+  html.includes('document.body.dataset.isAdmin==="true"') &&
+  html.includes("startOwnerVoiceConversation();"));
+check("Captação de áudio ativa cancelamento de eco, redução de ruído e ganho automático",
+  html.includes("echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1"));
+check("Detecção de fala usa limiar mais sensível e pausa curta",
+  fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 350, silence_duration_ms: 650'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

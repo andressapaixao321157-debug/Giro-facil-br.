@@ -1272,7 +1272,7 @@ footer{color:#64748b;padding-bottom:100px}
         const soldAction=item.status==="ativo"?'<button type="button" data-mark-sold="'+escapeHtml(item.id)+'">Marcar como vendido</button>':"";
         const editAction=["ativo","pendente"].includes(item.status)?'<button type="button" class="secondary" data-edit-listing="'+escapeHtml(item.id)+'">Editar</button>':"";
         const boostAction=item.status==="ativo"?'<button type="button" class="secondary" data-boost-listing="'+escapeHtml(item.id)+'">Turbinar</button>':"";
-        return '<article class="owner-listing">'+image+'<div><h3>'+escapeHtml(item.titulo)+'</h3><div class="owner-listing-meta">'+escapeHtml(item.categoria)+' · '+Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'<br><span class="owner-status '+escapeHtml(item.status)+'">'+escapeHtml(item.status)+'</span><br>Publicado: '+escapeHtml(published)+'<br>Última atualização: '+escapeHtml(updated)+'</div><div class="owner-listing-stats"><span>👁 '+stats.view+' visualizações</span><span>↗ '+stats.click+' cliques</span><span>✉ '+stats.contact+' contatos</span></div><div class="owner-listing-actions">'+editAction+soldAction+boostAction+'<button type="button" class="secondary" data-delete-listing="'+escapeHtml(item.id)+'">Excluir</button></div></div></article>';
+        return '<article class="owner-listing" data-owner-listing="'+escapeHtml(item.id)+'">'+image+'<div><h3>'+escapeHtml(item.titulo)+'</h3><div class="owner-listing-meta">'+escapeHtml(item.categoria)+' · '+Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+'<br><span class="owner-status '+escapeHtml(item.status)+'">'+escapeHtml(item.status)+'</span><br>Publicado: '+escapeHtml(published)+'<br>Última atualização: '+escapeHtml(updated)+'</div><div class="owner-listing-stats"><span>👁 '+stats.view+' visualizações</span><span>↗ '+stats.click+' cliques</span><span>✉ '+stats.contact+' contatos</span></div><div class="owner-listing-actions">'+editAction+soldAction+boostAction+'<button type="button" class="secondary" data-delete-listing="'+escapeHtml(item.id)+'">Excluir</button></div></div></article>';
       }).join(""):'<div class="panel"><p class="hint">Nenhum classificado nesta categoria.</p></div>';
       status("myListingsStatus","Seus classificados foram atualizados. As métricas são contadas por visitante único em cada anúncio.","ok");
     }catch(error){status("myListingsStatus","Não foi possível carregar seus classificados: "+(error.message||"erro inesperado"),"err");}
@@ -1441,6 +1441,7 @@ footer{color:#64748b;padding-bottom:100px}
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
   const ownerFallbackHistory=[];
   let ownerVoicePendingChatLookup=null;
+  let ownerVoiceSelectedListingId=null;
   async function executeOwnerVoiceCommand(transcript){
     const q=String(transcript||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
     const has=(pattern)=>pattern.test(q);
@@ -1504,6 +1505,80 @@ footer{color:#64748b;padding-bottom:100px}
     if(has(/\b(captacao|captadores|leads|crm)\b/))return await goTo("adminAcquisitionLeads","captação nacional e CRM");
     if(has(/\b(central 24|agentes|tarefas dos agentes|equipe)\b/))return await goTo("ownerAgentControl","Central 24h e equipe de agentes");
     if(has(/\b(resumo|indicadores|numeros|metricas|como esta o giro)\b/)){ownerVoiceSetStatus("Consultando os indicadores reais do Giro Fácil...");const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});if(error)throw error;if(data?.error)throw new Error(data.error);const t=data?.totals||{},f=data?.founderCampaign||{},a=data?.acquisition||{};const money=Number(t.paidRevenue||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});return {handled:true,answer:"Resumo confirmado: "+(t.users??"—")+" usuários, "+(t.ads??"—")+" anúncios, "+(t.pendingAds??"—")+" anúncios pendentes e "+money+" em receita confirmada. Parceiros ativos: "+(t.activePartners??"—")+". Inscrições na campanha: "+(f.total??"—")+". Leads registrados: "+(a.total??"—")+". Dados retornados agora pelo painel."};}
+    const norm=(v)=>String(v||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    const listingIntent=has(/\b(anuncio|anuncios|classificado|classificados)\b/);
+    const listingPhrase=(q.match(/(?:anuncio|classificado)(?:s)?(?: chamado| com titulo| intitulado)?\s+(.+?)(?=\s+(?:com|para|por|preco|titulo|cliques|visualizacoes|contatos)\b|$)/)||[])[1];
+    const loadVoiceListings=async()=>{
+      const {data,error}=await db.from("anuncios").select("id,titulo,categoria,preco,status,cidade,estado,criado_em,created_at,updated_at,usuario_id").eq("usuario_id",currentUser.id).order("criado_em",{ascending:false}).limit(200);
+      if(error)throw error;return data||[];
+    };
+    const resolveVoiceListing=async()=>{
+      const rows=await loadVoiceListings();
+      if(/\b(esse|este|deste|desse|atual|aberto)\b/.test(q)&&ownerVoiceSelectedListingId){
+        const selected=rows.find(x=>String(x.id)===String(ownerVoiceSelectedListingId));if(selected)return {item:selected,rows};
+      }
+      if(listingPhrase){
+        const wanted=norm(listingPhrase.replace(/\b(esse|este|meu|minha|o|a)\b/g," "));
+        const matches=rows.filter(x=>norm(x.titulo).includes(wanted)||wanted.includes(norm(x.titulo)));
+        if(matches.length===1)return {item:matches[0],rows};
+        if(matches.length>1)return {matches,rows};
+      }
+      if(rows.length===1)return {item:rows[0],rows};
+      return {matches:rows.slice(0,12),rows};
+    };
+    if(listingIntent&&has(/\b(cliques|clique|visualizacoes|visualizacao|contatos|desempenho|metricas|estatisticas|quantos|quantas)\b/)){
+      const resolved=await resolveVoiceListing();
+      if(!resolved.item){
+        if(resolved.matches?.length)return {handled:true,answer:"Encontrei estes anúncios: "+resolved.matches.map(x=>x.titulo).join("; ")+". Diga o título do anúncio que quer consultar."};
+        return {handled:true,answer:"Não encontrei anúncios seus para consultar."};
+      }
+      const item=resolved.item;ownerVoiceSelectedListingId=item.id;
+      const {data:events,error}=await db.from("listing_events").select("event_type").eq("listing_id",item.id);
+      if(error)throw error;
+      const counts=(events||[]).reduce((acc,e)=>{acc[e.event_type]=(acc[e.event_type]||0)+1;return acc;},{});
+      return {handled:true,answer:"No anúncio "+item.titulo+": "+(counts.view||0)+" visualizações, "+(counts.click||0)+" cliques e "+(counts.contact||0)+" contatos registrados. Status: "+item.status+"."};
+    }
+    if(listingIntent&&has(/\b(editar|edite|edita|alterar|altere|mudar|mude|modificar|modifique)\b/)){
+      const resolved=await resolveVoiceListing();
+      if(!resolved.item){
+        if(resolved.matches?.length)return {handled:true,answer:"Qual anúncio você quer editar? Encontrei: "+resolved.matches.map(x=>x.titulo).join("; ")+". Diga o título."};
+        return {handled:true,answer:"Não encontrei anúncios seus para editar."};
+      }
+      const item=resolved.item;ownerVoiceSelectedListingId=item.id;
+      const priceMatch=q.match(/\b(?:preco|valor)\s+(?:para|de|em)?\s*(?:r\$\s*)?([0-9][0-9.,]*)/);
+      const titleMatch=String(transcript).match(/(?:titulo|nome)\s+(?:para|de|como)\s+(.+)$/i);
+      const patch={};
+      if(priceMatch){const price=Number(priceMatch[1].replace(/\./g,"").replace(",","."));if(Number.isFinite(price)&&price>0)patch.preco=price;}
+      if(titleMatch?.[1]?.trim())patch.titulo=titleMatch[1].trim().slice(0,160);
+      if(!Object.keys(patch).length)return {handled:true,answer:"Encontrei o anúncio "+item.titulo+". Diga: mude o preço para 125000, ou mude o título para carro em ótimo estado."};
+      const {error}=await db.from("anuncios").update(patch).eq("id",item.id).eq("usuario_id",currentUser.id);
+      if(error)throw error;
+      await loadMyListings();await loadListings();
+      return {handled:true,answer:"Pronto, chefe. Atualizei "+item.titulo+". "+(patch.preco?"Novo preço: "+Number(patch.preco).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+". ":"")+(patch.titulo?"Novo título: "+patch.titulo+".":"")};
+    }
+    if(listingIntent&&has(/\b(abrir|abra|abre|mostrar|mostra|ver|visualizar|entrar)\b/)){
+      const resolved=await resolveVoiceListing();
+      if(!resolved.item){
+        if(resolved.matches?.length)return {handled:true,answer:"Qual anúncio você quer abrir? Encontrei: "+resolved.matches.map(x=>x.titulo).join("; ")+". Diga o título."};
+        return {handled:true,answer:"Não encontrei anúncios seus para abrir."};
+      }
+      const item=resolved.item;ownerVoiceSelectedListingId=item.id;
+      const card=document.querySelector('[data-open-listing="'+CSS.escape(String(item.id))+'"]');
+      if(card){card.click();return {handled:true,answer:"Abrindo o anúncio "+item.titulo+"."};}
+      $("myListingsOpen")?.click();
+      setTimeout(()=>{const ownerCard=document.querySelector('[data-owner-listing="'+CSS.escape(String(item.id))+'"]');ownerCard?.scrollIntoView({behavior:"smooth",block:"center"});},250);
+      return {handled:true,answer:"Localizei "+item.titulo+" e abri seus classificados na posição dele. O anúncio está "+item.status+"."};
+    }
+    if(listingIntent&&has(/\b(vendido|marcar como vendido)\b/)){
+      const resolved=await resolveVoiceListing();
+      if(!resolved.item)return {handled:true,answer:"Diga o título do anúncio que deseja marcar como vendido."};
+      const item=resolved.item;
+      if(item.status!=="ativo")return {handled:true,answer:"O anúncio "+item.titulo+" não está ativo. Status atual: "+item.status+"."};
+      const {error}=await db.from("anuncios").update({status:"vendido"}).eq("id",item.id).eq("usuario_id",currentUser.id);
+      if(error)throw error;
+      await loadMyListings();await loadListings();
+      return {handled:true,answer:"Marquei "+item.titulo+" como vendido."};
+    }
     // Executor semântico genérico: opera somente controles visíveis e identificáveis
     // pela interface atual; não inventa ações nem contorna permissões.
     const norm=(v)=>String(v||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();

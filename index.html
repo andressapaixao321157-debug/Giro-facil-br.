@@ -1518,11 +1518,14 @@ footer{color:#64748b;padding-bottom:100px}
         const selected=rows.find(x=>String(x.id)===String(ownerVoiceSelectedListingId));if(selected)return {item:selected,rows};
       }
       if(listingPhrase){
-        const wanted=norm(listingPhrase.replace(/\b(esse|este|meu|minha|o|a)\b/g," "));
-        const matches=rows.filter(x=>norm(x.titulo).includes(wanted)||wanted.includes(norm(x.titulo)));
-        if(matches.length===1)return {item:matches[0],rows};
-        if(matches.length>1)return {matches,rows};
+        const wanted=norm(listingPhrase.replace(/\b(esse|este|meu|minha|o|a|atual|aberto)\b/g," "));
+        if(wanted.length>=3){
+          const matches=rows.filter(x=>norm(x.titulo).includes(wanted)||wanted.includes(norm(x.titulo)));
+          if(matches.length===1)return {item:matches[0],rows};
+          if(matches.length>1)return {matches,rows};
+        }
       }
+      if(ownerVoiceSelectedListingId){const selected=rows.find(x=>String(x.id)===String(ownerVoiceSelectedListingId));if(selected)return {item:selected,rows};}
       if(rows.length===1)return {item:rows[0],rows};
       return {matches:rows.slice(0,12),rows};
     };
@@ -2306,6 +2309,12 @@ footer{color:#64748b;padding-bottom:100px}
   }
 
 
+  document.addEventListener("click",(event)=>{
+    const ownerCard=event.target.closest("[data-owner-listing]");
+    const listingDetail=event.target.closest("[data-open-listing]");
+    if(ownerCard)ownerVoiceSelectedListingId=ownerCard.dataset.ownerListing;
+    else if(listingDetail)ownerVoiceSelectedListingId=listingDetail.dataset.openListing;
+  });
   // Ações do proprietário nos cards da vitrine.
   document.addEventListener("click",async(event)=>{
     const details=event.target.closest("[data-open-listing]");

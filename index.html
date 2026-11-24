@@ -2288,6 +2288,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     bubble.textContent=content;
     $("assistantMessages").appendChild(bubble);
     $("assistantMessages").scrollTop=$("assistantMessages").scrollHeight;
+    return bubble;
   }
   $("assistantOpen").onclick=()=>{
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para conversar com o assistente virtual.");return;}
@@ -2304,24 +2305,77 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para usar o assistente virtual.");return;}
     if(sendButton.disabled)return;
     sendButton.disabled=true;
-    sendButton.textContent="Enviando...";
+    sendButton.textContent="Respondendo...";
     input.value="";
     addAssistantBubble(message,true);
-    status("assistantStatus","Enviando sua mensagem para o assistente...");
+    const replyBubble=addAssistantBubble("Estou pensando...",false);
+    status("assistantStatus","Preparando resposta...");
     try{
-      const {data,error}=await db.functions.invoke("giro-assistant",{body:{message,history:assistantHistory}});
-      if(error){
-        const detail=error.message||"Falha ao chamar o serviço.";
-        throw new Error(detail);
+      const {data:sessionData,error:sessionError}=await db.auth.getSession();
+      if(sessionError)throw sessionError;
+      const accessToken=sessionData?.session?.access_token;
+      if(!accessToken)throw new Error("Sua sessão expirou. Entre novamente.");
+      const response=await fetch(SUPABASE_URL+"/functions/v1/giro-assistant",{
+        method:"POST",
+        headers:{
+          "Authorization":"Bearer "+accessToken,
+          "apikey":SUPABASE_ANON_KEY,
+          "Content-Type":"application/json",
+          "Accept":"text/event-stream, application/json"
+        },
+        body:JSON.stringify({message,history:assistantHistory,stream:true})
+      });
+      if(!response.ok){
+        const failure=await response.json().catch(()=>({}));
+        throw new Error(failure?.error||"Falha ao chamar o serviço de inteligência.");
       }
-      if(data?.error)throw new Error(data.error);
-      if(typeof data?.answer!=="string"||!data.answer.trim())throw new Error("O assistente não retornou uma resposta.");
-      assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:data.answer}].slice(-10);
-      addAssistantBubble(data.answer+(data.mode==="ajuda-basica"?"\n\n"+(data.notice||"Atendimento básico ativo; IA avançada ainda não configurada."):""),false);
+      let answer="";
+      if((response.headers.get("content-type")||"").includes("text/event-stream")){
+        replyBubble.textContent="";
+        status("assistantStatus","Respondendo...");
+        if(!response.body)throw new Error("O navegador não recebeu o fluxo de resposta.");
+        const reader=response.body.getReader();
+        const decoder=new TextDecoder();
+        let buffer="";
+        while(true){
+          const {value,done}=await reader.read();
+          if(value)buffer+=decoder.decode(value,{stream:!done});
+          let separator;
+          while((separator=buffer.search(/\r?\n\r?\n/))>=0){
+            const block=buffer.slice(0,separator);
+            const delimiter=buffer.slice(separator).match(/^\r?\n\r?\n/);
+            buffer=buffer.slice(separator+(delimiter?delimiter[0].length:2));
+            const dataLine=block.split(/\r?\n/).find(line=>line.startsWith("data:"));
+            if(!dataLine)continue;
+            const payload=dataLine.slice(5).trim();
+            if(!payload||payload==="[DONE]")continue;
+            let event;
+            try{event=JSON.parse(payload);}catch{continue;}
+            if(event.type==="response.output_text.delta"&&typeof event.delta==="string"){
+              answer+=event.delta;
+              replyBubble.textContent=answer;
+              $("assistantMessages").scrollTop=$("assistantMessages").scrollHeight;
+            }else if(event.type==="error"||event.type==="response.failed"){
+              throw new Error(event.error?.message||event.response?.error?.message||"A geração da resposta foi interrompida.");
+            }
+          }
+          if(done)break;
+        }
+      }else{
+        const data=await response.json();
+        if(data?.error)throw new Error(data.error);
+        if(typeof data?.answer!=="string"||!data.answer.trim())throw new Error("O assistente não retornou uma resposta.");
+        answer=data.answer;
+        replyBubble.textContent=answer+(data.mode==="ajuda-basica"?"\n\n"+(data.notice||"Atendimento básico ativo; IA avançada ainda não configurada."):"");
+      }
+      if(!answer.trim())throw new Error("O assistente não conseguiu concluir a resposta.");
+      assistantHistory=[...assistantHistory,{role:"user",content:message},{role:"assistant",content:answer}].slice(-10);
       $("assistantStatus").classList.add("hidden");
     }catch(err){
       const messageError=err?.message||"Não foi possível conectar ao assistente. Tente novamente.";
-      addAssistantBubble("Não consegui responder agora: "+messageError+". Sua mensagem foi mantida para você tentar novamente.",false);
+      if(replyBubble.textContent==="Estou pensando...")replyBubble.textContent="Não consegui responder agora: "+messageError;
+      else if(!replyBubble.textContent.trim())replyBubble.textContent="Não consegui responder agora: "+messageError;
+      else replyBubble.textContent+="\n\nA resposta foi interrompida: "+messageError;
       input.value=message;
       status("assistantStatus","Falha no envio. Confira sua conexão e tente novamente.","err");
     }finally{

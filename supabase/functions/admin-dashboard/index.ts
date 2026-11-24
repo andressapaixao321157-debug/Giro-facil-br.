@@ -84,6 +84,78 @@ Deno.serve(async (req) => {
 
     if (!isAdmin) return reply({ error: "Acesso restrito ao administrador." }, 403);
 
+    if (body?.action === "admin_support_inbox") {
+      const { data: conversations, error: conversationError } = await admin.from("conversas")
+        .select("id,anuncio_id,comprador_id,vendedor_id,ultima_mensagem_em,anuncios(titulo)")
+        .order("ultima_mensagem_em", { ascending: false }).limit(100);
+      if (conversationError) throw conversationError;
+      const participantIds = [...new Set((conversations || []).flatMap((row: any) => [row.comprador_id, row.vendedor_id]).filter(Boolean))];
+      const { data: profiles, error: profileListError } = participantIds.length
+        ? await admin.from("perfis").select("id,nome").in("id", participantIds)
+        : { data: [], error: null };
+      if (profileListError) throw profileListError;
+      const names = new Map((profiles || []).map((p: any) => [p.id, p.nome]));
+      const ids = (conversations || []).map((row: any) => row.id);
+      const { data: messages, error: messageError } = ids.length
+        ? await admin.from("mensagens").select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em,entregue_em").in("conversa_id", ids).order("criada_em", { ascending: false }).limit(1000)
+        : { data: [], error: null };
+      if (messageError) throw messageError;
+      const latest = new Map();
+      for (const message of messages || []) if (!latest.has(message.conversa_id)) latest.set(message.conversa_id, message);
+      return reply({ success: true, conversations: (conversations || []).map((row: any) => ({
+        id: row.id, adTitle: row.anuncios?.titulo || "Anúncio", buyerId: row.comprador_id, sellerId: row.vendedor_id,
+        buyerName: names.get(row.comprador_id) || "Comprador", sellerName: names.get(row.vendedor_id) || "Vendedor",
+        lastMessage: latest.get(row.id)?.conteudo || "Sem mensagens", lastMessageAt: latest.get(row.id)?.criada_em || row.ultima_mensagem_em,
+        unread: (messages || []).filter((m: any) => m.conversa_id === row.id && m.remetente_id !== userId && !m.lida_em).length,
+      })), messages: (messages || []).reverse() });
+    }
+
+    if (body?.action === "admin_support_thread") {
+      const conversationId = String(body.conversationId ?? "");
+      if (!uuid(conversationId)) return reply({ error: "Conversa inválida." }, 400);
+      const { data, error } = await admin.from("mensagens").select("id,conversa_id,remetente_id,conteudo,criada_em,lida_em,entregue_em")
+        .eq("conversa_id", conversationId).order("criada_em", { ascending: true }).limit(300);
+      if (error) throw error;
+      const { data: conversation, error: convError } = await admin.from("conversas").select("id").eq("id", conversationId).maybeSingle();
+      if (convError) throw convError;
+      if (!conversation) return reply({ error: "Conversa não encontrada." }, 404);
+      return reply({ success: true, messages: data || [] });
+    }
+
+    if (body?.action === "admin_support_reply") {
+      const conversationId = String(body.conversationId ?? "");
+      const content = String(body.content ?? "").trim();
+      if (!uuid(conversationId) || content.length < 1 || content.length > 4000) return reply({ error: "Informe uma conversa válida e uma mensagem de até 4.000 caracteres." }, 400);
+      const { data: conversation, error: convError } = await admin.from("conversas").select("id").eq("id", conversationId).maybeSingle();
+      if (convError) throw convError;
+      if (!conversation) return reply({ error: "Conversa não encontrada." }, 404);
+      const { data, error } = await admin.from("mensagens").insert({ conversa_id: conversationId, remetente_id: userId, conteudo: content })
+        .select("id,conversa_id,remetente_id,conteudo,criada_em").single();
+      if (error) throw error;
+      return reply({ success: true, message: data });
+    }
+
+    if (body?.action === "get_platform_settings") {
+      const { data, error } = await admin.from("platform_settings").select("setting_key,setting_value,description,updated_at").order("setting_key");
+      if (error) throw error;
+      return reply({ success: true, settings: data || [] });
+    }
+
+    if (body?.action === "update_platform_setting") {
+      const key = String(body.key ?? "");
+      const allowed = new Set(["support_chat_enabled","new_registrations_enabled","public_notice"]);
+      if (!allowed.has(key)) return reply({ error: "Configuração não permitida." }, 400);
+      const value = body.value;
+      if (key === "public_notice" && (typeof value !== "string" || value.length > 500)) return reply({ error: "O aviso público deve ter até 500 caracteres." }, 400);
+      if (key !== "public_notice" && typeof value !== "boolean") return reply({ error: "Valor de configuração inválido." }, 400);
+      const { data, error } = await admin.from("platform_settings").upsert({
+        setting_key: key, setting_value: JSON.stringify(value), updated_at: new Date().toISOString(), updated_by: userId,
+        description: key === "support_chat_enabled" ? "Habilita o atendimento por chat dentro da plataforma" : key === "new_registrations_enabled" ? "Permite novos cadastros de usuários" : "Aviso público exibido no site",
+      }, { onConflict: "setting_key" }).select("setting_key,setting_value,updated_at").single();
+      if (error) throw error;
+      return reply({ success: true, setting: data });
+    }
+
     if (body?.action === "list_users") {
       const { data, error, count } = await admin.from("perfis")
         .select("id,nome,telefone,cidade,estado,papel,plano_status,criado_em", { count: "exact" })

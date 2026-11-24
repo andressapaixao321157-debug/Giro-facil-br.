@@ -1061,13 +1061,15 @@ footer{color:#64748b;padding-bottom:100px}
     return SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("COLE_AQUI") && SUPABASE_ANON_KEY.length>30 && !SUPABASE_ANON_KEY.includes("COLE_AQUI");
   }
   let supportChatEnabled=true;
+  let newRegistrationsEnabled=true;
   async function applyPublicPlatformSettings(){
     if(!db)return;
     try{
-      const {data,error}=await db.from("platform_settings").select("setting_key,setting_value").in("setting_key",["support_chat_enabled","public_notice"]);
-      if(error)throw error;
-      const settings=Object.fromEntries((data||[]).map(row=>[row.setting_key,row.setting_value]));
+      const response=await fetch(SUPABASE_URL+"/functions/v1/public-platform-settings",{method:"GET",headers:{apikey:SUPABASE_ANON_KEY}});
+      if(!response.ok)throw new Error("Configurações públicas indisponíveis.");
+      const settings=await response.json();
       supportChatEnabled=settings.support_chat_enabled!==false;
+      newRegistrationsEnabled=settings.new_registrations_enabled!==false;
       ["navMessages","headerMessages"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("hidden",!supportChatEnabled);});
       const notice=typeof settings.public_notice==="string"?settings.public_notice.trim():"";
       let banner=$("giroPublicNotice");
@@ -1167,6 +1169,7 @@ footer{color:#64748b;padding-bottom:100px}
     $("authSubmit").disabled=true;
     try{
       if(signupMode){
+        if(!newRegistrationsEnabled)throw new Error("Novos cadastros estão temporariamente pausados. Tente novamente mais tarde.");
         const name=$("fullName").value.trim();if(!name)throw new Error("Informe seu nome.");
         const {data,error}=await db.auth.signUp({email,password,options:{data:{nome:name},emailRedirectTo:PUBLIC_SITE_URL+"/"}});if(error)throw error;
         if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
@@ -1982,6 +1985,7 @@ footer{color:#64748b;padding-bottom:100px}
     stopChatPresence();
   }
   async function openChat(conversationId=null){
+    if(!supportChatEnabled){alert("O atendimento por chat está temporariamente pausado.");return;}
     if(!db){alert("O serviço de mensagens ainda não está conectado.");return;}
     if(!currentUser){openAuth();status("authStatus","Entre na sua conta para acessar as mensagens.");return;}
     showMessagesPage("chat");

@@ -977,6 +977,8 @@ footer{color:#64748b;padding-bottom:100px}
     <div id="adminTotals" class="form-grid"></div>
     <h3>Estoque da conta administradora — lote</h3><p class="hint">Use somente para anúncios próprios da conta administradora, não para estoque de parceiros. Cada linha deve conter 11 campos: Título;Categoria;Preço;Marca;Modelo;Ano;Cidade;UF;WhatsApp;Descrição;URL HTTPS da foto. Até 20 por lote. Os anúncios ficam pendentes até revisão e pagamento confirmado.</p><textarea id="adminBulkInput" rows="6" placeholder="Toyota Corolla XEi;Carro;95000;Toyota;Corolla XEi;2020;Rondonópolis;MT;66999999999;Bem conservado;https://..."></textarea><button id="adminBulkSubmit" type="button" style="margin-top:8px">Cadastrar lote de anúncios</button>
     <div class="section-head"><h3>Solicitações de parceiros</h3><button id="assistantLeadOpen" class="secondary" type="button">Robô de captação</button></div><div id="adminPartners" style="overflow:auto"></div>
+    <h3>Diretório de usuários</h3><p class="hint">Consulta administrativa somente leitura. Dados pessoais visíveis apenas após validação de administrador.</p><div id="adminUsers" style="overflow:auto"></div>
+    <h3>Saúde técnica do sistema</h3><p class="hint">Verificação de conectividade e leitura das áreas principais do banco.</p><div id="adminHealth" class="form-grid"></div>
     <h3>Captação nacional — CRM</h3>
     <p class="hint">Interessados que chegaram pelo formulário público. Atualize a etapa do atendimento.</p>
     <div id="adminAcquisitionMetrics" class="form-grid"></div><div id="adminAcquisitionLeads" style="overflow:auto"></div>
@@ -1313,13 +1315,23 @@ footer{color:#64748b;padding-bottom:100px}
     if(!db||!currentUser)return;
     $("adminRefresh").disabled=true;
     try{
-      const requiredAdminIds=["adminStatus","adminRefresh","adminFounderStats","adminFounderProgress","adminFounderList","adminTotals","adminOrders","adminListings","adminPartners","adminAcquisitionMetrics","adminAcquisitionLeads"];
+      const requiredAdminIds=["adminStatus","adminRefresh","adminFounderStats","adminFounderProgress","adminFounderList","adminTotals","adminOrders","adminListings","adminPartners","adminUsers","adminHealth","adminAcquisitionMetrics","adminAcquisitionLeads"];
       const missingAdminIds=requiredAdminIds.filter(id=>!$(id));
       if(missingAdminIds.length)throw new Error("Painel incompleto nesta versão. Atualize a página para carregar: "+missingAdminIds.join(", "));
       const {data,error}=await db.functions.invoke("admin-dashboard",{body:{}});
       if(error)throw error;if(data?.error)throw new Error(data.error);
       if(!data||!data.totals||!Array.isArray(data.orders)||!Array.isArray(data.listings))throw new Error("O servidor retornou dados incompletos para o painel. Toque em Atualizar painel novamente.");
       await loadOwnerAgentControlCenter();
+      const [usersResult,healthResult]=await Promise.all([
+        db.functions.invoke("admin-dashboard",{body:{action:"list_users"}}),
+        db.functions.invoke("admin-dashboard",{body:{action:"system_health"}})
+      ]);
+      if(usersResult.error)throw usersResult.error;if(usersResult.data?.error)throw new Error(usersResult.data.error);
+      if(healthResult.error)throw healthResult.error;if(healthResult.data?.error)throw new Error(healthResult.data.error);
+      const directory=usersResult.data?.users||[];
+      $("adminUsers").innerHTML=directory.length?'<table style="width:100%;border-collapse:collapse;min-width:720px"><tr><th>Nome</th><th>Telefone</th><th>Local</th><th>Perfil</th><th>Plano</th><th>Cadastro</th></tr>'+directory.map(u=>'<tr><td>'+escapeHtml(u.nome||"—")+'</td><td>'+escapeHtml(u.telefone||"—")+'</td><td>'+escapeHtml([u.cidade,u.estado].filter(Boolean).join("/ ")||"—")+'</td><td>'+escapeHtml(u.papel||"usuario")+'</td><td>'+escapeHtml(u.plano_status||"inativo")+'</td><td>'+ (u.criado_em?new Date(u.criado_em).toLocaleDateString("pt-BR"):"—")+'</td></tr>').join("")+'</table><p class="hint">'+(usersResult.data?.total||directory.length)+' usuários cadastrados · mostrando até 200 mais recentes.</p>':'<p class="hint">Nenhum perfil cadastrado.</p>';
+      const health=healthResult.data||{};
+      $("adminHealth").innerHTML='<div class="panel"><strong>Última verificação</strong><div style="font-size:15px;margin-top:8px">'+(health.checkedAt?new Date(health.checkedAt).toLocaleString("pt-BR"):"Não disponível")+'</div></div>'+ (health.services||[]).map(s=>'<div class="panel"><strong>'+escapeHtml(s.name)+'</strong><div style="font-size:20px;margin-top:8px">'+(s.ok?'✓ Operacional':'⚠ Atenção')+'</div><p class="hint">'+escapeHtml(s.detail)+' · '+s.count+' registros</p></div>').join("");
       const t=data.totals;
       const cards=[["Usuários",t.users],["Anúncios",t.ads],["Pendentes",t.pendingAds],["Receita confirmada",Number(t.paidRevenue).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Destaques ativos",t.activeBoosts],["Lojas ativas",t.activeStores],["Parceiros ativos",t.activePartners],["Solicitações de parceria",t.pendingPartners]];
       const campaign=data.founderCampaign||{};const founderApps=data.partnerApplications||[];let activeFounderFilter="todos";
@@ -2832,12 +2844,12 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   const modules=[
    ['overview','▦','Visão geral','Indicadores e resumo do negócio',['ownerDashboard','adminTotals']],
    ['marketplace','▤','Marketplace e anúncios','Anúncios, estoque próprio e publicação em lote',['adminListings','adminBulkInput','adminBulkSubmit']],
-   ['users','♙','Usuários e atendimento','Solicitações de parceiros e acesso às mensagens',['adminPartners']],
+   ['users','♙','Usuários e atendimento','Diretório de usuários, solicitações de parceiros e suporte',['adminUsers','adminPartners']],
    ['finance','R$','Financeiro','Pagamentos, pedidos e receita',['adminOrders']],
    ['growth','♧','Parceiros e crescimento','Campanha de fundadores, parceiros e CRM nacional',['adminFounderCampaign','adminAcquisitionMetrics','adminAcquisitionLeads']],
    ['intelligence','✦','Inteligência artificial e voz','Assistente CHEFE e agentes especialistas',['ownerVoiceAssistant','agentConsole']],
    ['operations','◷','Operações e monitoramento','Central 24h, tarefas e relatórios da equipe',['ownerAgentControl']],
-   ['settings','⚙','Configurações e saúde técnica','Orientações de operação e diagnóstico do ambiente',[]]
+   ['settings','⚙','Configurações e saúde técnica','Diagnóstico de conectividade das áreas principais',['adminHealth']]
   ];
   const host=document.createElement('div');host.className='admin-screens';
   function makeScreen(key,title,desc,ids){

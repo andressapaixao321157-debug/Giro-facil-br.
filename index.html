@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
+  <meta name="theme-color" content="#10243b">
   <title>Giro Fácil BR | Marketplace do Brasil</title>
   <meta name="description" content="Compre, venda e alugue veículos, imóveis, máquinas, embarcações, roupas e produtos em todo o Brasil.">
   <script src="./vendor/supabase.js?v=20261122-recovery2" onerror="window.__giroSupabaseLoadError=true"></script>
@@ -2449,6 +2449,66 @@ footer{color:#64748b;padding-bottom:100px}
 #adminPanel .admin-home.hidden{display:none}
 @media(max-width:760px){#adminPanel .admin-home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#adminPanel .admin-home-card{min-height:112px;padding:14px}}
 @media(max-width:380px){#adminPanel .admin-home-grid{grid-template-columns:1fr}}
+
+/* GIRO FÁCIL BR — identidade visual unificada: navy + teal + grafite + acentos premium */
+:root{
+ --giro-navy:#10243b;--giro-navy-2:#183653;--giro-teal:#0e9f9a;
+ --giro-teal-dark:#087b78;--giro-gold:#c49a45;--giro-emerald:#16845b;
+ --giro-ink:#182638;--giro-muted:#64748b;--giro-bg:#f3f6f8;
+ --giro-surface:#ffffff;--giro-line:#dce5eb;--giro-soft:#eaf5f4;
+ --navy:var(--giro-navy);--navy2:var(--giro-navy-2);--orange:var(--giro-teal);
+ --ink:var(--giro-ink);--muted:var(--giro-muted);--bg:var(--giro-bg);--line:var(--giro-line);
+}
+html{scroll-behavior:smooth}
+body{background:var(--giro-bg);color:var(--giro-ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.5}
+button,.btn,[role="button"],input[type="submit"]{font-family:inherit;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:not(:disabled),.btn,[role="button"]{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #0e9f9a55;outline-offset:2px}
+input,select,textarea{font:inherit;border-color:var(--giro-line);border-radius:10px}
+input:focus,select:focus,textarea:focus{border-color:var(--giro-teal);box-shadow:0 0 0 3px #0e9f9a18}
+.panel,.card,.modal-content,.admin-screen-body>div,.admin-screen-body>.panel{border-color:var(--giro-line);border-radius:16px}
+header,.topbar,.navbar,.app-header{border-color:#ffffff18}
+a{color:var(--giro-teal-dark)}
+button.primary,.btn-primary,.button-primary,.cta-primary{background:var(--giro-teal)!important;border-color:var(--giro-teal)!important;color:#fff!important}
+button.primary:hover,.btn-primary:hover,.button-primary:hover,.cta-primary:hover{background:var(--giro-teal-dark)!important}
+button.secondary,.btn-secondary,.button-secondary{background:#eaf0f4!important;border-color:#d8e2e9!important;color:var(--giro-navy)!important}
+.badge,.tag,.pill{border-radius:999px}
+.success,.status-success{color:var(--giro-emerald)}
+/* Navegação e superfícies principais */
+nav,.sidebar,.app-sidebar{background:var(--giro-navy)}
+nav a,.sidebar a,.app-sidebar a{color:#e8f0f6}
+nav a:hover,.sidebar a:hover,.app-sidebar a:hover{background:#ffffff12}
+main,.main-content,.content-area{min-width:0}
+h1,h2,h3,h4{color:var(--giro-ink);letter-spacing:-.02em}
+hr{border:0;border-top:1px solid var(--giro-line)}
+/* Painel do proprietário: hierarquia limpa e telas independentes */
+#adminPanel{background:transparent}
+#adminPanel .admin-home-card{background:linear-gradient(145deg,var(--giro-navy-2),var(--giro-navy));border:1px solid #2d526c;border-radius:17px;box-shadow:0 8px 22px #10243b16}
+#adminPanel .admin-home-card:hover{transform:translateY(-2px);border-color:#48b9b1;box-shadow:0 12px 26px #10243b22}
+#adminPanel .admin-home-card .admin-home-icon{color:#72d5cd}
+#adminPanel .admin-screen-top{border-bottom-color:var(--giro-line)}
+#adminPanel .admin-screen-top h3{color:var(--giro-navy)}
+#adminPanel .admin-screen-top p{color:var(--giro-muted)}
+#adminPanel .admin-screen-back{background:var(--giro-soft);color:var(--giro-navy);border:1px solid #c9e5e2}
+#adminPanel .admin-screen-back:hover{background:#d9efed}
+#adminPanel .admin-screen-body{gap:18px}
+#adminPanel .admin-screen-body>.panel{box-shadow:0 3px 14px #10243b08}
+#adminPanel .admin-home{padding:4px 0}
+#adminPanel .admin-home h2,#adminPanel .admin-home h3{color:var(--giro-navy)}
+/* Destaques premium em planos, turbo e parceiros — dourado usado com moderação */
+.plan-premium,.premium-badge,.founder-badge,.turbo-premium{border-color:#d7bd83!important}
+.premium-badge,.founder-badge{background:#f7f0df!important;color:#785b20!important}
+/* Estados semânticos */
+.status-pending,.badge-pending{background:#fff5df;color:#8a641b}
+.status-error,.badge-error{background:#fff0ef;color:#a3332a}
+.status-success,.badge-success{background:#e8f6ef;color:#176b49}
+@media(max-width:760px){
+ body{font-size:15px}
+ .panel,.card{border-radius:14px}
+ #adminPanel .admin-screen-top{align-items:flex-start;flex-wrap:wrap;margin:10px 0 18px}
+ #adminPanel .admin-screen-top h3{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
 <script id="admin-separated-screens-script">
 (()=> {

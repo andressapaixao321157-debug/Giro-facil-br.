@@ -81,6 +81,10 @@ check("Assistente desabilita botão durante envio e restaura ao finalizar",
   html.includes('sendButton.disabled=true;') &&
   html.includes('sendButton.disabled=false;') &&
   html.includes('sendButton.textContent="Enviar";'));
+
+check("Chat público recebe respostas incrementais por streaming",
+  html.includes("stream:true") && html.includes("response.output_text.delta") &&
+  assistant.includes("stream: wantsStream") && assistant.includes('"text/event-stream; charset=utf-8"'));
 check("Erro do assistente preserva a mensagem para nova tentativa",
   html.includes('input.value=message;') &&
   html.includes("Falha no envio. Confira sua conexão"));
@@ -468,7 +472,7 @@ check("Assistente inicia microfone automaticamente após validar a conta proprie
 check("Captação de áudio ativa cancelamento de eco, redução de ruído e ganho automático",
   html.includes("echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1"));
 check("Detecção de fala usa limiar mais sensível e pausa curta",
-  fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 350, silence_duration_ms: 650'));
+  fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 500') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

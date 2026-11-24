@@ -1855,18 +1855,37 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   async function startOwnerVoiceConversation(){
     const start=$("ownerVoiceStart"),stop=$("ownerVoiceStop");
     if(!currentUser||!db){ownerVoiceSetStatus("Entre na conta proprietária para usar o assistente.",true);return;}
-    if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){ownerVoiceSetStatus("Este navegador não oferece suporte à chamada de voz. Atualize o Chrome ou use o site em HTTPS.",true);return;}
+    if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){
+      ownerVoiceSetStatus("Este WebView não oferece chamada de voz em tempo real. Tentando reconhecimento de voz compatível do Android...",true);
+      startOwnerFallbackVoice();
+      return;
+    }
     start.disabled=true;ownerVoiceSetStatus("Solicitando acesso ao microfone e preparando a conexão segura...");
     try{
       ownerVoiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});
-      ownerVoiceSetStatus("Microfone autorizado. Preparando conexão segura...");
+      const inputTrack=ownerVoiceStream.getAudioTracks()[0];
+      if(!inputTrack||inputTrack.readyState!=="live")throw new Error("O Android autorizou a permissão, mas não disponibilizou um fluxo de áudio ativo.");
+      inputTrack.onmute=()=>ownerVoiceSetStatus("O Android pausou a captura do microfone. Verifique se outro aplicativo está usando o áudio.",true);
+      inputTrack.onended=()=>ownerVoiceSetStatus("A captura do microfone foi encerrada pelo Android.",true);
+      ownerVoiceSetStatus("Microfone autorizado e fluxo de áudio ativo. Preparando conexão segura...");
+
       const {data:tokenData,error:tokenError}=await db.functions.invoke("owner-voice-session",{body:{}});
       if(tokenError)throw new Error(tokenError.message||"Não foi possível autorizar a sessão de voz.");
       const ephemeralKey=tokenData?.value;
       if(!ephemeralKey)throw new Error(tokenData?.error||"O servidor não retornou a credencial temporária de voz.");
       ownerVoicePeer=new RTCPeerConnection();
       ownerVoiceAudio=document.createElement("audio");ownerVoiceAudio.autoplay=true;ownerVoiceAudio.playsInline=true;ownerVoiceAudio.style.display="none";document.body.appendChild(ownerVoiceAudio);
-      ownerVoicePeer.ontrack=event=>{ownerVoiceAudio.srcObject=event.streams[0];ownerVoiceAudio.play().catch(()=>ownerVoiceSetStatus("Toque na tela para liberar o áudio do assistente."));};
+      ownerVoicePeer.ontrack=event=>{
+        ownerVoiceAudio.srcObject=event.streams[0];
+        ownerVoiceAudio.play().then(()=>ownerVoiceSetStatus("Áudio conectado. Pode falar; estou ouvindo.")).catch(()=>ownerVoiceSetStatus("Recebi o áudio do CHEFE, mas o Android bloqueou a reprodução. Toque na tela para liberar o som.",true));
+      };
+      ownerVoicePeer.oniceconnectionstatechange=()=>{
+        const state=ownerVoicePeer?.iceConnectionState;
+        if(state==="failed"||state==="disconnected")ownerVoiceSetStatus("Falha na conexão de áudio ("+state+"). Verifique a internet e tente novamente.",true);
+      };
+      ownerVoicePeer.onicegatheringstatechange=()=>{
+        if(ownerVoicePeer?.iceGatheringState==="complete")ownerVoiceSetStatus("Microfone ativo. Finalizando conexão com a IA...");
+      };
       ownerVoiceStream.getTracks().forEach(track=>ownerVoicePeer.addTrack(track,ownerVoiceStream));
       ownerVoiceChannel=ownerVoicePeer.createDataChannel("oai-events");
       ownerVoiceChannel.addEventListener("open",()=>{
@@ -1901,7 +1920,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       const answerSdp=await response.text();
       if(!response.ok)throw new Error("A conexão de voz foi recusada ("+response.status+"). "+answerSdp.slice(0,240));
       await ownerVoicePeer.setRemoteDescription({type:"answer",sdp:answerSdp});
-      stop.disabled=false;ownerVoiceSetStatus("Conectando ao assistente de voz...");
+      stop.disabled=false;
+      ownerVoiceSetStatus("Conexão segura estabelecida. Aguardando áudio e fala do CHEFE...");
+      if(ownerVoiceChannel?.readyState==="open")ownerVoiceSetStatus("Conectado! Fale agora: estou ouvindo.");
+      else ownerVoiceChannel?.addEventListener("open",()=>ownerVoiceSetStatus("Conectado! Fale agora: estou ouvindo."),{once:true});
     }catch(error){
       console.error("Falha ao iniciar assistente de voz",error);
       let detail=String(error?.message||error||"");

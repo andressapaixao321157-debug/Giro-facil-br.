@@ -315,15 +315,21 @@ check("Configuração exige JWT para assistente e painel",
 check("Formulário nacional de captação e consentimento LGPD", hasId("acquisitionPanel") && hasId("acqConsent") && hasId("acqSubmit"));
 check("Painel administrativo mostra métricas e lista de interessados", hasId("adminAcquisitionMetrics") && hasId("adminAcquisitionLeads") && html.includes("data-acq-status"));
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
-check("Tracking de anúncios usa INSERT sem upsert e ignora duplicidade pela constraint",
+check("Tracking de anúncios usa INSERT mínimo, ignora duplicidade e pula o próprio anunciante",
   (() => {
-    const start = html.indexOf("async function trackListingEvent(eventType,listingId){");
+    const start = html.indexOf("async function trackListingEvent(eventType,listingId,listingOwnerId){");
     const end = html.indexOf("\n  }", start);
     const tracker = start >= 0 && end > start ? html.slice(start, end + 4) : "";
     return tracker.includes('db.from("listing_events").insert(') &&
       tracker.includes('error.code!=="23505"') &&
+      tracker.includes("currentUser.id===listingOwnerId") &&
       !tracker.includes(".upsert(") &&
-      !tracker.includes("onConflict:");
+      !tracker.includes("onConflict:") &&
+      html.includes('trackListingEvent("view",item.id,item.usuario_id)') &&
+      html.includes('trackListingEvent("click",id,details.dataset.sellerId)') &&
+      html.includes('trackListingEvent("contact",b.dataset.listingId,b.dataset.sellerId)') &&
+      html.includes('trackListingEvent("contact",item.id,item.usuario_id)') &&
+      html.includes('data-open-listing="${escapeHtml(item.id)}" data-seller-id="${escapeHtml(item.usuario_id)}"');
   })());
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));

@@ -315,6 +315,8 @@ check("Configuração exige JWT para assistente e painel",
 check("Formulário nacional de captação e consentimento LGPD", hasId("acquisitionPanel") && hasId("acqConsent") && hasId("acqSubmit"));
 check("Painel administrativo mostra métricas e lista de interessados", hasId("adminAcquisitionMetrics") && hasId("adminAcquisitionLeads") && html.includes("data-acq-status"));
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
+check("Eventos de aquisição registram UF explícita sem geolocalização", html.includes("function normalizeAcqState(value)") && html.includes("region_state:selectedState") && html.includes('trackAcqEvent("partner_lead",null,payload.state)'));
+check("Abertura de detalhes e início de contato geram eventos separados", html.includes('trackAcqEvent("listing_view",id,details.dataset.listingState)') && html.includes('trackAcqEvent("contact_initiated",b.dataset.listingId,b.dataset.listingState)') && !html.includes('trackAcqEvent("listing_view",b.dataset.listingId'));
 check("Admin API devolve total exato e distribuição por estado", admin.includes('count: "exact"') && admin.includes("byState") && admin.includes("update_acquisition_lead"));
 check("Migration de captação nacional está versionada", fs.existsSync("supabase/migrations/20261120050755_acquisition_national_crm.sql"));
 const listingStatusMigrationPath = "supabase/migrations/20261120140058_listing_analytics_and_advertiser_dashboard.sql";
@@ -544,6 +546,34 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
   html.includes("echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1"));
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
+
+
+const listingPrivacyMigrationPath = "supabase/migrations/20261124020000_restrict_public_listing_private_columns.sql";
+const listingPrivacyMigration = fs.existsSync(listingPrivacyMigrationPath) ? fs.readFileSync(listingPrivacyMigrationPath, "utf8") : "";
+const paymentInsertMigrationPath = "supabase/migrations/20261124020100_restrict_client_payment_status_insert.sql";
+const paymentInsertMigration = fs.existsSync(paymentInsertMigrationPath) ? fs.readFileSync(paymentInsertMigrationPath, "utf8") : "";
+const publicListingGrant = listingPrivacyMigration.split("GRANT SELECT (")[1] || "";
+const clientInsertGrant = paymentInsertMigration.split("GRANT INSERT (")[1] || "";
+const publicProjection = 'db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at")';
+check("Vitrine e detalhes usam projeção explícita e nenhuma consulta de anúncios solicita todas as colunas",
+  html.split(publicProjection).length - 1 >= 2 &&
+  !/\bdb\s*\.\s*from\(\s*["']anuncios["']\s*\)\s*\.\s*select\(\s*["']\*["']\s*\)/.test(html));
+check("Migração de privacidade revoga leitura ampla e libera apenas campos públicos",
+  listingPrivacyMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&
+  publicListingGrant.includes("updated_at") &&
+  !publicListingGrant.includes("whatsapp") &&
+  !publicListingGrant.includes("pagamento_status") &&
+  !listingPrivacyMigration.includes("service_role"));
+check("Migração impede cliente de inserir status de pagamento e preserva o servidor confiável",
+  paymentInsertMigration.includes("REVOKE INSERT ON TABLE public.anuncios FROM authenticated;") &&
+  paymentInsertMigration.includes("REVOKE INSERT (pagamento_status)") &&
+  clientInsertGrant.includes("updated_at") &&
+  !clientInsertGrant.includes("pagamento_status") &&
+  !paymentInsertMigration.includes("service_role"));
+
+check("Detalhes do anúncio próprio usam projeção explícita sem campos privados",
+  html.includes('db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at").eq("id",listingId).eq("usuario_id",currentUser.id)') &&
+  !/db\.from\(["']anuncios["']\)\.select\(["']\*["']\)\.eq\(["']id["'],listingId\)/.test(html));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

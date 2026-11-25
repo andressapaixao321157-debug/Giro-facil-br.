@@ -2570,7 +2570,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   $("chatSend").onclick=sendChatMessage;
   $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
   document.addEventListener("click",e=>{
-    const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("contact_initiated",b.dataset.listingId,b.dataset.listingState);trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
+    const b=e.target.closest(".listing-chat");if(b){trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
     const fav=e.target.closest(".favorite-toggle");if(fav){const id=fav.dataset.favoriteId;let ids=JSON.parse(localStorage.getItem("giro_favorites")||"[]");ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];localStorage.setItem("giro_favorites",JSON.stringify(ids));fav.textContent=ids.includes(id)?"♥":"♡";if(favoritesOnly)loadListings();}
   });
 

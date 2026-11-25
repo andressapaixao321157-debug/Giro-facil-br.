@@ -105,6 +105,7 @@ check("Comandos seguros por texto reutilizam o executor local do CHEFE sem depen
   html.includes('document.body.dataset.isAdmin==="true"'));
 check("Falha de créditos do Realtime ativa fallback de voz local",
   html.includes("credit_balance_exhausted") &&
+  html.includes("item.error?.code") &&
   html.includes("startOwnerFallbackVoice();"));
 
 check("Erro do assistente preserva a mensagem para nova tentativa",

@@ -2378,7 +2378,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   $("chatSend").onclick=sendChatMessage;
   $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}});
   document.addEventListener("click",e=>{
-    const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("listing_view",b.dataset.listingId);trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
+    const b=e.target.closest(".listing-chat");if(b){trackAcqEvent("contact_initiated",b.dataset.listingId,b.dataset.listingState);trackListingEvent("contact",b.dataset.listingId);startListingChat(b.dataset.listingId,b.dataset.listingTitle,b.dataset.sellerId);return;}
     const fav=e.target.closest(".favorite-toggle");if(fav){const id=fav.dataset.favoriteId;let ids=JSON.parse(localStorage.getItem("giro_favorites")||"[]");ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];localStorage.setItem("giro_favorites",JSON.stringify(ids));fav.textContent=ids.includes(id)?"♥":"♡";if(favoritesOnly)loadListings();}
   });
 
@@ -2389,9 +2389,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   const acqCampaign=(acqParams.get("utm_campaign")||"").slice(0,120);
   const acqSource=acqRef?"indicacao":(acqParams.has("utm_source")?"social":"organico");
   const acqSession=(()=>{let k=sessionStorage.getItem("giro_acq_session");if(!k){k=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,80);sessionStorage.setItem("giro_acq_session",k);}return k;})();
-  async function trackAcqEvent(eventName,listingId=null){
+  function normalizeAcqState(value){
+    const state=String(value||"").trim().toUpperCase();
+    return /^[A-Z]{2}$/.test(state)?state:null;
+  }
+  async function trackAcqEvent(eventName,listingId=null,regionState=null){
     if(!db)return;
-    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
+    const selectedState=normalizeAcqState(regionState)||normalizeAcqState($("locationFilter")?.value);
+    try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,region_state:selectedState,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';
   ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});
@@ -2400,7 +2405,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const payload={lead_type:$("acqType").value,contact_name:$("acqName").value.trim(),business_name:$("acqBusiness").value.trim()||null,phone:$("acqPhone").value.trim(),email:$("acqEmail").value.trim()||null,category:$("acqCategory").value||null,city:$("acqCity").value.trim(),state:$("acqState").value,message:$("acqMessage").value.trim()||null,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,user_id:currentUser?.id||null,consent_lgpd:$("acqConsent").checked};
     if(payload.contact_name.length<2||payload.city.length<2||!payload.state||payload.phone.replace(/\D/g,"").length<10||!payload.consent_lgpd){status("acquisitionStatus","Preencha nome, telefone, cidade, UF e aceite o uso dos dados para atendimento.","err");return;}
     const b=$("acqSubmit");b.disabled=true;
-    try{const {error}=await db.from("acquisition_leads").insert(payload);if(error)throw error;await trackAcqEvent("partner_lead");status("acquisitionStatus","Cadastro recebido! Nossa equipe poderá entrar em contato para orientar os próximos passos.","ok");["acqName","acqBusiness","acqPhone","acqEmail","acqCity","acqMessage"].forEach(id=>$(id).value="");$("acqConsent").checked=false;}
+    try{const {error}=await db.from("acquisition_leads").insert(payload);if(error)throw error;await trackAcqEvent("partner_lead",null,payload.state);status("acquisitionStatus","Cadastro recebido! Nossa equipe poderá entrar em contato para orientar os próximos passos.","ok");["acqName","acqBusiness","acqPhone","acqEmail","acqCity","acqMessage"].forEach(id=>$(id).value="");$("acqConsent").checked=false;}
     catch(e){status("acquisitionStatus","Não foi possível enviar agora. Confira os dados e tente novamente.","err");console.error(e);}
     finally{b.disabled=false;}
   };
@@ -2489,7 +2494,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]"),isFav=favs.includes(item.id);
       const ownerActions=currentUser?.id===item.usuario_id?`<div class="owner-listing-actions"><button type="button" class="owner-edit" data-edit-listing="${escapeHtml(item.id)}">Editar anúncio</button><button type="button" class="owner-boost" data-boost-listing="${escapeHtml(item.id)}">Turbinar anúncio</button></div>`:"";
       const published=formatListingDate(item.criado_em||item.created_at);
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><div class="meta">Publicado em ${escapeHtml(published)}</div>${reachTag}<button type="button" class="listing-details" data-open-listing="${escapeHtml(item.id)}" style="display:block;width:100%;margin-top:10px">Ver anúncio completo</button>${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><div class="meta">Publicado em ${escapeHtml(published)}</div>${reachTag}<button type="button" class="listing-details" data-open-listing="${escapeHtml(item.id)}" data-listing-state="${escapeHtml(item.estado||"")}" style="display:block;width:100%;margin-top:10px">Ver anúncio completo</button>${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-listing-state="${escapeHtml(item.estado||"")}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
       $("listings").appendChild(card);
       trackListingEvent("view",item.id);
     });
@@ -2507,6 +2512,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const details=event.target.closest("[data-open-listing]");
     if(details){
       const id=details.dataset.openListing;
+      trackAcqEvent("listing_view",id,details.dataset.listingState);
       trackListingEvent("click",id);
       details.disabled=true;
       const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("id",id).eq("status","ativo").maybeSingle();

@@ -507,6 +507,7 @@ check("Permissão do microfone e credencial de voz são solicitadas em paralelo 
   html.includes("const [voiceStream,tokenResult]=await Promise.all") &&
   html.includes('navigator.mediaDevices.getUserMedia({audio:') &&
   html.includes('db.functions.invoke("owner-voice-session",{body:{}})'));
+check("Falha de conexão Realtime ativa automaticamente o modo gratuito de voz do Android",html.includes('const microphoneUnavailable=["NotAllowedError","PermissionDeniedError","NotFoundError"].includes(error?.name)')&&html.includes("Ativando o modo gratuito de voz do Android para continuar os comandos.")&&html.includes("startOwnerFallbackVoice();"));
 check("Erro de permissão do microfone apresenta orientação clara no Android",
   html.includes('Acesso ao microfone bloqueado. Nas configurações do Android'));
 

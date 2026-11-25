@@ -466,7 +466,7 @@ check("CHEFE abre a conversa correspondente após o proprietário informar o nom
   html.includes('await openChat(target.id)') &&
   html.includes('Abri a conversa com "+target.name'));
 
-check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
+check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-4)")&&html.includes('message:transcript,history'));
 check("Comandos locais são priorizados antes de qualquer chamada de IA online",
   html.includes("const command=await executeOwnerVoiceCommand(transcript)") &&
   html.indexOf("const command=await executeOwnerVoiceCommand(transcript)") < html.indexOf('db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}})'));

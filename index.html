@@ -2875,8 +2875,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   const listingVisitorKey=(()=>{try{let key=localStorage.getItem("giro_listing_visitor");if(!key){key=crypto.randomUUID();localStorage.setItem("giro_listing_visitor",key);}return key;}catch{return crypto.randomUUID();}})();
   async function trackListingEvent(eventType,listingId){
     if(!db||!listingId)return;
-    try{await db.from("listing_events").upsert({listing_id:listingId,event_type:eventType,visitor_key:listingVisitorKey},{onConflict:"listing_id,event_type,visitor_key",ignoreDuplicates:true});}
-    catch(error){console.debug("Métrica de anúncio não registrada",error);}
+    try{
+      const {error}=await db.from("listing_events").insert({listing_id:listingId,event_type:eventType,visitor_key:listingVisitorKey});
+      if(error&&error.code!=="23505")console.debug("Métrica de anúncio não registrada",error);
+    }catch(error){console.debug("Métrica de anúncio não registrada",error);}
   }
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
   $("applyFilters").onclick=()=>{favoritesOnly=false;loadListings();};

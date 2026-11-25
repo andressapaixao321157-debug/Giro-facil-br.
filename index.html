@@ -995,8 +995,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       <div class="owner-security-note"><strong>Proteção da conta</strong><span>Este painel só é exibido após autenticação e verificação do papel administrativo no Supabase. Ações privilegiadas continuam validadas no servidor.</span></div>
       <section id="ownerVoiceAssistant" class="owner-voice-card" aria-labelledby="ownerVoiceTitle">
         <div class="owner-voice-head"><div><span class="owner-eyebrow">ASSISTENTE EXCLUSIVO DO PROPRIETÁRIO</span><h2 id="ownerVoiceTitle">CHEFE · Seu assistente pessoal</h2><p id="ownerVoiceWelcome">Olá, meu chefe! Bem-vindo de volta. Estou pronto para conversar com você.</p></div><span class="owner-voice-orb" aria-hidden="true">✦</span></div>
-        <div class="owner-voice-actions"><button id="ownerVoiceStart" type="button">🎙️ Iniciar conversa por voz</button><button id="ownerVoiceStop" type="button" class="secondary" disabled>Encerrar conversa</button></div>
-        <div id="ownerVoiceStatus" class="owner-voice-status" role="status" aria-live="polite">Assistente pronto. Toque em “Iniciar conversa por voz” para autorizar o microfone.</div>
+        <div class="owner-voice-actions"><button id="ownerVoiceStart" type="button" class="primary">🎙️ ATIVAR IA DE COMANDO DE VOZ</button><button id="ownerVoiceStop" type="button" class="secondary" disabled>⏹ Desativar voz</button></div><p class="owner-voice-privacy">Toque no botão para ativar o microfone, fale seu comando e aguarde a resposta do CHEFE. Este botão usa reconhecimento de voz do Android/navegador e envia o texto ao assistente Gemini configurado no servidor. O microfone fica ativo somente enquanto a conversa estiver ligada.</p>
+        <div id="ownerVoiceStatus" class="owner-voice-status" role="status" aria-live="polite">IA de comandos pronta. Toque em “ATIVAR IA DE COMANDO DE VOZ” para ligar o microfone.</div>
         <div id="ownerVoiceTranscript" class="owner-voice-transcript" aria-live="polite"><p>Quando iniciar, você poderá falar naturalmente e ouvir as respostas em tempo real.</p></div>
         <p class="owner-voice-privacy">O microfone só funciona durante a conversa iniciada por você. A conexão usa uma credencial temporária; a chave principal permanece no servidor. O assistente pode orientar e analisar, mas ações sensíveis exigem confirmação no painel.</p>
       </section>
@@ -2016,7 +2016,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       }
     }
   }
-  $("ownerVoiceStart").onclick=startOwnerVoiceConversation;
+  $("ownerVoiceStart").onclick=()=>{startOwnerFallbackVoice();};
   $("ownerVoiceStop").onclick=stopOwnerVoiceConversation;
   $("adminRefresh").onclick=loadAdminDashboard;
   $("ownerAgentRefresh").onclick=loadOwnerAgentControlCenter;

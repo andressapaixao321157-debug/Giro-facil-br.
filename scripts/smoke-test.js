@@ -467,6 +467,18 @@ check("CHEFE abre a conversa correspondente após o proprietário informar o nom
   html.includes('Abri a conversa com "+target.name'));
 
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-6)")&&html.includes('message:transcript,history'));
+check("Comandos locais são priorizados antes de qualquer chamada de IA online",
+  html.includes("const command=await executeOwnerVoiceCommand(transcript)") &&
+  html.indexOf("const command=await executeOwnerVoiceCommand(transcript)") < html.indexOf('db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}})'));
+check("Voz mantém comandos locais quando a internet cai e detecta reconexão",
+  html.includes('window.addEventListener("offline"') &&
+  html.includes('window.addEventListener("online"') &&
+  html.includes("navigator.onLine===false") &&
+  html.includes("Os comandos locais continuam disponíveis"));
+check("Consulta online de voz tem timeout e histórico reduzido para conexões lentas",
+  html.includes("setTimeout(()=>reject(new Error(") &&
+  html.includes(")),9000)") &&
+  html.includes("ownerFallbackHistory.slice(-4)"));
 check("Ativação de voz não solicita microfone automaticamente fora de um toque do usuário",
   html.includes("Toque no ícone do CHEFE para ativar o microfone") &&
   !html.includes("startOwnerVoiceConversation();\n          }\n        },900)"));

@@ -1596,7 +1596,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const answer=(label)=>({handled:true,answer:"Pronto, chefe. "+label+" está aberto."});
     const normVoiceName=(value)=>String(value||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
     const chatInput=$("chatMessageInput");
-    const dictateMatch=String(transcript||"").match(/^\s*(?:ditar|escrever|redigir)\s+mensagem\s*[:,-]?\s*(.+)$/i);
+    const dictateMatch=String(transcript||"").match(/^\s*(?:ditar|escrever|redigir|preparar|montar|manda|mandar|envia|enviar)\s+mensagem\s*[:,-]?\s*(.+)$/i);
     if(dictateMatch){
       if(!currentUser)return {handled:true,answer:"Entre na sua conta antes de ditar uma mensagem."};
       if(!activeConversationId||!chatInput||chatInput.disabled)return {handled:true,answer:"Primeiro abra a conversa da pessoa para quem você quer enviar a mensagem."};
@@ -1606,7 +1606,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       ownerVoiceMessageDraftReady=true;chatInput.focus();
       return {handled:true,answer:"Escrevi sua mensagem na conversa. Confira o texto na tela. Quando estiver certo, diga enviar mensagem. Para trocar o texto, diga ditar mensagem e fale novamente."};
     }
-    if(/^(?:enviar mensagem|pode enviar mensagem|confirmo envio)$/.test(q)){
+    if(/^(?:enviar mensagem|pode enviar mensagem|confirmo envio|pode mandar|manda mensagem|manda|envia|enviar|pode enviar|manda essa|envia essa)$/.test(q)){
       if(!ownerVoiceMessageDraftReady)return {handled:true,answer:"Ainda não há uma mensagem ditada pronta para enviar. Diga ditar mensagem e fale o texto."};
       if(!currentUser||!activeConversationId||!chatInput||chatInput.disabled){ownerVoiceMessageDraftReady=false;return {handled:true,answer:"A conversa não está mais aberta. Abra a conversa novamente e dite a mensagem."};}
       if(!chatInput.value.trim()){ownerVoiceMessageDraftReady=false;return {handled:true,answer:"O texto da mensagem está vazio. Dite a mensagem novamente."};}

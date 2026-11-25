@@ -12,7 +12,7 @@ const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : ""
 const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
 const webhookPath = "supabase/functions/asaas-webhook/index.ts";
 const webhook = fs.existsSync(webhookPath) ? fs.readFileSync(webhookPath, "utf8") : "";
-const founderMigrationPath = "supabase/migrations/20261123193000_giro_founder_500_campaign.sql";
+const founderMigrationPath = "supabase/migrations/20261123191706_giro_founder_500_campaign.sql";
 const founderMigration = fs.existsSync(founderMigrationPath) ? fs.readFileSync(founderMigrationPath, "utf8") : "";
 const assistantWorkflow = fs.existsSync(assistantWorkflowPath) ? fs.readFileSync(assistantWorkflowPath, "utf8") : "";
 const config = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "";
@@ -342,7 +342,7 @@ check("Chat consulta o campo lida_em para renderizar recibos", html.includes('se
 check("Destinatário marca somente mensagens recebidas como lidas", html.includes('m.remetente_id!==currentUser.id&&!m.lida_em') && html.includes('update({lida_em:readAt}).in("id",unreadIncoming)'));
 check("Remetente vê confirmação dupla quando a mensagem é visualizada", html.includes('m.lida_em?"✓✓ Visualizada":m.entregue_em?"✓✓ Entregue":"✓ Enviada"'));
 check("Atualização automática de recibos usa eventos Realtime de UPDATE", html.includes('event:"UPDATE",schema:"public",table:"mensagens"') && html.includes("scheduleChatInboxRefresh"));
-check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261121230000_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261121230000_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
+check("Migration restringe leitura ao participante destinatário", fs.existsSync("supabase/migrations/20261122024246_message_read_receipts.sql") && fs.readFileSync("supabase/migrations/20261122024246_message_read_receipts.sql", "utf8").includes("grant update (lida_em)") && fs.readFileSync("supabase/migrations/20261122024246_message_read_receipts.sql", "utf8").includes("remetente_id <> (select auth.uid())"));
 
 check("Central de mensagens usa cabeçalho profissional e assistente compacto",
   html.includes('class="messages-heading"') &&
@@ -422,8 +422,8 @@ check("Asaas cria checkout com autenticação e tipo de pedido válidos",
   fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind, billing_type: billingType") &&
   !fs.readFileSync("supabase/functions/asaas-create-payment/index.ts", "utf8").includes("kind: orderKind"));
 check("Banco aceita cartão para planos recorrentes no Asaas",
-  fs.existsSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql") &&
-  fs.readFileSync("supabase/migrations/20261123010000_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
+  fs.existsSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261123015419_allow_credit_card_payment_orders.sql", "utf8").includes("'CREDIT_CARD'"));
 
 check("Campanha 500 Parceiros Fundadores aparece na página inicial com preço e benefícios", html.includes("500 Parceiros Fundadores Giro Fácil BR") && html.includes("R$ 39 por mês") && html.includes("7 dias de turbo promocional"));
 check("Inscrição de parceiro reserva vaga na campanha por código próprio", html.includes('founder_campaign_code:"fundadores-500"') && founderMigration.includes("giro_private.giro_founder_500_seq") && founderMigration.includes("no maxvalue"));

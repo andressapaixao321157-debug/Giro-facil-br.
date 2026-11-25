@@ -317,8 +317,9 @@ check("Painel administrativo mostra métricas e lista de interessados", hasId("a
 check("Captação grava eventos e parâmetros de campanha/indicação", html.includes('db.from("acquisition_events").insert') && html.includes("utm_campaign") && html.includes('acqParams.get("ref")'));
 check("Tracking de anúncios usa INSERT sem upsert e ignora duplicidade pela constraint",
   (() => {
-    const match = html.match(/async function trackListingEvent\\(eventType,listingId\\)\\{[\\s\\S]*?\\n  \\}/);
-    const tracker = match ? match[0] : "";
+    const start = html.indexOf("async function trackListingEvent(eventType,listingId){");
+    const end = html.indexOf("\n  }", start);
+    const tracker = start >= 0 && end > start ? html.slice(start, end + 4) : "";
     return tracker.includes('db.from("listing_events").insert(') &&
       tracker.includes('error.code!=="23505"') &&
       !tracker.includes(".upsert(") &&

@@ -1565,7 +1565,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
   }
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
-  let ownerNativeSpeechReady=null;
+  let ownerNativeSpeechReady=null,ownerNativeSpeechListenersReady=false,ownerNativePartialTranscript="",ownerNativeHandlingResult=false;
   const ownerFallbackHistory=[];
   let ownerVoicePendingChatLookup=null;
   let ownerVoicePendingListingLookup=null;
@@ -1835,13 +1835,30 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
         })();
       }
       await ownerNativeSpeechReady;
-      if(!ownerFallbackActive||ownerFallbackBusy)return;
-      ownerVoiceSetStatus("Microfone Android ativo. Fale seu comando; estou ouvindo...");
-      const result=await native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false});
-      if(!ownerFallbackActive)return;
-      const transcript=result?.matches?.[0]?.trim();
-      if(transcript)await ownerFallbackHandleTranscript(transcript);
-      else {ownerVoiceSetStatus("Não captei a fala. Vou continuar ouvindo.");ownerFallbackStartListening();}
+      if(!ownerFallbackActive||ownerFallbackBusy||ownerNativeHandlingResult)return;
+      if(!ownerNativeSpeechListenersReady){
+        ownerNativeSpeechListenersReady=true;
+        await native.addListener("partialResults",event=>{
+          const transcript=event?.matches?.[0]?.trim();
+          if(transcript){ownerNativePartialTranscript=transcript;ownerVoiceSetStatus("Estou ouvindo: "+transcript);}
+        });
+        await native.addListener("listeningState",event=>{
+          if(event?.status!=="stopped"||!ownerFallbackActive||ownerNativeHandlingResult)return;
+          const transcript=ownerNativePartialTranscript.trim();
+          ownerNativePartialTranscript="";
+          if(transcript){
+            ownerNativeHandlingResult=true;
+            ownerFallbackHandleTranscript(transcript).finally(()=>{ownerNativeHandlingResult=false;});
+          }else if(ownerFallbackActive&&!ownerFallbackBusy){
+            ownerVoiceSetStatus("Continuo pronto. Pode falar seu comando.");
+            setTimeout(ownerFallbackStartListening,120);
+          }
+        });
+      }
+      if(!ownerFallbackActive||ownerFallbackBusy||ownerNativeHandlingResult)return;
+      ownerNativePartialTranscript="";
+      ownerVoiceSetStatus("Microfone ativo. Pode falar; estou captando sua voz...");
+      await native.start({language:"pt-BR",maxResults:1,partialResults:true,popup:false});
     }catch(error){
       if(ownerFallbackActive){ownerVoiceSetStatus("Falha no reconhecimento nativo: "+(error?.message||"erro do Android"),true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;}
     }
@@ -1854,8 +1871,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!Recognition){ownerVoiceSetStatus("Este Android não disponibilizou reconhecimento de voz. Atualize o aplicativo Google e habilite a digitação por voz.",true);return;}
     try{
       ownerFallbackRecognition=new Recognition();
-      ownerFallbackRecognition.lang="pt-BR";ownerFallbackRecognition.continuous=false;ownerFallbackRecognition.interimResults=false;ownerFallbackRecognition.maxAlternatives=1;
-      ownerFallbackRecognition.onresult=event=>{const transcript=event.results?.[0]?.[0]?.transcript?.trim();if(transcript)ownerFallbackHandleTranscript(transcript);};
+      ownerFallbackRecognition.lang="pt-BR";ownerFallbackRecognition.continuous=true;ownerFallbackRecognition.interimResults=true;ownerFallbackRecognition.maxAlternatives=1;
+      ownerFallbackRecognition.onresult=event=>{for(let i=event.resultIndex;i<event.results.length;i++){const result=event.results[i];if(result.isFinal){const transcript=result?.[0]?.transcript?.trim();if(transcript)ownerFallbackHandleTranscript(transcript);}}};
       ownerFallbackRecognition.onerror=event=>{
         if(!ownerFallbackActive)return;
         if(event.error==="not-allowed"||event.error==="service-not-allowed"){
@@ -1863,7 +1880,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
           ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;
         }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+").",true);
       };
-      ownerFallbackRecognition.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)setTimeout(ownerFallbackStartListening,350);};
+      ownerFallbackRecognition.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)setTimeout(ownerFallbackStartListening,120);};
       ownerFallbackRecognition.start();
       ownerVoiceSetStatus("Modo de voz do navegador ativo. Fale normalmente.");
     }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone: "+(error?.message||"erro desconhecido"),true);}

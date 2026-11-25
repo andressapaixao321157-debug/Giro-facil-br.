@@ -1788,24 +1788,37 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   const ownerNativeSpeech=()=>window.Capacitor?.Plugins?.SpeechRecognition||window.Capacitor?.registerPlugin?.("SpeechRecognition");
   async function ownerFallbackHandleTranscript(transcript){
     if(!transcript||!ownerFallbackActive)return;
-    ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Vou verificar seu comando...");
+    ownerFallbackBusy=true;ownerVoiceAddLine("Você",transcript);ownerVoiceSetStatus("Entendi. Verificando comando...");
     try{
+      // Ações locais têm prioridade e não dependem de internet nem de Gemini.
       const command=await executeOwnerVoiceCommand(transcript);
       if(command.handled){ownerVoiceAddLine("CHEFE",command.answer);ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:command.answer});ownerFallbackBusy=false;ownerFallbackSpeak(command.answer);return;}
-      ownerVoiceSetStatus("Preparando uma resposta...");
-      const history=ownerFallbackHistory.slice(-6);
-      const {data,error}=await db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}});
+      if(navigator.onLine===false){
+        ownerVoiceSetStatus("Sem internet no momento. Os comandos locais continuam disponíveis; a IA online volta quando a conexão retornar.",true);
+        ownerFallbackBusy=false;ownerFallbackSpeak("Meu chefe, estou sem internet. Ainda consigo executar os comandos locais. Quando a conexão voltar, retomo a inteligência completa.");
+        return;
+      }
+      ownerVoiceSetStatus("Consultando a IA...");
+      const history=ownerFallbackHistory.slice(-4);
+      const request=db.functions.invoke("giro-assistant",{body:{agent:"admin",message:transcript,history}});
+      const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("A conexão está demorando. Tente novamente quando o sinal melhorar.")),9000));
+      const {data,error}=await Promise.race([request,timeout]);
       if(error)throw error;
-      const answer=data?.answer||data?.error||"Não consegui montar uma resposta agora. Tente falar de outro jeito.";
+      const answer=data?.answer||data?.error||"Não consegui montar uma resposta agora. Tente novamente.";
       ownerFallbackHistory.push({role:"user",content:transcript},{role:"assistant",content:answer});
+      if(ownerFallbackHistory.length>12)ownerFallbackHistory.splice(0,ownerFallbackHistory.length-12);
       ownerVoiceAddLine("CHEFE",answer);
-      ownerVoiceSetStatus(data?.mode==="ajuda-basica"?"Modo gratuito de contingência ativo. Pode continuar falando.":"Assistente pronto. Pode continuar falando.");
+      ownerVoiceSetStatus(data?.mode==="ajuda-basica"?"Modo econômico ativo. Pode continuar.":"Assistente pronto. Pode continuar.");
       ownerFallbackBusy=false;ownerFallbackSpeak(answer);
     }catch(error){
-      ownerFallbackBusy=false;ownerVoiceSetStatus("Não consegui consultar o assistente básico. Confira a internet e tente novamente.",true);
-      ownerFallbackSpeak("Meu chefe, perdi a conexão com o atendimento. Confira a internet e tente de novo.");
+      ownerFallbackBusy=false;
+      const offline=navigator.onLine===false;
+      const message=offline?"Sem internet. Os comandos locais continuam ativos.":(error?.message||"A conexão está lenta. Tente novamente.");
+      ownerVoiceSetStatus(message,true);
+      ownerFallbackSpeak(offline?"Meu chefe, a internet caiu. Os comandos locais continuam funcionando.": "Meu chefe, a internet está lenta. Pode repetir seu pedido daqui a pouco; continuo ouvindo.");
     }
   }
+
   function ownerFallbackSpeak(message){
     if(!("speechSynthesis" in window)||!message){if(ownerFallbackActive)ownerFallbackStartListening();return;}
     window.speechSynthesis.cancel();
@@ -1884,6 +1897,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       ownerFallbackRecognition.start();
       ownerVoiceSetStatus("Modo de voz do navegador ativo. Fale normalmente.");
     }catch(error){if(ownerFallbackActive)ownerVoiceSetStatus("Não consegui iniciar o microfone: "+(error?.message||"erro desconhecido"),true);}
+  }
+  if(!window.giroVoiceNetworkListeners){
+    window.giroVoiceNetworkListeners=true;
+    window.addEventListener("offline",()=>{if(ownerFallbackActive)ownerVoiceSetStatus("Internet instável ou desconectada. Comandos locais continuam disponíveis.",true);});
+    window.addEventListener("online",()=>{if(ownerFallbackActive)ownerVoiceSetStatus("Conexão recuperada. A IA completa está disponível novamente.");});
   }
   function startOwnerFallbackVoice(){
     ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;

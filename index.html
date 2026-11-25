@@ -1975,7 +1975,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
           else if(item.type==="response.output_text.done"&&item.text)ownerVoiceAddLine("CHEFE",item.text);
           else if(item.type==="response.function_call_arguments.done")runOwnerVoiceToolCall(item);
           else if(item.type==="error"){
-            const detail=item.error?.message||"A conversa encontrou um erro. Tente novamente.";
+            const detail=[item.error?.message,item.error?.code].filter(Boolean).join(" · ")||"A conversa encontrou um erro. Tente novamente.";
             ownerVoiceSetStatus(detail,true);
             if(/credit_balance_exhausted|insufficient_quota|billing|429|quota/i.test(detail)&&!ownerFallbackActive){
               stopOwnerVoiceConversation().then(()=>{

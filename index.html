@@ -1565,7 +1565,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
   }
   let ownerFallbackRecognition=null,ownerFallbackActive=false,ownerFallbackBusy=false;
-  let ownerNativeSpeechReady=null,ownerNativeSpeechListenersReady=false,ownerNativePartialTranscript="",ownerNativeHandlingResult=false;
+  let ownerNativeSpeechReady=null,ownerNativeSpeechListenersReady=false,ownerNativePartialTranscript="",ownerNativeHandlingResult=false,ownerForceBrowserSpeech=false;
   const ownerFallbackHistory=[];
   let ownerVoicePendingChatLookup=null;
   let ownerVoiceMessageDraftReady=false;
@@ -1897,12 +1897,20 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       ownerVoiceSetStatus("Microfone ativo. Pode falar; estou captando sua voz...");
       await native.start({language:"pt-BR",maxResults:1,partialResults:true,popup:false});
     }catch(error){
-      if(ownerFallbackActive){ownerVoiceSetStatus("Falha no reconhecimento nativo: "+(error?.message||"erro do Android"),true);ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;}
+      if(ownerFallbackActive){
+        // O serviço nativo pode falhar mesmo com a permissão concedida.
+        // Troca imediatamente para o reconhecimento do navegador sem encerrar a sessão.
+        ownerNativeSpeechReady=null;
+        ownerNativeSpeechListenersReady=false;
+        ownerForceBrowserSpeech=true;
+        ownerVoiceSetStatus("O reconhecimento nativo falhou. Ativando automaticamente o modo básico de voz...",true);
+        ownerFallbackStartListening();
+      }
     }
   }
   function ownerFallbackStartListening(){
     if(!ownerFallbackActive||ownerFallbackBusy||window.speechSynthesis?.speaking)return;
-    const native=ownerNativeSpeech();
+    const native=ownerForceBrowserSpeech?null:ownerNativeSpeech();
     if(native){ownerNativeSpeechLoop();return;}
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!Recognition){ownerVoiceSetStatus("Este Android não disponibilizou reconhecimento de voz. Atualize o aplicativo Google e habilite a digitação por voz.",true);return;}
@@ -1913,9 +1921,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       ownerFallbackRecognition.onerror=event=>{
         if(!ownerFallbackActive)return;
         if(event.error==="not-allowed"||event.error==="service-not-allowed"){
-          ownerVoiceSetStatus("Permita o microfone nas configurações do Android.",true);
-          ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;
-        }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+").",true);
+          ownerVoiceSetStatus("O Android bloqueou o reconhecimento neste momento. A sessão continua ativa; confira a permissão de reconhecimento de voz e tente falar novamente.",true);
+        }else if(event.error!=="no-speech"&&event.error!=="aborted")ownerVoiceSetStatus("O reconhecimento de voz falhou ("+event.error+"). Vou tentar novamente automaticamente.",true);
       };
       ownerFallbackRecognition.onend=()=>{if(ownerFallbackActive&&!ownerFallbackBusy&&!window.speechSynthesis?.speaking)setTimeout(ownerFallbackStartListening,120);};
       ownerFallbackRecognition.start();
@@ -1928,7 +1935,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     window.addEventListener("online",()=>{if(ownerFallbackActive)ownerVoiceSetStatus("Conexão recuperada. A IA completa está disponível novamente.");});
   }
   function startOwnerFallbackVoice(){
-    ownerFallbackActive=true;ownerFallbackBusy=false;ownerFallbackHistory.length=0;
+    ownerFallbackActive=true;ownerFallbackBusy=false;ownerForceBrowserSpeech=false;ownerFallbackHistory.length=0;
     const launcher=$( "giroOwnerLauncher");if(launcher){launcher.classList.add("voice-active");launcher.classList.remove("wake-armed");launcher.textContent="●";}
     $( "ownerVoiceStart").disabled=true;$( "ownerVoiceStop").disabled=false;
     ownerVoiceSetStatus("Ativando o microfone agora. Pode falar...");

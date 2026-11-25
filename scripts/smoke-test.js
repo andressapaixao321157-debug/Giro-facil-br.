@@ -446,6 +446,8 @@ check("APK usa transcrição parcial nativa para reduzir atraso e acompanha esta
 
 check("Assistente de voz do proprietário possui controles de iniciar e encerrar",hasId("ownerVoiceStart")&&hasId("ownerVoiceStop")&&hasId("ownerVoiceStatus")&&hasId("ownerVoiceTranscript"));
 check("Modo gratuito usa reconhecimento e síntese de voz pt-BR do navegador",html.includes("window.SpeechRecognition||window.webkitSpeechRecognition")&&html.includes("new SpeechSynthesisUtterance(message)")&&html.includes('utterance.lang="pt-BR"'));
+check("Falha do reconhecimento nativo troca automaticamente para voz básica do navegador sem encerrar sessão",html.includes("ownerForceBrowserSpeech=true")&&html.includes("ownerFallbackStartListening();")&&html.includes("ownerNativeSpeechReady=null")&&!/ownerVoiceSetStatus\("Falha no reconhecimento nativo:[\\s\\S]{0,180}?ownerFallbackActive=false/.test(html));
+check("Falha de reconhecimento no navegador mantém a sessão de voz ativa",html.includes("A sessão continua ativa")&&!html.includes('ownerFallbackActive=false;$( "ownerVoiceStart").disabled=false;$( "ownerVoiceStop").disabled=true;'));
 check("Modo gratuito interrompe reconhecimento e fala ao encerrar",html.includes("ownerFallbackRecognition.abort()")&&html.includes("window.speechSynthesis.cancel()"));
 check("Normalização de nomes falados remove acentos corretamente",html.includes('const normVoiceName=')&&html.includes('replace(/[\\u0300-\\u036f]/g,"")'));
 check("Comando para abrir mensagens de compradores reconhece palavras com limites corretos",html.includes('has(/\\b(mensagem|mensagens|conversa|conversas|chat)\\b/)&&has(/\\b(comprador|cliente|compradores|clientes)\\b/)'));

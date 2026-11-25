@@ -2007,7 +2007,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       const statusCode=error?.context?.status||error?.status||0;
       try{if(error?.context?.clone)detail+=" "+await error.context.clone().text();}catch(readError){}
       await stopOwnerVoiceConversation();
-      if(statusCode===429||/429|credit|quota|crédito|credits remaining|insufficient_quota/i.test(detail)){
+      if(statusCode===429||statusCode===503||/429|credit|quota|crédito|credits remaining|insufficient_quota|a ia de voz ainda não está configurada|não foi possível preparar a sessão de voz/i.test(detail)){
         ownerVoiceSetStatus("A IA avançada está sem créditos. Vou iniciar o modo gratuito de voz do celular.");
         startOwnerFallbackVoice();
       }else ownerVoiceSetStatus(detail||"Não foi possível iniciar a conversa por voz.",true);

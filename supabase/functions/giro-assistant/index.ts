@@ -416,15 +416,20 @@ Deno.serve(async (req: Request) => {
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.error("OpenAI API error", response.status, result?.error?.code ?? "unknown");
-      // Keep the in-app support usable when the AI provider is rate-limited
-      // or temporarily unavailable. Do not expose upstream 429/5xx to the app.
-      if (response.status === 429 || response.status >= 500) {
+      const upstreamCode = String(result?.error?.code ?? result?.error?.type ?? "unknown");
+      console.error("OpenAI API error", response.status, upstreamCode);
+      // Billing/quota exhaustion is not a network failure. Keep support usable
+      // with the local FAQ/command fallback and never expose provider internals.
+      const quotaUnavailable = /insufficient_quota|credit_balance_exhausted|billing_hard_limit_reached|billing/i.test(upstreamCode)
+        || /no credits remaining|exceeded your current quota|billing details/i.test(String(result?.error?.message ?? ""));
+      if (quotaUnavailable || response.status === 429 || response.status >= 500) {
         return respond({
           answer: localAgentAnswer(agent, message, conversationHistory),
           mode: "ajuda-basica",
           agent,
-          notice: "A resposta inteligente está temporariamente indisponível. O atendimento básico continua funcionando.",
+          notice: quotaUnavailable
+            ? "A IA avançada está sem créditos disponíveis. O atendimento básico continua funcionando; a equipe precisa regularizar o faturamento para reativar as respostas avançadas."
+            : "A resposta inteligente está temporariamente indisponível. O atendimento básico continua funcionando.",
         });
       }
       return respond({

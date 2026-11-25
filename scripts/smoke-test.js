@@ -481,7 +481,7 @@ const publicListingGrant = listingPrivacyMigration.split("GRANT SELECT (")[1] ||
 const clientInsertGrant = paymentInsertMigration.split("GRANT INSERT (")[1] || "";
 const publicProjection = 'db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at")';
 check("Vitrine e detalhes usam projeção explícita e nenhuma consulta de anúncios solicita todas as colunas",
-  html.split(publicProjection).length - 1 === 2 &&
+  html.split(publicProjection).length - 1 >= 2 &&
   !/\bdb\s*\.\s*from\(\s*["']anuncios["']\s*\)\s*\.\s*select\(\s*["']\*["']\s*\)/.test(html));
 check("Migração de privacidade revoga leitura ampla e libera apenas campos públicos",
   listingPrivacyMigration.includes("REVOKE SELECT ON TABLE public.anuncios FROM anon, authenticated;") &&

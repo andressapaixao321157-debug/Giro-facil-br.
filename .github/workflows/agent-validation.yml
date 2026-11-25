@@ -2,6 +2,7 @@ name: Validate intelligent agents
 on:
   push:
     branches: [main, feature/giro-agentes-inteligentes, campaign/500-parceiros-fundadores, fix/acquisition-event-semantics-20261125]
+    # Temporary regression branch for acquisition event semantics.
     paths:
       - "index.html"
       - "kit-parceiro-fundador.html"

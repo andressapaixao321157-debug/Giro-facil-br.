@@ -44,6 +44,8 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install dependencies
         run: npm install
+      - name: Run marketplace regression tests before publishing
+        run: npm test
       - name: Build site with local Supabase SDK
         run: npm run build
       - name: Generate Android project

@@ -1571,7 +1571,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   let ownerVoicePendingListingLookup=null;
   let ownerVoiceSelectedListingId=null;
   async function openOwnerListingDetail(listingId){
-    const {data:item,error}=await db.from("anuncios").select("*").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
+    const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
     if(error)throw error;
     if(!item)throw new Error("Não encontrei esse anúncio na sua conta.");
     const photos=Array.isArray(item.fotos)?item.fotos:[];

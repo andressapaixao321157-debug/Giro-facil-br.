@@ -545,6 +545,12 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
 
+
+check("Cadastro exige senha mínima de 8 caracteres no plano gratuito", html.includes('password.length<8') && html.includes('pelo menos 8 caracteres') && html.includes('placeholder="Mínimo de 8 caracteres"'));
+check("Senhas novas são verificadas pela API Pwned Passwords com k-anonymity", html.includes('api.pwnedpasswords.com/range/') && html.includes('crypto.subtle.digest("SHA-1",bytes)') && html.includes('hash.slice(0,5)'));
+check("Verificação de senha comprometida nunca envia a senha nem o hash completo", html.includes('const prefix=hash.slice(0,5),suffix=hash.slice(5)') && !html.includes('api.pwnedpasswords.com/range/"+hash'));
+check("Cadastro e redefinição verificam senhas comprometidas antes de salvar", html.includes('if(await isPasswordCompromised(password))throw new Error') && html.includes('db.auth.signUp') && html.includes('db.auth.updateUser({password})'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

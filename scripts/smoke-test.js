@@ -436,9 +436,11 @@ check("Regras comerciais deixam claro que não há sorteio ou prêmio aleatório
 
 // CHEFE: comandos de voz do proprietário — testes de regressão.
 
-check("APK inclui reconhecimento nativo de fala compatível com Capacitor 7",
+check("APK usa transcrição parcial nativa para reduzir atraso e acompanha estado do microfone",
   html.includes('window.Capacitor?.Plugins?.SpeechRecognition') &&
-  html.includes('native.start({language:"pt-BR",maxResults:1,partialResults:false,popup:false})') &&
+  html.includes('native.start({language:"pt-BR",maxResults:1,partialResults:true,popup:false})') &&
+  html.includes('native.addListener("partialResults"') &&
+  html.includes('native.addListener("listeningState"') &&
   html.includes('native.requestPermissions()') &&
   html.includes('await native.stop()'));
 

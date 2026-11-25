@@ -465,6 +465,17 @@ check("Inbox identifica o comprador pelo nome do perfil e associa a conversa ao 
 check("CHEFE abre a conversa correspondente após o proprietário informar o nome",
   html.includes('await openChat(target.id)') &&
   html.includes('Abri a conversa com "+target.name'));
+check("Voz dita mensagem diretamente no campo da conversa e exige comando explícito para enviar",
+  html.includes("ditar|escrever|redigir") &&
+  html.includes("chatInput.value=dictated") &&
+  html.includes("ownerVoiceMessageDraftReady=true") &&
+  html.includes("enviar mensagem|pode enviar mensagem|confirmo envio") &&
+  html.includes("await sendChatMessage()"));
+check("Voz permite cancelar o rascunho sem enviar e impede envio sem texto preparado",
+  html.includes("cancelar rascunho|apagar rascunho|limpar mensagem") &&
+  html.includes("Ainda não há uma mensagem ditada pronta para enviar") &&
+  html.includes("Rascunho apagado. Nenhuma mensagem foi enviada."));
+
 
 check("Resposta de contingência mantém contexto recente e não repete saudação fixa",html.includes("ownerFallbackHistory.slice(-4)")&&html.includes('message:transcript,history'));
 check("Comandos locais são priorizados antes de qualquer chamada de IA online",

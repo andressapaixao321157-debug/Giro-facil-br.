@@ -573,7 +573,7 @@ check("Migração impede cliente de inserir status de pagamento e preserva o ser
 
 check("Detalhes do anúncio próprio usam projeção explícita sem campos privados",
   html.includes('db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at").eq("id",listingId).eq("usuario_id",currentUser.id)') &&
-  !/db\\.from\\(["']anuncios["']\\)\\.select\\(["']\\*["']\\)\\.eq\\(["']id["'],listingId\\)/.test(html));
+  !/db\.from\(["']anuncios["']\)\.select\(["']\*["']\)\.eq\(["']id["'],listingId\)/.test(html));
 
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);

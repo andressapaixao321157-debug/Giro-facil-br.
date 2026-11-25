@@ -1572,7 +1572,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   let ownerVoicePendingListingLookup=null;
   let ownerVoiceSelectedListingId=null;
   async function openOwnerListingDetail(listingId){
-    const {data:item,error}=await db.from("anuncios").select("*").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
+    const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
     if(error)throw error;
     if(!item)throw new Error("Não encontrei esse anúncio na sua conta.");
     const photos=Array.isArray(item.fotos)?item.fotos:[];
@@ -2711,7 +2711,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   async function loadListings(){
     if(!db)return;
     const term=favoritesOnly?"":$("searchText").value.trim(),cat=favoritesOnly?"":$("searchCategory").value;
-    let q=db.from("anuncios").select("*").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
+    let q=db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
     if(cat && cat!=="Filtros")q=q.eq("categoria",cat);
     const uf=$("locationFilter")?.value||"", city=$("cityFilter")?.value||"";
@@ -2764,7 +2764,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       const id=details.dataset.openListing;
       trackListingEvent("click",id);
       details.disabled=true;
-      const {data:item,error}=await db.from("anuncios").select("*").eq("id",id).eq("status","ativo").maybeSingle();
+      const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("id",id).eq("status","ativo").maybeSingle();
       details.disabled=false;
       if(error||!item){alert("Este anúncio não está disponível no momento.");return;}
       const photos=Array.isArray(item.fotos)?item.fotos:[];

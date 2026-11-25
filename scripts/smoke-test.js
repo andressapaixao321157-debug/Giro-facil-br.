@@ -520,6 +520,9 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
 
+check("Consultas de anúncios usam colunas explícitas e não dependem de SELECT amplo",
+  !/\\bdb\\s*\\.\\s*from\\(\\s*["']anuncios["']\\s*\\)\\s*\\.select\\(\\s*["']\\*["']\\s*\\)/.test(html));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

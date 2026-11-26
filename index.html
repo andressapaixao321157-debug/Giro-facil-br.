@@ -3494,8 +3494,61 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   }
   function keyIcon(k){const m=modules.find(x=>x[0]===k);return m?m[1]:'•';}
   modules.forEach(([key,icon,title,desc,ids])=>makeScreen(key,title,desc,ids));
+  const financeScreen=host.querySelector('[data-screen="finance"] .admin-screen-body');
+  if(financeScreen){
+    const finance=document.createElement('section');finance.id='ownerAsaasFinance';finance.className='panel';
+    finance.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><span class="owner-eyebrow" style="color:#a87935">ASAAS · CONTROLE FINANCEIRO</span><h3 style="margin:6px 0;color:#10243b">Central Financeira</h3><p class="hint">Saldo real da conta Asaas, extrato e receitas identificadas pelo Giro Fácil BR.</p></div>
+        <button id="ownerFinanceRefresh" type="button">Atualizar dados</button>
+      </div>
+      <div id="ownerFinanceStatus" class="status hidden" role="status" aria-live="polite"></div>
+      <div id="ownerFinanceBalance" class="panel" style="margin:12px 0;background:linear-gradient(120deg,#0b1d35,#1b3d61);color:#fff;border:1px solid #c99a4a">
+        <small style="color:#e4c58e;font-weight:800;letter-spacing:1.4px">SALDO DISPONÍVEL NO ASAAS</small>
+        <div id="ownerFinanceBalanceValue" style="font-size:32px;font-weight:900;margin:8px 0">Toque em Atualizar dados</div>
+        <small id="ownerFinanceMeta" style="color:#cbd8e7">O saldo é consultado diretamente no Asaas. Nenhuma chave é exibida neste painel.</small>
+      </div>
+      <h3>Receita registrada pelo Giro Fácil</h3>
+      <div id="ownerFinanceRevenue" class="form-grid"><p class="hint">Atualize os dados para consultar as receitas.</p></div>
+      <h3>Pedidos recentes</h3><div id="ownerFinanceOrders" style="overflow:auto"><p class="hint">Aguardando consulta.</p></div>
+      <h3>Extrato da conta Asaas</h3><div id="ownerFinanceStatement" style="overflow:auto"><p class="hint">Aguardando consulta.</p></div>
+      <p class="hint">O saldo Asaas representa a conta inteira. A receita do Giro Fácil é calculada separadamente a partir dos pedidos registrados e confirmados na plataforma; valores podem divergir por taxas, estornos, transferências e outras movimentações.</p>
+    `;
+    financeScreen.appendChild(finance);
+    const money=(value)=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const safe=(value)=>String(value??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
+    const statusLabel={PAID:'Pago',RECEIVED:'Recebido',CONFIRMED:'Confirmado',PENDING:'Pendente',OVERDUE:'Vencido',REFUNDED:'Estornado',CANCELED:'Cancelado',CANCELLED:'Cancelado',CREATING:'Em criação'};
+    const showFinanceStatus=(message,isError=false)=>{const el=document.getElementById('ownerFinanceStatus');el.textContent=message;el.className='status'+(isError?' err':' ok');};
+    async function loadOwnerFinance(){
+      const button=document.getElementById('ownerFinanceRefresh');button.disabled=true;button.textContent='Consultando...';
+      try{
+        const {data,error}=await db.functions.invoke('asaas-owner-finance',{body:{}});
+        if(error)throw error;if(data?.error)throw new Error(data.error);
+        const balance=data.balance||{};
+        const balanceValue=balance.balance??balance.available??balance.availableBalance;
+        document.getElementById('ownerFinanceBalanceValue').textContent=balanceValue===undefined?'Saldo indisponível':money(balanceValue);
+        document.getElementById('ownerFinanceMeta').textContent='Ambiente: '+(data.environment==='production'?'Produção':'Sandbox')+' · Consultado em '+new Date(data.checkedAt).toLocaleString('pt-BR');
+        const summary=data.summary||{};
+        document.getElementById('ownerFinanceRevenue').innerHTML=[
+          ['Turbinamentos',summary.boost],['Planos de lojistas',summary.store],['Anúncios avulsos',summary.single],['Planos mensais',summary.monthly]
+        ].map(([label,item])=>'<div class="panel"><strong>'+label+'</strong><div style="font-size:22px;font-weight:900;margin-top:8px;color:#9a6a28">'+money(item?.grossReceived)+'</div><p class="hint">'+(item?.paidOrders||0)+' recebidos · '+(item?.pendingOrders||0)+' pendentes · '+(item?.refundedOrders||0)+' estornados</p></div>').join('');
+        const orders=data.recentOrders||[];
+        document.getElementById('ownerFinanceOrders').innerHTML=orders.length?'<table style="width:100%;border-collapse:collapse;min-width:620px"><tr><th>Tipo</th><th>Valor</th><th>Status</th><th>Forma</th><th>Data</th></tr>'+orders.map(o=>'<tr><td>'+safe(kindLabel[o.kind]||o.kind)+'</td><td>'+money(o.amount)+'</td><td>'+safe(statusLabel[o.status]||o.status)+'</td><td>'+safe(o.billingType)+'</td><td>'+new Date(o.createdAt).toLocaleString('pt-BR')+'</td></tr>').join('')+'</table>':'<p class="hint">Nenhum pedido registrado.</p>';
+        const tx=data.transactions||[];
+        document.getElementById('ownerFinanceStatement').innerHTML=tx.length?'<table style="width:100%;border-collapse:collapse;min-width:620px"><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr>'+tx.map(t=>'<tr><td>'+safe(t.date?new Date(t.date).toLocaleString('pt-BR'):'—')+'</td><td>'+safe(t.description||t.paymentId||t.id)+'</td><td>'+safe(t.type)+'</td><td>'+money(t.value)+'</td></tr>').join('')+'</table>':(data.statementAvailable?'<p class="hint">Nenhuma movimentação retornada no extrato.</p>':'<p class="hint">'+safe(data.statementError||'Extrato indisponível.')+'</p>');
+        showFinanceStatus('Dados financeiros atualizados com sucesso.');
+      }catch(error){showFinanceStatus(error.message||'Não foi possível consultar o Asaas.',true);}
+      finally{button.disabled=false;button.textContent='Atualizar dados';}
+    }
+    document.getElementById('ownerFinanceRefresh').addEventListener('click',loadOwnerFinance);
+  }
   const settingsScreen=host.querySelector('[data-screen="settings"] .admin-screen-body');
-  if(settingsScreen){const info=document.createElement('section');info.className='panel';info.innerHTML="<h3>Saúde técnica e configurações</h3><p>Área reservada para acompanhar disponibilidade do site, versão do aplicativo, integrações, banco de dados e preferências administrativas.</p><p><a href='https://girofacilbr.com.br' target='_blank' rel='noopener'>Abrir site oficial</a></p><p>Não exponha chaves privadas no aplicativo. Alterações críticas devem ser testadas antes da publicação.</p>";settingsScreen.appendChild(info);}
+  if(settingsScreen){
+    const info=document.createElement('section');info.className='panel';
+    info.innerHTML="<h3>Configurações do aplicativo</h3><p>Gerencie os controles operacionais disponíveis e acompanhe o estado das integrações.</p><p><strong>Atendimento:</strong> ligar ou desligar o chat interno na área de controles abaixo.</p><p><strong>Cadastros:</strong> controlar a abertura de novos cadastros.</p><p><strong>Comunicados:</strong> publicar ou atualizar o aviso exibido aos usuários.</p><p><strong>Segurança:</strong> acesso administrativo validado no servidor; chaves do Asaas e credenciais privadas nunca aparecem no aplicativo.</p><p><a href='https://girofacilbr.com.br' target='_blank' rel='noopener'>Abrir site oficial</a></p>";
+    settingsScreen.appendChild(info);
+  }
   function showHome(){
    home.classList.remove('hidden');host.querySelectorAll('.admin-screen').forEach(s=>s.classList.remove('active'));
    panel.dataset.activeScreen='home';window.scrollTo({top:panel.getBoundingClientRect().top+window.scrollY-12,behavior:'smooth'});

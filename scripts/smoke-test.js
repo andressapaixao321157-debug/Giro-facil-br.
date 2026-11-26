@@ -10,6 +10,8 @@ const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, 
 const adminDashboard = fs.existsSync("supabase/functions/admin-dashboard/index.ts") ? fs.readFileSync("supabase/functions/admin-dashboard/index.ts", "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
 const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
+const ownerFinancePath = "supabase/functions/asaas-owner-finance/index.ts";
+const ownerFinance = fs.existsSync(ownerFinancePath) ? fs.readFileSync(ownerFinancePath, "utf8") : "";
 const webhookPath = "supabase/functions/asaas-webhook/index.ts";
 const webhook = fs.existsSync(webhookPath) ? fs.readFileSync(webhookPath, "utf8") : "";
 const founderMigrationPath = "supabase/migrations/20261123193000_giro_founder_500_campaign.sql";
@@ -576,9 +578,16 @@ check("Endpoint de transferência valida papel admin, saldo, chave Pix e evita r
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('confirmation !== "TRANSFERIR"') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('idempotency_key') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('value > available'));
-check("Transferência com resposta incerta não é marcada como falha nem encoraja reenvio automático",
-  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
-  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("não repita o Pix agora"));
+check("Central Financeira exige URL explícita do ambiente Asaas e não assume produção",
+  ownerFinance.includes('Deno.env.get("ASAAS_API_URL")?.trim()') &&
+  ownerFinance.includes("ASAAS_API_URL deve apontar explicitamente") &&
+  !ownerFinance.includes('|| "https://api.asaas.com/v3"'));
+check("Transferência Pix classifica recusas definitivas como FAILED e falhas inconclusivas como UNKNOWN",
+  ownerFinance.includes("transferResponseStatus") &&
+  ownerFinance.includes("providerAccepted") &&
+  ownerFinance.includes("[408, 409, 429].includes(transferResponse.status)") &&
+  ownerFinance.includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
+  ownerFinance.includes("não repita o Pix agora"));
 
 
 check("Captação de lojistas tem CTA visível no topo e direciona ao formulário sem exigir login",

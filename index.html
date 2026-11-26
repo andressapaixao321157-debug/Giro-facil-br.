@@ -905,24 +905,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   </section>
   <section id="paymentPanel" class="panel hidden">
     <h2>Pagamento do Giro Fácil</h2>
-    <p class="hint">Anúncio avulso R$ 10,00 · Plano mensal padrão R$ 59,00 · Plano Parceiro Fundador R$ 39,00/mês · Turbinamentos pagos e benefícios promocionais conforme elegibilidade.</p>
+    <p class="hint">Publicação de anúncios gratuita · Planos mensais exclusivos para lojistas · Turbinamentos por orçamento e duração · Sem comissão sobre vendas entre usuários.</p>
     <div id="paymentStatus" class="status hidden"></div>
     <p id="adminBoostNotice" class="hint hidden" style="background:#e8f7ee;border:1px solid #9bd7b1;border-radius:10px;padding:12px;color:#14532d;font-weight:700">Benefício do proprietário: o turbinamento dos seus próprios anúncios é gratuito. Nenhuma cobrança será gerada.</p>
     <div class="form-grid">
       <div class="field"><label for="paymentKind">O que deseja contratar?</label><select id="paymentKind">
-        <option value="single">Anúncio avulso — R$ 10,00</option><option value="monthly">Plano mensal — R$ 59,00</option>
-        <option value="boost">Turbinar anúncio</option><option value="store">Plano para loja</option>
+        <option value="boost">Turbinar anúncio</option><option value="store">Plano mensal para lojista</option>
       </select></div>
       <div class="field"><label for="billingType">Forma de pagamento</label><select id="billingType"><option value="PIX">PIX</option><option value="CREDIT_CARD">Cartão de crédito</option></select><p class="hint" id="billingHint">O pagamento abre no checkout seguro do Asaas. O Giro Fácil não pede CPF no cadastro; se necessário, o próprio Asaas solicitará os dados na página de pagamento.</p></div>
       <div class="field full hidden" id="boostFields"><label for="boostPlan">Destaque do anúncio</label><select id="boostPlan">
-        <option value="boost_3d">3 dias — R$ 19,90</option><option value="boost_7d">7 dias — R$ 34,90</option>
-        <option value="boost_15d">15 dias — R$ 59,90</option><option value="boost_30d">30 dias — R$ 89,90</option>
-        <option value="boost_60d">60 dias — R$ 149,90</option><option value="founder_7d">Benefício Parceiro Fundador — 7 dias grátis (uma vez)</option><option value="boost_custom">Orçamento personalizado</option>
+        <option value="boost_1d10">1 dia — R$ 10,00</option><option value="boost_1d15">1 dia — R$ 15,00</option><option value="boost_2d10">2 dias — R$ 20,00</option><option value="boost_7d50">7 dias — R$ 50,00 no total</option><option value="boost_15d100">15 dias — R$ 100,00 no total</option><option value="boost_30d200">30 dias — R$ 200,00 no total</option><option value="founder_7d">Benefício Parceiro Fundador — 7 dias grátis (uma vez)</option><option value="boost_custom">Montar meu orçamento</option>
       </select></div>
-      <div class="field hidden" id="customAmountField"><label for="customBoostAmount">Seu orçamento (R$ 20 a R$ 5.000)</label><input id="customBoostAmount" type="number" min="20" max="5000" step="0.01" value="20" placeholder="Ex.: 120"></div>
-      <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" value="1" placeholder="Ex.: 10"></div>
+      <div class="field hidden" id="customAmountField"><label for="customBoostMode">Como deseja definir o orçamento?</label><select id="customBoostMode"><option value="total">Valor total para todo o período</option><option value="daily">Valor por dia</option></select><label for="customBoostAmount">Orçamento em reais (mínimo R$ 10)</label><input id="customBoostAmount" type="number" min="10" max="5000" step="0.01" value="50" placeholder="Ex.: 50"><p class="hint" id="boostBudgetPreview">Escolha a duração para calcular o total.</p></div>
+      <div class="field hidden" id="customDaysField"><label for="customBoostDays">Duração (1 a 30 dias)</label><input id="customBoostDays" type="number" min="1" max="30" step="1" value="7" placeholder="Ex.: 7"></div>
       <div class="field full hidden" id="storeFields"><label for="storeName">Nome da loja</label><input id="storeName" placeholder="Nome comercial da sua loja"><label for="storePlan">Plano mensal da loja</label><select id="storePlan">
-        <option value="loja_fundador">Parceiro Fundador — R$ 39/mês (somente aprovado)</option><option value="loja_basica">Básico — R$ 99/mês</option><option value="loja_pro">Pro — R$ 199/mês</option><option value="loja_premium">Premium — R$ 399/mês</option>
+        <option value="loja_fundador">Parceiro Fundador — R$ 39/mês (somente aprovado)</option><option value="loja_basica">Loja Start — R$ 39,90/mês</option><option value="loja_pro">Loja Pro — R$ 79,90/mês</option><option value="loja_premium">Loja Premium — R$ 129,90/mês</option><option value="loja_rede">Loja Rede — R$ 199,90/mês</option>
       </select></div>
       <div class="field full hidden" id="paymentListingWrap"><label for="paymentListingId">Selecione seu anúncio</label><select id="paymentListingId"><option value="">Carregando seus anúncios...</option></select></div>
     </div>
@@ -1321,7 +1318,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const kind=$("paymentKind").value, boost=kind==="boost", store=kind==="store";
     $("boostFields").classList.toggle("hidden",!boost);
     $("storeFields").classList.toggle("hidden",!store);
-    $("paymentListingWrap").classList.toggle("hidden",!(kind==="single"||boost));
+    $("paymentListingWrap").classList.toggle("hidden",!boost);
     const custom=boost && $("boostPlan").value==="boost_custom";
     $("adminBoostNotice").classList.toggle("hidden",!(boost && document.body.dataset.isAdmin==="true"));
     $("customAmountField").classList.toggle("hidden",!custom);
@@ -1336,12 +1333,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     (data||[]).forEach(item=>{const option=document.createElement("option");option.value=item.id;option.textContent=item.titulo+" ("+item.status+")";select.appendChild(option);});
     if(selected)select.value=selected;
   }
-  function syncBillingOptions(){const recurring=["monthly","store"].includes($("paymentKind").value);const select=$("billingType");select.innerHTML=recurring?'<option value="CREDIT_CARD">Cartão de crédito — cobrança mensal recorrente</option>':'<option value="PIX">PIX — pagamento único</option>';select.value=recurring?"CREDIT_CARD":"PIX";$("billingHint").textContent=recurring?"Planos mensais e lojas usam cartão recorrente no checkout seguro do Asaas. O Giro Fácil não solicita CPF; o Asaas poderá pedir os dados necessários diretamente na página dele.":"O pagamento abre no checkout seguro do Asaas. O Giro Fácil não pede CPF; se necessário, o Asaas solicitará os dados diretamente na página de pagamento.";}
-  $("paymentKind").onchange=()=>{updatePaymentFields();syncBillingOptions();if(["single","boost"].includes($("paymentKind").value))loadOwnListings();};
-  $("boostPlan").onchange=updatePaymentFields;
+  function syncBillingOptions(){const recurring=$("paymentKind").value==="store";const select=$("billingType");select.innerHTML=recurring?'<option value="CREDIT_CARD">Cartão de crédito — cobrança mensal recorrente</option>':'<option value="PIX">PIX — pagamento único</option>';select.value=recurring?"CREDIT_CARD":"PIX";$("billingHint").textContent=recurring?"Planos mensais exclusivos para lojistas, com cobrança recorrente no checkout seguro do Asaas.":"O turbinamento é pago por PIX no checkout seguro do Asaas.";}
+  $("paymentKind").onchange=()=>{updatePaymentFields();syncBillingOptions();if($("paymentKind").value==="boost")loadOwnListings();};
+  $("boostPlan").onchange=()=>{updatePaymentFields();updateBoostBudgetPreview();};
+  function updateBoostBudgetPreview(){const amount=Number($("customBoostAmount").value||0),days=Math.max(1,Math.min(30,Number($("customBoostDays").value)||1)),mode=$("customBoostMode").value,total=mode==="daily"?amount*days:amount,daily=total/days;$("boostBudgetPreview").textContent="Total: "+total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})+" · Média por dia: "+daily.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
+  ["customBoostAmount","customBoostDays","customBoostMode"].forEach(id=>$(id).addEventListener("input",updateBoostBudgetPreview));
   $("paymentListingId").onchange=()=>{pendingListingId=$("paymentListingId").value||null;};
   updatePaymentFields();
-  $("plansOpen").onclick=()=>{$("paymentKind").value="monthly";$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});};
+  $("plansOpen").onclick=()=>{$("paymentKind").value="store";updatePaymentFields();syncBillingOptions();$("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth"});};
   $("myListingsOpen").onclick=async()=>{if(!currentUser){openAuth();return;}$("myListingsPanel").classList.remove("hidden");await loadMyListings();$("myListingsPanel").scrollIntoView({behavior:"smooth",block:"start"});};
   $("myListingsRefresh").onclick=loadMyListings;
   document.querySelectorAll("[data-owner-filter]").forEach(button=>button.addEventListener("click",()=>{ownerListingFilter=button.dataset.ownerFilter;document.querySelectorAll("[data-owner-filter]").forEach(b=>b.classList.toggle("active",b===button));loadMyListings();}));
@@ -2674,14 +2673,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!db||!currentUser){status("paymentStatus","Entre na sua conta para continuar.","err");return;}
     const kind=$("paymentKind").value, billingType=$("billingType").value;
     const listingId=$("paymentListingId").value.trim()||pendingListingId;
-    if((kind==="single"||kind==="boost")&&!listingId){status("paymentStatus","Selecione o anúncio que deseja pagar ou turbinar.","err");return;}if(kind==="boost"&&$("boostPlan").value==="boost_custom"){const amount=Number($("customBoostAmount").value),days=Number($("customBoostDays").value);if(!Number.isFinite(amount)||amount<20||amount>5000){status("paymentStatus","Informe um orçamento entre R$ 20 e R$ 5.000.","err");return;}if(!Number.isInteger(days)||days<1||days>30){status("paymentStatus","Informe uma duração entre 1 e 30 dias.","err");return;}}
+    if(kind==="boost"&&!listingId){status("paymentStatus","Selecione o anúncio que deseja turbinar.","err");return;}if(kind==="boost"&&$("boostPlan").value==="boost_custom"){const amount=Number($("customBoostAmount").value),days=Number($("customBoostDays").value),mode=$("customBoostMode").value,total=mode==="daily"?amount*days:amount;if(!Number.isFinite(amount)||amount<10||amount>5000||total>5000){status("paymentStatus","Informe pelo menos R$ 10 e limite o orçamento total a R$ 5.000.","err");return;}if(!Number.isInteger(days)||days<1||days>30){status("paymentStatus","Informe uma duração entre 1 e 30 dias.","err");return;}}
     if(kind==="store"&&$("storeName").value.trim().length<2){status("paymentStatus","Informe o nome da loja.","err");return;}
     $("payBtn").disabled=true;$("paymentResult").innerHTML="";
     try{
       const {data:{session}}=await db.auth.getSession();
       if(!session)throw new Error("Sua sessão expirou. Entre novamente.");
-      const payload={kind,billingType,listingId:(kind==="single"||kind==="boost")?listingId:null};
-      if(kind==="boost"){payload.planCode=$("boostPlan").value;if(payload.planCode==="boost_custom"){payload.customAmount=Number($("customBoostAmount").value);payload.customDays=Number($("customBoostDays").value);}}
+      const payload={kind,billingType,listingId:kind==="boost"?listingId:null};
+      if(kind==="boost"){payload.planCode=$("boostPlan").value;if(payload.planCode==="boost_custom"){payload.customAmount=Number($("customBoostAmount").value);payload.customDays=Number($("customBoostDays").value);payload.customMode=$("customBoostMode").value;}}
       if(kind==="store"){payload.planCode=$("storePlan").value;payload.storeName=$("storeName").value.trim();}
       const {data,error}=await db.functions.invoke("asaas-create-payment",{body:payload});
       if(error)throw error;

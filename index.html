@@ -3388,6 +3388,53 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
   panel.appendChild(host);showHome();
  };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  // Atualização por gesto: puxar para baixo no topo da tela.
+  (function enablePullToRefresh(){
+    let startY=0, pullDistance=0, tracking=false, refreshing=false;
+    const threshold=82;
+    const indicator=document.createElement("div");
+    indicator.id="giroPullRefresh";
+    indicator.setAttribute("role","status");
+    indicator.setAttribute("aria-live","polite");
+    indicator.textContent="↓ Puxe para atualizar";
+    indicator.style.cssText="position:fixed;z-index:9999;top:calc(env(safe-area-inset-top) + 8px);left:50%;transform:translate(-50%,-150%);opacity:0;padding:10px 16px;border-radius:999px;background:#102b50;color:#fff;font:700 13px Arial,sans-serif;box-shadow:0 5px 18px #102b5040;transition:transform .18s ease,opacity .18s ease;pointer-events:none;white-space:nowrap";
+    document.body.appendChild(indicator);
+    const show=(distance)=>{
+      const progress=Math.min(1,distance/threshold);
+      indicator.style.transform="translate(-50%,"+(-115+progress*125)+"%)";
+      indicator.style.opacity=String(Math.min(1,progress+.15));
+      indicator.textContent=distance>=threshold?"↻ Solte para atualizar":"↓ Puxe para atualizar";
+    };
+    const hide=()=>{
+      indicator.style.transform="translate(-50%,-150%)";
+      indicator.style.opacity="0";
+    };
+    window.addEventListener("touchstart",event=>{
+      if(refreshing||window.scrollY>2||event.touches.length!==1)return;
+      startY=event.touches[0].clientY;pullDistance=0;tracking=true;
+    },{passive:true});
+    window.addEventListener("touchmove",event=>{
+      if(!tracking||refreshing||event.touches.length!==1)return;
+      const delta=event.touches[0].clientY-startY;
+      if(delta<0){tracking=false;hide();return;}
+      pullDistance=Math.min(140,delta*.65);
+      if(pullDistance>8)show(pullDistance);
+    },{passive:true});
+    const finish=()=>{
+      if(!tracking)return;
+      tracking=false;
+      if(pullDistance>=threshold){
+        refreshing=true;
+        indicator.textContent="↻ Atualizando Giro Fácil...";
+        indicator.style.transform="translate(-50%,0)";
+        indicator.style.opacity="1";
+        window.setTimeout(()=>window.location.reload(),250);
+      }else hide();
+    };
+    window.addEventListener("touchend",finish,{passive:true});
+    window.addEventListener("touchcancel",()=>{tracking=false;hide();},{passive:true});
+  })();
+
 })();
 </script>
 

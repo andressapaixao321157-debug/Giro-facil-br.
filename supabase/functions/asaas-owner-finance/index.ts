@@ -14,7 +14,14 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get("SUPABASE_URL");
     const apiKey = Deno.env.get("ASAAS_API_KEY");
-    const apiUrl = (Deno.env.get("ASAAS_API_URL") || "https://api.asaas.com/v3").replace(/\/$/, "");
+    const configuredApiUrl = Deno.env.get("ASAAS_API_URL")?.trim();
+    if (!configuredApiUrl) {
+      return reply({ error: "A URL do ambiente Asaas não está configurada. Defina ASAAS_API_URL explicitamente para sandbox ou produção." }, 503);
+    }
+    const apiUrl = configuredApiUrl.replace(/\/$/, "");
+    if (!/^https:\/\/api(?:-sandbox)?\.asaas\.com\/v3$/i.test(apiUrl)) {
+      return reply({ error: "ASAAS_API_URL deve apontar explicitamente para https://api.asaas.com/v3 ou https://api-sandbox.asaas.com/v3." }, 503);
+    }
     const anon = (() => {
       const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
       if (raw) { const parsed = JSON.parse(raw); if (parsed.default) return parsed.default as string; }
@@ -89,6 +96,9 @@ Deno.serve(async (req) => {
         throw insertError;
       }
       let transferRequestStarted = false;
+      let transferResponseStatus: number | null = null;
+      let providerAccepted = false;
+      let providerTransferId: string | null = null;
       try {
         const balanceResponse = await fetch(apiUrl + "/finance/balance", { method: "GET", headers, signal: AbortSignal.timeout(15000) });
         const balanceData = await balanceResponse.json().catch(() => ({}));
@@ -101,23 +111,44 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ value, pixAddressKey, pixAddressKeyType, description, externalReference: inserted.id }),
           signal: AbortSignal.timeout(20000)
         });
+        transferResponseStatus = transferResponse.status;
         const transferData = await transferResponse.json().catch(() => ({}));
-        if (!transferResponse.ok) throw new Error(transferData?.errors?.[0]?.description || "O Asaas recusou a transferência.");
+        if (!transferResponse.ok) {
+          const reason = transferData?.errors?.[0]?.description || "O Asaas recusou a transferência.";
+          const uncertain = transferResponse.status >= 500 || [408, 409, 429].includes(transferResponse.status);
+          await admin.from("asaas_owner_transfers").update({
+            status: uncertain ? "UNKNOWN" : "FAILED",
+            fail_reason: (uncertain
+              ? `Resposta não conclusiva do Asaas (HTTP ${transferResponse.status}). Consulte o histórico antes de tentar novamente. `
+              : `Asaas recusou a solicitação (HTTP ${transferResponse.status}). `) + reason.slice(0, 180),
+            updated_at: new Date().toISOString()
+          }).eq("id", inserted.id);
+          return reply({
+            error: uncertain ? "O Asaas não confirmou o resultado. Não repita o Pix agora; consulte o histórico de transferências." : reason,
+            requestId: inserted.id,
+            providerStatus: transferResponse.status,
+            uncertain
+          }, uncertain ? 202 : 400);
+        }
+        providerAccepted = true;
+        providerTransferId = typeof transferData?.id === "string" ? transferData.id : null;
+        if (!providerTransferId) throw new Error("O Asaas respondeu sem identificador da transferência; consulte o histórico antes de repetir.");
         const transferStatus = String(transferData?.status || "PENDING").toUpperCase();
         const { data: saved, error: saveError } = await admin.from("asaas_owner_transfers").update({
-          asaas_transfer_id: transferData.id, status: transferStatus, updated_at: new Date().toISOString()
+          asaas_transfer_id: providerTransferId, status: transferStatus, updated_at: new Date().toISOString()
         }).eq("id", inserted.id).select("*").single();
         if (saveError) throw saveError;
-        return reply({ success: true, transfer: saved, provider: { id: transferData.id, status: transferStatus, value: transferData.value, dateCreated: transferData.dateCreated }, message: "Solicitação enviada ao Asaas. Acompanhe o status no histórico; o envio ainda pode estar em processamento." });
+        return reply({ success: true, transfer: saved, provider: { id: providerTransferId, status: transferStatus, value: transferData.value, dateCreated: transferData.dateCreated }, message: "Solicitação enviada ao Asaas. Acompanhe o status no histórico; o envio ainda pode estar em processamento." });
       } catch (transferError) {
         const reason = transferError instanceof Error ? transferError.message : "Falha ao solicitar transferência.";
-        const uncertain = transferRequestStarted;
+        const uncertain = transferRequestStarted && (transferResponseStatus === null || providerAccepted);
         await admin.from("asaas_owner_transfers").update({
+          asaas_transfer_id: providerTransferId,
           status: uncertain ? "UNKNOWN" : "FAILED",
           fail_reason: (uncertain ? "Resultado ainda não confirmado. Consulte o histórico Asaas antes de tentar novamente. " : "") + reason.slice(0, 180),
           updated_at: new Date().toISOString()
         }).eq("id", inserted.id);
-        return reply({ error: uncertain ? "Não foi possível confirmar a resposta do Asaas. Por segurança, não repita o Pix agora. Consulte o histórico de transferências no Asaas antes de tentar novamente." : reason, requestId: inserted.id, uncertain }, uncertain ? 202 : 400);
+        return reply({ error: uncertain ? "Não foi possível confirmar a resposta do Asaas. Por segurança, não repita o Pix agora. Consulte o histórico de transferências no Asaas antes de tentar novamente." : reason, requestId: inserted.id, providerStatus: transferResponseStatus, uncertain }, uncertain ? 202 : 400);
       }
     }
 

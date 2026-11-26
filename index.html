@@ -3503,7 +3503,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
         <button id="ownerFinanceRefresh" type="button">Atualizar dados</button>
       </div>
       <div id="ownerFinanceStatus" class="status hidden" role="status" aria-live="polite"></div>
-      <div id="ownerFinanceBalance" class="panel" style="margin:12px 0;background:linear-gradient(120deg,#0b1d35,#1b3d61);color:#fff;border:1px solid #c99a4a">
+      <div id="ownerFinanceBalance" class="panel" data-finance-page="balance" role="button" tabindex="0" style="margin:12px 0;background:linear-gradient(120deg,#0b1d35,#1b3d61);color:#fff;border:1px solid #c99a4a">
         <small style="color:#e4c58e;font-weight:800;letter-spacing:1.4px">SALDO DISPONÍVEL NO ASAAS</small>
         <div id="ownerFinanceBalanceValue" style="font-size:32px;font-weight:900;margin:8px 0">Toque em Atualizar dados</div>
         <small id="ownerFinanceMeta" style="color:#cbd8e7">O saldo é consultado diretamente no Asaas. Nenhuma chave é exibida neste painel.</small>
@@ -3585,6 +3585,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
       }
     };
     finance.addEventListener('click',event=>{const button=event.target.closest('[data-finance-page]');if(button)showFinancePage(button.dataset.financePage);});
+    finance.addEventListener('keydown',event=>{const button=event.target.closest('[data-finance-page][role="button"]');if(button&&(event.key==='Enter'||event.key===' ')){event.preventDefault();showFinancePage(button.dataset.financePage);}});
     document.getElementById('ownerFinanceBack').onclick=()=>{detail.hidden=true;homeEls.forEach(el=>el.hidden=false);};
     async function loadTransferHistory(){
       const target=document.getElementById('ownerTransferHistory');if(!target)return;
@@ -3611,8 +3612,8 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
         document.getElementById('ownerFinanceMeta').textContent='Ambiente: '+(data.environment==='production'?'Produção':'Sandbox')+' · Consultado em '+new Date(data.checkedAt).toLocaleString('pt-BR');
         const summary=data.summary||{};
         document.getElementById('ownerFinanceRevenue').innerHTML=[
-          ['Turbinamentos',summary.boost],['Planos de lojistas',summary.store],['Anúncios avulsos',summary.single],['Planos mensais',summary.monthly]
-        ].map(([label,item])=>'<div class="panel"><strong>'+label+'</strong><div style="font-size:22px;font-weight:900;margin-top:8px;color:#9a6a28">'+money(item?.grossReceived)+'</div><p class="hint">'+(item?.paidOrders||0)+' recebidos · '+(item?.pendingOrders||0)+' pendentes · '+(item?.refundedOrders||0)+' estornados</p></div>').join('');
+          ['Turbinamentos',summary.boost,'boost'],['Planos de lojistas',summary.store,'plans'],['Anúncios avulsos',summary.single,'single'],['Planos mensais',summary.monthly,'plans']
+        ].map(([label,item,page])=>'<button type="button" data-finance-page="'+page+'" class="admin-home-card"><strong>'+label+'</strong><div style="font-size:22px;font-weight:900;margin-top:8px;color:#9a6a28">'+money(item?.grossReceived)+'</div><small>'+(item?.paidOrders||0)+' recebidos · '+(item?.pendingOrders||0)+' pendentes · '+(item?.refundedOrders||0)+' estornados</small></button>').join('');
         const orders=data.recentOrders||[];
         document.getElementById('ownerFinanceOrders').innerHTML=orders.length?'<table style="width:100%;border-collapse:collapse;min-width:620px"><tr><th>Tipo</th><th>Valor</th><th>Status</th><th>Forma</th><th>Data</th></tr>'+orders.map(o=>'<tr><td>'+safe(kindLabel[o.kind]||o.kind)+'</td><td>'+money(o.amount)+'</td><td>'+safe(statusLabel[o.status]||o.status)+'</td><td>'+safe(o.billingType)+'</td><td>'+new Date(o.createdAt).toLocaleString('pt-BR')+'</td></tr>').join('')+'</table>':'<p class="hint">Nenhum pedido registrado.</p>';
         const tx=data.transactions||[];

@@ -3532,8 +3532,8 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
     detail.innerHTML='<button id="ownerFinanceBack" type="button" class="secondary">← Voltar ao financeiro</button><h3 id="ownerFinanceDetailTitle" style="margin-top:16px"></h3><p id="ownerFinanceDetailHelp" class="hint"></p><div id="ownerFinanceDetailBody"></div>';
     finance.appendChild(detail);
     const detailBody=detail.querySelector('#ownerFinanceDetailBody');
-    const homeEls=['ownerFinanceBalance','ownerFinanceRevenue','ownerFinanceNav','ownerFinanceOrders','ownerFinanceStatement'].map(id=>document.getElementById(id)).filter(Boolean);
-    ['ownerFinanceOrders','ownerFinanceStatement'].forEach(id=>{const el=document.getElementById(id);if(el?.previousElementSibling?.tagName==='H3')homeEls.push(el.previousElementSibling);});
+    const homeEls=['ownerFinanceBalance','ownerFinanceRevenue','ownerFinanceNav'].map(id=>document.getElementById(id)).filter(Boolean);
+    ['ownerFinanceOrders','ownerFinanceStatement'].forEach(id=>{const el=document.getElementById(id);if(el){el.hidden=true;if(el.previousElementSibling?.tagName==='H3')el.previousElementSibling.hidden=true;}});
     const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
     const transferStatus={PENDING:'Pendente',PROCESSING:'Processando',TRANSFER_PENDING:'Pendente',TRANSFER_DONE:'Concluída',TRANSFER_FAILED:'Falhou',TRANSFER_CANCELLED:'Cancelada',FAILED:'Falhou'};
     const showFinancePage=(page)=>{
@@ -3598,13 +3598,13 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
     const safe=(value)=>String(value??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
     const statusLabel={PAID:'Pago',RECEIVED:'Recebido',CONFIRMED:'Confirmado',PENDING:'Pendente',OVERDUE:'Vencido',REFUNDED:'Estornado',CANCELED:'Cancelado',CANCELLED:'Cancelado',CREATING:'Em criação'};
+    async function invokeFinance(body={}){const {data,error}=await db.functions.invoke('asaas-owner-finance',{body});if(error)throw error;if(data?.error)throw new Error(data.error);return data;}
     const showFinanceStatus=(message,isError=false)=>{const el=document.getElementById('ownerFinanceStatus');el.textContent=message;el.className='status'+(isError?' err':' ok');};
     async function loadOwnerFinance(){
       const button=document.getElementById('ownerFinanceRefresh');button.disabled=true;button.textContent='Consultando...';
       try{
-        const {data,error}=await db.functions.invoke('asaas-owner-finance',{body:{}});
-        if(error)throw error;if(data?.error)throw new Error(data.error);
-        financeData=data;
+        financeData=await invokeFinance({action:'dashboard'});
+        const data=financeData;
         const balance=data.balance||{};
         const balanceValue=balance.balance??balance.available??balance.availableBalance;
         document.getElementById('ownerFinanceBalanceValue').textContent=balanceValue===undefined?'Saldo indisponível':money(balanceValue);

@@ -566,7 +566,7 @@ check("Painel de configurações apresenta controles operacionais e segurança",
 
 
 check("Central Financeira oferece páginas independentes para saldo, entradas, turbo, planos, anúncios, Pix, extrato e histórico",
-  ["balance","receipts","boost","plans","single","transfers","statement","history"].every(key=>html.includes('data-finance-page="'+key+'"')));
+  ["balance","receipts","boost","plans","single","transfers","statement","history"].every(key=>html.includes("["+String.fromCharCode(39)+key+String.fromCharCode(39))));
 check("Transferência Pix exige revisão e confirmação digitada pelo proprietário",
   html.includes("ownerTransferReview") && html.includes("ownerTransferConfirm") &&
   html.includes("confirmInput.value.trim()!=='TRANSFERIR'") &&

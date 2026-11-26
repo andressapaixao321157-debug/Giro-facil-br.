@@ -12,18 +12,19 @@ const datePlusDays = (days: number) => {
 };
 
 const BOOSTS: Record<string, { amount: number; days: number }> = {
-  boost_3d: { amount: 19.90, days: 3 },
-  boost_7d: { amount: 34.90, days: 7 },
-  boost_15d: { amount: 59.90, days: 15 },
-  boost_30d: { amount: 89.90, days: 30 },
-  boost_60d: { amount: 149.90, days: 60 },
+  boost_1d10: { amount: 10, days: 1 },
+  boost_1d15: { amount: 15, days: 1 },
+  boost_2d10: { amount: 20, days: 2 },
+  boost_7d50: { amount: 50, days: 7 },
+  boost_15d100: { amount: 100, days: 15 },
+  boost_30d200: { amount: 200, days: 30 },
   founder_7d: { amount: 0, days: 7 },
 };
-const STORES: Record<string, number> = { loja_fundador: 39, loja_basica: 99, loja_pro: 199, loja_premium: 399 };
+const STORES: Record<string, number> = { loja_fundador: 39, loja_basica: 39.90, loja_pro: 79.90, loja_premium: 129.90, loja_rede: 199.90 };
 
-// O valor maior compra prioridade de exposição, não uma quantidade garantida de compradores.
-const reachMultiplierForAmount = (amount: number) =>
-  amount >= 150 ? 10 : amount >= 90 ? 7 : amount >= 60 ? 5 : amount >= 35 ? 3 : 2;
+// Mais investimento médio por dia dá maior prioridade na distribuição; não garante compradores.
+const reachMultiplierForDailyBudget = (daily: number) =>
+  daily >= 50 ? 10 : daily >= 35 ? 7 : daily >= 20 ? 5 : daily >= 15 ? 3 : 2;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -53,8 +54,6 @@ Deno.serve(async (req) => {
     })();
     const apiKey = Deno.env.get("ASAAS_API_KEY");
     const apiUrl = (Deno.env.get("ASAAS_API_URL") || "https://api.asaas.com/v3").replace(/\/$/, "");
-    const singlePrice = Number(Deno.env.get("ASAAS_SINGLE_AD_PRICE") || 10);
-    const monthlyPrice = Number(Deno.env.get("ASAAS_MONTHLY_PLAN_PRICE") || 59);
     if (!apiKey) return json({ error: "Integração Asaas ainda não configurada no servidor." }, 503);
     const headers = { "Content-Type": "application/json", access_token: apiKey };
 
@@ -72,8 +71,8 @@ Deno.serve(async (req) => {
     const planCode = body.planCode ? String(body.planCode) : null;
     const storeName = String(body.storeName || "").trim();
 
-    if (!["single", "monthly", "boost", "store"].includes(kind)) return json({ error: "Tipo de cobrança inválido." }, 400);
-    const recurring = kind === "monthly" || kind === "store";
+    if (!["boost", "store"].includes(kind)) return json({ error: "Publicação de anúncios é gratuita. Escolha um turbinamento ou plano de loja." }, 400);
+    const recurring = kind === "store";
     if (recurring && billingType !== "CREDIT_CARD") {
       return json({ error: "Para plano mensal e loja, escolha cartão de crédito no checkout seguro do Asaas. O Giro Fácil não solicita CPF." }, 400);
     }
@@ -81,16 +80,21 @@ Deno.serve(async (req) => {
       return json({ error: "Para esta cobrança, a opção disponível sem cadastro de CPF no Giro Fácil é PIX." }, 400);
     }
 
-    let amount = kind === "single" ? singlePrice : kind === "monthly" ? monthlyPrice : 0;
+    let amount = 0;
     let durationDays = 0;
+    let dailyBudget = 0;
     if (kind === "boost") {
       if (!listingId) return json({ error: "Selecione o anúncio que deseja turbinar." }, 400);
       if (planCode === "boost_custom") {
-        amount = Number(body.customAmount);
-        durationDays = Math.max(1, Math.min(30, Math.floor(Number(body.customDays) || 0)));
-        if (!Number.isFinite(amount) || amount < 20 || amount > 5000 || !durationDays) {
-          return json({ error: "Orçamento personalizado: informe de R$ 20 a R$ 5.000 e duração de 1 a 30 dias." }, 400);
+        const customValue = Number(body.customAmount);
+        durationDays = Math.floor(Number(body.customDays) || 0);
+        const customMode = String(body.customMode || "total");
+        if (!Number.isFinite(customValue) || customValue < 10 || customValue > 5000 || durationDays < 1 || durationDays > 30 || !["total", "daily"].includes(customMode)) {
+          return json({ error: "Orçamento personalizado: mínimo de R$ 10, duração de 1 a 30 dias e máximo de R$ 5.000 no total." }, 400);
         }
+        amount = customMode === "daily" ? customValue * durationDays : customValue;
+        if (amount > 5000) return json({ error: "O orçamento total não pode ultrapassar R$ 5.000." }, 400);
+        dailyBudget = amount / durationDays;
       } else {
         const selected = planCode ? BOOSTS[planCode] : null;
         if (!selected) return json({ error: "Opção de turbinamento inválida." }, 400);
@@ -135,11 +139,10 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(amount) || (amount <= 0 && !freeAdminBoost && !freeFounderBoost)) return json({ error: "Preço inválido." }, 400);
     if (freeAdminBoost) amount = 0;
 
-    if (kind === "single" || kind === "boost") {
+    if (kind === "boost") {
       if (!listingId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(listingId)) return json({ error: "Selecione um anúncio válido." }, 400);
       const { data: listing, error } = await admin.from("anuncios").select("id,usuario_id,status").eq("id", listingId).eq("usuario_id", user.id).maybeSingle();
       if (error || !listing) return json({ error: "Anúncio não encontrado para esta conta." }, 404);
-      if (kind === "single" && listing.status !== "pendente") return json({ error: "Este anúncio não está aguardando pagamento." }, 409);
       if (freeFounderBoost && listing.status !== "ativo") return json({ error: "Escolha um anúncio ativo para usar o turbo promocional." }, 409);
     }
 
@@ -151,14 +154,14 @@ Deno.serve(async (req) => {
         amount: 0, status: "PAID", asaas_customer_id: null,
       }).select("id").single();
       if (freeOrderError || !freeOrder) throw new Error("Não foi possível registrar o turbinamento gratuito do administrador.");
-      const baseAmount = planCode === "boost_custom" ? Number(body.customAmount) : (BOOSTS[planCode!]?.amount || 19.90);
+      const baseAmount = planCode === "boost_custom" ? (String(body.customMode || "total") === "daily" ? Number(body.customAmount) : Number(body.customAmount) / durationDays) : ((BOOSTS[planCode!]?.amount || 10) / Math.max(1, durationDays));
       const { error: freeBoostError } = await admin.from("ad_boosts").insert({
         order_id: freeOrder.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
-        duration_days: durationDays, amount: 0, reach_multiplier: reachMultiplierForAmount(baseAmount),
+        duration_days: durationDays, amount: 0, reach_multiplier: reachMultiplierForDailyBudget(baseAmount),
         status: "active", starts_at: now.toISOString(), ends_at: endsAt.toISOString(),
       });
       if (freeBoostError) throw new Error("O pedido foi registrado, mas não foi possível ativar o turbinamento gratuito.");
-      return json({ orderId: freeOrder.id, kind, billingType, amount: 0, status: "ACTIVE", freeForAdmin: true, startsAt: now.toISOString(), endsAt: endsAt.toISOString() });
+      return json({ orderId: freeOrder.id, kind, billingType, amount: 0, status: "ACTIVE", freeForAdmin: true, startsAt: now.toISOString(), endsAt: endsAt.toISOString(), durationDays });
     }
 
     if (freeFounderBoost && founderPlanForBoost) {
@@ -197,14 +200,10 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (orderError || !order) throw new Error("Não foi possível registrar o pedido de pagamento.");
 
-    const itemName = kind === "single" ? "Anúncio avulso Giro Fácil BR"
-      : kind === "monthly" ? "Plano mensal Giro Fácil BR"
-      : kind === "boost" ? "Turbinamento Giro Fácil BR"
+    const itemName = kind === "boost" ? "Turbinamento Giro Fácil BR"
       : planCode === "loja_fundador" ? "Plano Parceiro Fundador Giro Fácil BR"
       : `Plano de loja Giro Fácil BR - ${storeName}`;
-    const itemDescription = kind === "single" ? `Publicação do anúncio ${listingId}`
-      : kind === "monthly" ? "Acesso ao plano mensal do marketplace"
-      : kind === "boost" ? `Destaque ${planCode} por ${durationDays} dia(s)`
+    const itemDescription = kind === "boost" ? `Destaque ${planCode} por ${durationDays} dia(s), orçamento total R$ ${amount.toFixed(2)}`
       : planCode === "loja_fundador" ? "Assinatura mensal de Parceiro Fundador por R$ 39,00"
       : `Assinatura mensal da loja ${storeName} (${planCode})`;
 
@@ -273,7 +272,7 @@ Deno.serve(async (req) => {
     if (kind === "boost") {
       const { error } = await admin.from("ad_boosts").insert({
         order_id: order.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
-        duration_days: durationDays, amount, reach_multiplier: reachMultiplierForAmount(amount), status: "awaiting_payment",
+        duration_days: durationDays, amount, reach_multiplier: reachMultiplierForDailyBudget(dailyBudget || (amount / Math.max(1, durationDays))), status: "awaiting_payment",
       });
       if (error) throw new Error("Checkout criado, mas não foi possível registrar o turbinamento.");
     }
@@ -288,7 +287,7 @@ Deno.serve(async (req) => {
     return json({
       orderId: order.id, checkoutId: checkout.id, checkoutUrl, paymentUrl: checkoutUrl,
       kind, billingType, amount, status: "AWAITING_PAYMENT",
-      recurring, checkoutWebhookReady, message: recurring
+      recurring, checkoutWebhookReady, dailyBudget: kind === "boost" ? (dailyBudget || amount / Math.max(1, durationDays)) : null, reachMultiplier: kind === "boost" ? reachMultiplierForDailyBudget(dailyBudget || amount / Math.max(1, durationDays)) : null, message: recurring
         ? "Checkout seguro aberto. A assinatura mensal será criada pelo Asaas após a conclusão do pagamento."
         : "Checkout PIX criado. O pagamento será confirmado pelo webhook do Asaas.",
     });

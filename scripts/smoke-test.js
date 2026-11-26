@@ -580,6 +580,18 @@ check("Transferência com resposta incerta não é marcada como falha nem encora
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("não repita o Pix agora"));
 
+
+check("Captação de lojistas tem CTA visível no topo e direciona ao formulário sem exigir login",
+  html.includes('id="merchantLeadTop" href="#acquisitionPanel"') &&
+  html.includes('function openAcquisitionForm(leadType="loja")') &&
+  html.includes('$("partnerInfo").onclick=()=>openAcquisitionForm("loja")') &&
+  html.includes('$("founderJoinBtn").onclick=()=>openAcquisitionForm("loja")'));
+check("Formulário de captação valida telefone, e-mail e preserva dados em caso de falha",
+  html.includes("phoneDigits.length>13") &&
+  html.includes("Confira o endereço de e-mail") &&
+  html.includes("Seus dados continuam no formulário") &&
+  html.includes('db.from("acquisition_leads").insert(payload)'));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

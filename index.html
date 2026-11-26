@@ -3515,6 +3515,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
       <p class="hint">O saldo Asaas representa a conta inteira. A receita do Giro Fácil é calculada separadamente a partir dos pedidos registrados e confirmados na plataforma; valores podem divergir por taxas, estornos, transferências e outras movimentações.</p>
     `;
     financeScreen.appendChild(finance);
+    let financeData=null;
     const nav=document.createElement('div');nav.id='ownerFinanceNav';nav.className='form-grid';
     nav.innerHTML=[
       ['balance','💰 Saldo e movimentações','Consultar saldo e fazer transferências'],
@@ -3532,6 +3533,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
     finance.appendChild(detail);
     const detailBody=detail.querySelector('#ownerFinanceDetailBody');
     const homeEls=['ownerFinanceBalance','ownerFinanceRevenue','ownerFinanceNav','ownerFinanceOrders','ownerFinanceStatement'].map(id=>document.getElementById(id)).filter(Boolean);
+    ['ownerFinanceOrders','ownerFinanceStatement'].forEach(id=>{const el=document.getElementById(id);if(el?.previousElementSibling?.tagName==='H3')homeEls.push(el.previousElementSibling);});
     const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
     const transferStatus={PENDING:'Pendente',PROCESSING:'Processando',TRANSFER_PENDING:'Pendente',TRANSFER_DONE:'Concluída',TRANSFER_FAILED:'Falhou',TRANSFER_CANCELLED:'Cancelada',FAILED:'Falhou'};
     const showFinancePage=(page)=>{
@@ -3602,6 +3604,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
       try{
         const {data,error}=await db.functions.invoke('asaas-owner-finance',{body:{}});
         if(error)throw error;if(data?.error)throw new Error(data.error);
+        financeData=data;
         const balance=data.balance||{};
         const balanceValue=balance.balance??balance.available??balance.availableBalance;
         document.getElementById('ownerFinanceBalanceValue').textContent=balanceValue===undefined?'Saldo indisponível':money(balanceValue);

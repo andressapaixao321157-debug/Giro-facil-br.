@@ -547,6 +547,23 @@ check("Captação de áudio ativa cancelamento de eco, redução de ruído e gan
 check("Detecção de fala usa limiar mais sensível e pausa curta",
   fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('threshold: 0.42, prefix_padding_ms: 300, silence_duration_ms: 400') && fs.readFileSync("supabase/functions/owner-voice-session/index.ts","utf8").includes('voice: "cedar", speed: 1.4'));
 
+
+check("Central Financeira Asaas tem endpoint dedicado e autenticação administrativa",
+  fs.existsSync("supabase/functions/asaas-owner-finance/index.ts") &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('profile?.papel !== "admin"') &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("/finance/balance") &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("/financialTransactions"));
+check("Painel financeiro mostra saldo Asaas e separa receitas por tipo",
+  html.includes("ownerAsaasFinance") &&
+  html.includes("ownerFinanceBalanceValue") &&
+  html.includes("ownerFinanceRevenue") &&
+  html.includes("asaas-owner-finance"));
+check("Painel de configurações apresenta controles operacionais e segurança",
+  html.includes("Configurações do aplicativo") &&
+  html.includes("Atendimento") &&
+  html.includes("Cadastros") &&
+  html.includes("Segurança"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

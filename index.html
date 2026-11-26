@@ -803,6 +803,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     .premium-welcome h1{margin:14px 0 10px;color:#fff;font-size:clamp(31px,5vw,54px);line-height:1.02;letter-spacing:-1.8px;font-weight:850}
     .premium-welcome h1 em{font-style:normal;color:#e2bd7c}
     .premium-welcome p{max-width:480px;margin:0 0 20px;color:#d0dbea;font-size:15px;line-height:1.65}
+    .premium-cta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .premium-cta-outline{background:rgba(255,255,255,.08);border-color:#e4c58e;color:#fff;box-shadow:none}
+    .premium-cta-outline:hover{background:rgba(255,255,255,.16)}
     .premium-cta{display:inline-flex;align-items:center;gap:18px;min-height:48px;padding:0 19px;border:1px solid #e4c58e;border-radius:12px;background:linear-gradient(135deg,#e4c58e,#c99a4a);color:#17263a;text-decoration:none;font-size:13px;font-weight:900;box-shadow:0 7px 18px rgba(0,0,0,.15);transition:transform .2s,box-shadow .2s}
     .premium-cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.2)}
     .premium-cta span{font-size:18px}
@@ -887,7 +890,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       <span class="premium-kicker"><i></i> MARKETPLACE NACIONAL</span>
       <h1>O Brasil inteiro.<br><em>Novas oportunidades.</em></h1>
       <p>Encontre, anuncie e negocie com praticidade em um só lugar.</p>
-      <a class="premium-cta" href="#listings">Explorar oportunidades <span aria-hidden="true">↗</span></a>
+      <div class="premium-cta-row"><a class="premium-cta" href="#listings">Explorar oportunidades <span aria-hidden="true">↗</span></a><a class="premium-cta premium-cta-outline" id="merchantLeadTop" href="#acquisitionPanel">Quero divulgar minha loja <span aria-hidden="true">↗</span></a></div>
       <div class="premium-assurance"><span>✦</span> Compra, venda e serviços em todo o Brasil</div>
     </div>
     <div class="premium-welcome-art" aria-hidden="true">
@@ -932,7 +935,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     <div class="trust-item"><span>✉</span><div><strong>Conversa pelo app</strong><small>Fale diretamente pelo chat interno</small></div></div>
   </section>
   <section class="promo-banner" aria-label="Espaço patrocinado">
-    <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Conheça os espaços ›</button></div>
+    <div class="promo-copy"><span class="promo-label">SEJA UM PARCEIRO</span><h2>Divulgue sua empresa no Giro Fácil BR</h2><p>Mais visibilidade para seu negócio e seus clientes.</p><button id="partnerInfo" type="button">Quero divulgar minha empresa ›</button></div>
     <div class="promo-art" aria-hidden="true">🚙</div>
   </section>
   <section id="founderCampaign" class="panel" style="border:1px solid #d6b56d;background:linear-gradient(135deg,#101827,#20344b);color:#fff">
@@ -948,8 +951,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   <section id="listings" class="grid"></section>
 
   <section id="acquisitionPanel" class="panel">
-    <h2>🚀 Anuncie no Giro Fácil BR</h2>
-    <p class="hint">Cadastre seu interesse gratuitamente. Atendemos anunciantes e empresas de todo o Brasil.</p>
+    <h2>🚀 Traga sua loja para o Giro Fácil BR</h2>
+    <p class="hint">Cadastro gratuito e rápido. Nossa equipe recebe seu interesse para apresentar os planos, o cadastro de estoque e a campanha de parceiro fundador.</p>
     <div id="acquisitionStatus" class="status hidden"></div>
     <div class="form-grid">
       <div class="field"><label for="acqType">Quero</label><select id="acqType"><option value="anunciante">Anunciar um produto</option><option value="loja">Divulgar minha loja</option><option value="parceiro">Ser parceiro</option></select></div>
@@ -1348,7 +1351,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   $("navSearch").onclick=()=>{hideMessagesPage();$("searchText").focus();$("searchText").scrollIntoView({behavior:"smooth",block:"center"});};
   $("navAnnounce").onclick=()=>{hideMessagesPage();openPublish();};$("navFavorites").onclick=()=>{hideMessagesPage();favoritesOnly=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};$("navMessages").onclick=()=>openChat();$("headerMessages").onclick=()=>openChat();$("navAccount").onclick=()=>{hideMessagesPage();if(currentUser){$("accountBar").classList.remove("hidden");$("accountBar").scrollIntoView({behavior:"smooth"});}else openAuth();};
   $("searchText").addEventListener("keydown",e=>{if(e.key==="Enter")loadListings();});
-  $("partnerInfo").onclick=()=>{if(currentUser){$("partnerOpen").click();}else{openAuth();status("authStatus","Entre na sua conta para solicitar parceria e cadastrar seu estoque no Giro Fácil.");}};
+  $("partnerInfo").onclick=()=>openAcquisitionForm("loja");
   $("closeAuth").onclick=()=>$("authPanel").classList.add("hidden");
   $("cancelPublish").onclick=()=>$("publishPanel").classList.add("hidden");
   $("closePayment").onclick=()=>$("paymentPanel").classList.add("hidden");
@@ -2223,7 +2226,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       $("founderKitLink").classList.toggle("hidden",founderPlan?.status!=="active");
     }
   };
-  $("founderJoinBtn").onclick=()=>{if(!currentUser){openAuth();status("authStatus","Entre ou crie sua conta para solicitar uma vaga de Parceiro Fundador.","ok");return;}$("partnerOpen").click();};
+  $("founderJoinBtn").onclick=()=>openAcquisitionForm("loja");
   $("founderSubscribeBtn").onclick=async()=>{
     $("paymentPanel").classList.remove("hidden");$("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
     $("paymentKind").value="store";$("storePlan").value="loja_fundador";
@@ -2774,16 +2777,20 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     if(!db)return;
     try{await db.from("acquisition_events").insert({event_name:eventName,user_id:currentUser?.id||null,listing_id:listingId,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,session_key:acqSession});}catch(e){console.debug("Evento de aquisição não registrado",e);}
   }
+  function openAcquisitionForm(leadType="loja"){const panel=$("acquisitionPanel");if(!panel)return;$("acqType").value=leadType;panel.scrollIntoView({behavior:"smooth",block:"start"});setTimeout(()=>$("acqName").focus({preventScroll:true}),350);}
+  $("merchantLeadTop").onclick=()=>openAcquisitionForm("loja");
   $("acqState").innerHTML='<option value="">Selecione a UF</option>';
   ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(uf=>{const o=document.createElement("option");o.value=uf;o.textContent=uf;$("acqState").appendChild(o);});
   $("acqSubmit").onclick=async()=>{
     if(!db){status("acquisitionStatus","Serviço temporariamente indisponível. Tente novamente mais tarde.","err");return;}
     const payload={lead_type:$("acqType").value,contact_name:$("acqName").value.trim(),business_name:$("acqBusiness").value.trim()||null,phone:$("acqPhone").value.trim(),email:$("acqEmail").value.trim()||null,category:$("acqCategory").value||null,city:$("acqCity").value.trim(),state:$("acqState").value,message:$("acqMessage").value.trim()||null,source:acqSource,campaign:acqCampaign||null,referral_code:acqRef||null,user_id:currentUser?.id||null,consent_lgpd:$("acqConsent").checked};
-    if(payload.contact_name.length<2||payload.city.length<2||!payload.state||payload.phone.replace(/\D/g,"").length<10||!payload.consent_lgpd){status("acquisitionStatus","Preencha nome, telefone, cidade, UF e aceite o uso dos dados para atendimento.","err");return;}
+    const phoneDigits=payload.phone.replace(/\D/g,"");
+    if(payload.contact_name.length<2||payload.city.length<2||!payload.state||phoneDigits.length<10||phoneDigits.length>13||!payload.consent_lgpd){status("acquisitionStatus","Confira os campos obrigatórios: nome, telefone com DDD, cidade, estado e autorização de contato.","err");return;}
+    if(payload.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)){status("acquisitionStatus","Confira o endereço de e-mail ou deixe o campo vazio.","err");$("acqEmail").focus();return;}
     const b=$("acqSubmit");b.disabled=true;
-    try{const {error}=await db.from("acquisition_leads").insert(payload);if(error)throw error;await trackAcqEvent("partner_lead");status("acquisitionStatus","Cadastro recebido! Nossa equipe poderá entrar em contato para orientar os próximos passos.","ok");["acqName","acqBusiness","acqPhone","acqEmail","acqCity","acqMessage"].forEach(id=>$(id).value="");$("acqConsent").checked=false;}
-    catch(e){status("acquisitionStatus","Não foi possível enviar agora. Confira os dados e tente novamente.","err");console.error(e);}
-    finally{b.disabled=false;}
+    try{b.textContent="Enviando...";const {error}=await db.from("acquisition_leads").insert(payload);if(error)throw error;await trackAcqEvent("partner_lead");status("acquisitionStatus","Cadastro recebido com sucesso! Seu interesse foi registrado. Nossa equipe poderá entrar em contato para apresentar os planos e próximos passos.","ok");["acqName","acqBusiness","acqPhone","acqEmail","acqCity","acqMessage"].forEach(id=>$(id).value="");$("acqConsent").checked=false;}
+    catch(e){console.error("Falha ao registrar lead de aquisição",e);const message=e?.code==="42501"?"O cadastro foi bloqueado por uma permissão do servidor. Nossa equipe precisa corrigir o acesso; tente novamente mais tarde.":e?.code==="23514"?"Confira os dados informados e tente novamente.":"Não foi possível registrar seu interesse agora. Seus dados continuam no formulário; confira sua conexão e tente novamente.";status("acquisitionStatus",message,"err");}
+    finally{b.disabled=false;b.textContent="Enviar meu cadastro";}
   };
   trackAcqEvent("page_view");
   const originalLoadAdminDashboard=loadAdminDashboard;

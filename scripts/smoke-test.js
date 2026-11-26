@@ -564,6 +564,22 @@ check("Painel de configurações apresenta controles operacionais e segurança",
   html.includes("Cadastros") &&
   html.includes("Segurança"));
 
+
+check("Central Financeira oferece páginas independentes para saldo, entradas, turbo, planos, anúncios, Pix, extrato e histórico",
+  ["balance","receipts","boost","plans","single","transfers","statement","history"].every(key=>html.includes("data-finance-page=\\""+key+"\\"")));
+check("Transferência Pix exige revisão e confirmação digitada pelo proprietário",
+  html.includes("ownerTransferReview") && html.includes("ownerTransferConfirm") &&
+  html.includes("confirmInput.value.trim()!=='TRANSFERIR'") &&
+  html.includes("confirmation:'TRANSFERIR'"));
+check("Endpoint de transferência valida papel admin, saldo, chave Pix e evita repetição",
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('action === "create_transfer"') &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('confirmation !== "TRANSFERIR"') &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('idempotency_key') &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('value > available'));
+check("Transferência com resposta incerta não é marcada como falha nem encoraja reenvio automático",
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
+  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("não repita o Pix agora"));
+
 const failed = checks.filter(item => !item.ok);
 for (const item of checks) console.log((item.ok ? "PASS " : "FAIL ") + item.name);
 console.log("\n" + checks.length + " verificações; " + failed.length + " falhas.");

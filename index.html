@@ -3002,9 +3002,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       if(!createdListing?.id)throw new Error("O servidor não confirmou o cadastro do anúncio.");
       pendingListingId=createdListing.id;
       await trackAcqEvent("listing_created",createdListing.id);
-      status("publishStatus","Anúncio enviado e salvo! Agora escolha o pagamento avulso ou o plano mensal. A aprovação administrativa continua necessária.","ok");
+      status("publishStatus","Anúncio enviado gratuitamente e salvo! Não há cobrança para publicar. A aprovação administrativa continua necessária; depois de aprovado, você poderá contratar um turbinamento se desejar.","ok");
       $("publishPanel").querySelectorAll("input,textarea").forEach(el=>{el.value="";});selectedPhotoFiles=[];renderSelectedPhotos();showPublishStep(1);
-      $("paymentKind").value="single";updatePaymentFields();$("paymentPanel").classList.remove("hidden");await loadOwnListings();$("paymentListingId").value=pendingListingId;$("paymentPanel").scrollIntoView({behavior:"smooth"});
     }catch(e){
       if(uploadedPaths.length){
         try{await db.storage.from("anuncios-fotos").remove(uploadedPaths);}catch(cleanupError){console.warn("Não foi possível limpar fotos de anúncio não salvo",cleanupError);}

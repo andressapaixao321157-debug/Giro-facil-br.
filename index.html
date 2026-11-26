@@ -3534,7 +3534,6 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
     const detailBody=detail.querySelector('#ownerFinanceDetailBody');
     const homeEls=['ownerFinanceBalance','ownerFinanceRevenue','ownerFinanceNav'].map(id=>document.getElementById(id)).filter(Boolean);
     ['ownerFinanceOrders','ownerFinanceStatement'].forEach(id=>{const el=document.getElementById(id);if(el){el.hidden=true;if(el.previousElementSibling?.tagName==='H3')el.previousElementSibling.hidden=true;}});
-    const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
     const transferStatus={PENDING:'Pendente',PROCESSING:'Processando',TRANSFER_PENDING:'Pendente',TRANSFER_DONE:'Concluída',TRANSFER_FAILED:'Falhou',TRANSFER_CANCELLED:'Cancelada',FAILED:'Falhou'};
     const showFinancePage=(page)=>{
       const titles={balance:'Saldo e movimentações',receipts:'Entradas e recebimentos',boost:'Turbinamentos',plans:'Planos de lojistas',single:'Anúncios avulsos',transfers:'Transferências Pix',statement:'Extrato Asaas',history:'Histórico e comprovantes'};

@@ -26,7 +26,9 @@ const STORES: Record<string, number> = { loja_fundador: 39, loja_basica: 39.90, 
 const reachMultiplierForDailyBudget = (daily: number, days: number) => {
   const spendTier = daily >= 50 ? 10 : daily >= 35 ? 7 : daily >= 20 ? 5 : daily >= 15 ? 3 : 2;
   const durationTier = days >= 30 ? 5 : days >= 15 ? 3 : days >= 7 ? 2 : days >= 3 ? 1 : 0;
-  return spendTier + durationTier;
+  // A coluna ad_boosts.reach_multiplier aceita valores de 1 a 10.
+  // Limitar a soma evita falha de INSERT nos maiores orçamentos e durações.
+  return Math.min(10, Math.max(1, spendTier + durationTier));
 };
 
 Deno.serve(async (req) => {

@@ -2924,9 +2924,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   }
   $("searchBtn").onclick=()=>{favoritesOnly=false;loadListings();};
   $("applyFilters").onclick=()=>{favoritesOnly=false;loadListings();};
-  $("seeAllListings").onclick=()=>{favoritesOnly=false;$("searchText").value="";$("searchCategory").value="";$("locationFilter").value="";$("cityFilter").innerHTML='<option value="">Todas as cidades</option>';$("cityFilter").disabled=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};
-  $("locationFilter").onchange=async()=>{favoritesOnly=false;await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
-  $("cityFilter").onchange=()=>{favoritesOnly=false;loadListings();};
+  function disableNearbyMode(){buyerGeoPoint=null;const nearButton=$("nearMeButton");if(nearButton){nearButton.textContent="Perto de mim";nearButton.classList.add("secondary");}}
+  $("seeAllListings").onclick=()=>{favoritesOnly=false;disableNearbyMode();$("searchText").value="";$("searchCategory").value="";$("locationFilter").value="";$("cityFilter").innerHTML='<option value="">Todas as cidades</option>';$("cityFilter").disabled=true;loadListings();$("listings").scrollIntoView({behavior:"smooth"});};
+  $("locationFilter").onchange=async()=>{favoritesOnly=false;disableNearbyMode();await fillMunicipalities("cityFilter",$("locationFilter").value);loadListings();};
+  $("cityFilter").onchange=()=>{favoritesOnly=false;disableNearbyMode();loadListings();};
   document.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{favoritesOnly=false;$("searchCategory").value=el.dataset.cat;loadListings();});
   // Estado local das fotos selecionadas e navegação do formulário em etapas.
   let selectedPhotoFiles=[];

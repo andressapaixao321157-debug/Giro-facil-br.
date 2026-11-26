@@ -3470,6 +3470,9 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
    ['settings','⚙','Configurações e saúde técnica','Diagnóstico e controles operacionais do site',['adminHealth','adminSettings']]
   ];
   const host=document.createElement('div');host.className='admin-screens';
+  // Anexe o contêiner antes de mover os módulos: assim os IDs administrativos
+  // continuam no documento mesmo se alguma etapa de montagem falhar.
+  panel.appendChild(host);
   function makeScreen(key,title,desc,ids){
    const section=document.createElement('section');section.className='admin-screen';section.dataset.screen=key;
    const top=document.createElement('div');top.className='admin-screen-top';

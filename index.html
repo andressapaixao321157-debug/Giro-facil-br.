@@ -776,7 +776,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   <div class="header-actions"><button class="icon-action" id="headerMessages" aria-label="Mensagens">✉</button><button class="icon-action" id="loginOpen" aria-label="Minha conta">♙</button><button class="icon-action" id="announceTop" aria-label="Anunciar">＋</button></div>
 </header>
 <main id="marketMain" class="market-main">
-  <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select></div>
+  <div class="location-row"><span>📍</span><select id="locationFilter" aria-label="Escolha o Estado"><option value="">Brasil inteiro · Todos os Estados</option></select><select id="cityFilter" aria-label="Escolha a cidade" disabled><option value="">Todas as cidades</option></select><button id="nearMeButton" type="button" class="secondary" style="white-space:nowrap">Perto de mim</button></div>
   <section class="search-panel">
     <span class="search-symbol">⌕</span><input id="searchText" placeholder="O que você está procurando?" aria-label="Buscar anúncios">
     <span class="search-divider"></span><select id="searchCategory" aria-label="Categorias"><option value="">Todas as categorias</option><option>Carro</option><option>Moto</option><option>Caminhão</option><option>Utilitário</option><option>Máquinas e equipamentos</option><option>Embarcações</option><option>Imóvel para venda</option><option>Imóvel para aluguel</option><option>Roupas e acessórios</option><option>Objetos e diversos</option><option>Móveis e decoração</option><option>Eletrônicos</option><option>Casa e construção</option><option>Agro e pecuária</option><option>Esportes e lazer</option></select>
@@ -1571,7 +1571,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   let ownerVoicePendingListingLookup=null;
   let ownerVoiceSelectedListingId=null;
   async function openOwnerListingDetail(listingId){
-    const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
+    const {data:item,error}=await db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,latitude,longitude,fotos,status,criado_em,created_at,updated_at").eq("id",listingId).eq("usuario_id",currentUser.id).maybeSingle();
     if(error)throw error;
     if(!item)throw new Error("Não encontrei esse anúncio na sua conta.");
     const photos=Array.isArray(item.fotos)?item.fotos:[];
@@ -2714,15 +2714,48 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }catch(e){let detail=e?.message||"Não foi possível gerar a cobrança.";try{if(e?.context&&typeof e.context.json==="function"){const body=await e.context.json();detail=body?.error||body?.message||detail;}}catch{}status("paymentStatus",detail,"err");}
     finally{$("payBtn").disabled=false;}
   };
+  // Geolocalização local: não envia a posição do comprador para terceiros.
+  let buyerGeoPoint=null;
+  const getDeviceGeoPoint=(timeout=5000)=>new Promise(resolve=>{
+    if(!navigator.geolocation){resolve(null);return;}
+    navigator.geolocation.getCurrentPosition(
+      pos=>resolve({latitude:Number(pos.coords.latitude.toFixed(2)),longitude:Number(pos.coords.longitude.toFixed(2))}),
+      ()=>resolve(null),
+      {enableHighAccuracy:false,timeout,maximumAge:300000}
+    );
+  });
+  const distanceKm=(a,b)=>{
+    const rad=n=>n*Math.PI/180, dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);
+    const x=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;
+    return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+  };
+  // O multiplicador comercial vira uma faixa de distribuição aproximada.
+  const radiusForReach=reach=>[0,25,50,100,150,250,400,600,800,1200,2000][Math.max(1,Math.min(10,Number(reach)||1))];
+  $("nearMeButton").onclick=async()=>{
+    const button=$("nearMeButton");
+    if(buyerGeoPoint){buyerGeoPoint=null;button.textContent="Perto de mim";button.classList.add("secondary");status("listingStatus","Busca por proximidade desativada. Você voltou à busca por cidade e estado.","ok");loadListings();return;}
+    button.disabled=true;button.textContent="Localizando...";
+    const point=await getDeviceGeoPoint(8000);
+    button.disabled=false;
+    if(!point){button.textContent="Perto de mim";status("listingStatus","Não consegui acessar sua localização. Permita a localização no navegador ou escolha estado e cidade manualmente.","err");return;}
+    buyerGeoPoint=point;
+    $("locationFilter").value="";
+    $("cityFilter").innerHTML='<option value="">Todas as cidades</option>';
+    $("cityFilter").disabled=true;
+    button.textContent="Desativar proximidade";
+    button.classList.remove("secondary");
+    status("listingStatus","Mostrando anúncios próximos. Orçamentos maiores ampliam a distância de distribuição; a localização exata não é armazenada.","ok");
+    loadListings();
+  };
   async function loadListings(){
     if(!db)return;
     const term=favoritesOnly?"":$("searchText").value.trim(),cat=favoritesOnly?"":$("searchCategory").value;
-    let q=db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("status","ativo").order("criado_em",{ascending:false}).limit(100);
+    let q=db.from("anuncios").select("id,usuario_id,titulo,categoria,marca,modelo,ano,preco,descricao,cidade,estado,fotos,status,criado_em,created_at,updated_at").eq("status","ativo").order("criado_em",{ascending:false}).limit(500);
     if(favoritesOnly){const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]");if(!favs.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Você ainda não salvou anúncios nos favoritos.</div>';favoritesOnly=false;return;}q=q.in("id",favs);}
     if(cat && cat!=="Filtros")q=q.eq("categoria",cat);
     const uf=$("locationFilter")?.value||"", city=$("cityFilter")?.value||"";
-    if(uf)q=q.eq("estado",uf);
-    if(city)q=q.eq("cidade",city);
+    if(!buyerGeoPoint&&uf)q=q.eq("estado",uf);
+    if(!buyerGeoPoint&&city)q=q.eq("cidade",city);
     const minPrice=Number($("priceMinFilter")?.value||0),maxPrice=Number($("priceMaxFilter")?.value||0);
     if($("priceMinFilter")?.value!=="")q=q.gte("preco",minPrice);
     if($("priceMaxFilter")?.value!=="")q=q.lte("preco",maxPrice);
@@ -2732,25 +2765,37 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     const {data:activeBoosts}=await db.from("ad_boosts").select("listing_id,reach_multiplier").eq("status","active").gt("ends_at",new Date().toISOString());
     const reachByListing=new Map();
     (activeBoosts||[]).forEach(boost=>reachByListing.set(boost.listing_id,Math.max(reachByListing.get(boost.listing_id)||1,Number(boost.reach_multiplier)||1)));
+    let visibleListings=data||[];
+    const listingDistances=new Map();
+    if(buyerGeoPoint){
+      visibleListings=visibleListings.filter(item=>{
+        if(item.latitude==null||item.longitude==null)return false;
+        const km=distanceKm(buyerGeoPoint,{latitude:Number(item.latitude),longitude:Number(item.longitude)});
+        const radius=radiusForReach(reachByListing.get(item.id)||1);
+        if(km>radius)return false;
+        listingDistances.set(item.id,km);return true;
+      });
+    }
     const sortMode=$("sortListings")?.value||"recent";
-    (data||[]).sort((a,b)=>{
+    visibleListings.sort((a,b)=>{
       const boostDiff=(reachByListing.get(b.id)||1)-(reachByListing.get(a.id)||1);
       if(boostDiff)return boostDiff;
+      if(buyerGeoPoint)return (listingDistances.get(a.id)||0)-(listingDistances.get(b.id)||0);
       if(sortMode==="price_asc")return Number(a.preco||0)-Number(b.preco||0);
       if(sortMode==="price_desc")return Number(b.preco||0)-Number(a.preco||0);
       return new Date(b.criado_em)-new Date(a.criado_em);
     });
     $("listingStatus").classList.add("hidden");$("listings").innerHTML="";
-    if(!data?.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">Ainda não há anúncios aprovados disponíveis. Os anúncios enviados passam por revisão e confirmação das condições de publicação antes de aparecerem aqui. Volte em breve para conferir as novidades.</div>';return;}
-    data.forEach(item=>{      const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
+    if(!visibleListings.length){$("listings").innerHTML='<div class="panel" style="grid-column:1/-1">'+(buyerGeoPoint?'Ainda não há anúncios com localização aproximada dentro do seu raio atual. Anúncios antigos sem coordenadas continuam disponíveis na busca por cidade e estado.':'Ainda não há anúncios aprovados disponíveis. Os anúncios enviados passam por revisão e confirmação das condições de publicação antes de aparecerem aqui. Volte em breve para conferir as novidades.')+'</div>';return;}
+    visibleListings.forEach(item=>{      const photo=item.fotos?.[0];const image=photo?`<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(item.titulo)}">`:"🚘";
       const price=Number(item.preco||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
       const reach=reachByListing.get(item.id)||1;
-      const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade de exposição ${reach}x</div>`:"";
+      const reachTag=reach>1?`<div class="meta" style="color:#a45b00;font-weight:700">⭐ Destaque patrocinado · prioridade ${reach}x · alcance até ${radiusForReach(reach).toLocaleString("pt-BR")} km</div>`:"";
       const card=document.createElement("article");card.className="card";
       const favs=JSON.parse(localStorage.getItem("giro_favorites")||"[]"),isFav=favs.includes(item.id);
       const ownerActions=currentUser?.id===item.usuario_id?`<div class="owner-listing-actions"><button type="button" class="owner-edit" data-edit-listing="${escapeHtml(item.id)}">Editar anúncio</button><button type="button" class="owner-boost" data-boost-listing="${escapeHtml(item.id)}">Turbinar anúncio</button></div>`:"";
       const published=formatListingDate(item.criado_em||item.created_at);
-      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}</div><div class="meta">Publicado em ${escapeHtml(published)}</div>${reachTag}<button type="button" class="listing-details" data-open-listing="${escapeHtml(item.id)}" style="display:block;width:100%;margin-top:10px">Ver anúncio completo</button>${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
+      card.innerHTML=`<div class="vehicle-img">${image}</div><div class="card-body"><div style="display:flex;justify-content:space-between;gap:6px;align-items:start"><h3>${escapeHtml(item.titulo)}</h3><button type="button" class="favorite-toggle" data-favorite-id="${escapeHtml(item.id)}" aria-label="Salvar favorito" style="padding:6px 9px;background:#fff0df;color:#a64b00">${isFav?"♥":"♡"}</button></div><div class="price">${price}</div><div class="meta">${escapeHtml(item.ano||"")} · ${escapeHtml(item.cidade||"")}${item.estado?"/"+escapeHtml(item.estado):""}${buyerGeoPoint&&listingDistances.has(item.id)?" · "+Math.round(listingDistances.get(item.id))+" km de você":""}</div><div class="meta">Publicado em ${escapeHtml(published)}</div>${reachTag}<button type="button" class="listing-details" data-open-listing="${escapeHtml(item.id)}" style="display:block;width:100%;margin-top:10px">Ver anúncio completo</button>${ownerActions}<button type="button" class="listing-chat" data-listing-id="${escapeHtml(item.id)}" data-listing-title="${escapeHtml(item.titulo)}" data-seller-id="${escapeHtml(item.usuario_id)}" style="display:block;width:100%;margin-top:10px">Enviar mensagem</button></div>`;
       $("listings").appendChild(card);
       trackListingEvent("view",item.id);
     });
@@ -2993,7 +3038,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
       }
       publishStage="gravação do anúncio no banco de dados";
       status("publishStatus","Fotos enviadas. Salvando o anúncio no servidor...", "ok");
-      const payload={usuario_id:currentUser.id,titulo:title,categoria:category,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,fotos:urls,status:"pendente"};
+      // Coordenadas arredondadas para cerca de 1 km; se o usuário negar a permissão, o anúncio segue normalmente.
+      const sellerGeoPoint=await getDeviceGeoPoint(5000);
+      const payload={usuario_id:currentUser.id,titulo:title,categoria:category,marca:brand||"",modelo:model||"",ano:$("year").value?Number($("year").value):null,preco:price,descricao:$("description").value.trim(),cidade:$("city").value,estado:$("state").value,latitude:sellerGeoPoint?.latitude??null,longitude:sellerGeoPoint?.longitude??null,fotos:urls,status:"pendente"};
       let insertResult;
       try{insertResult=await db.from("anuncios").insert(payload).select("id").single();}
       catch(networkError){throw new Error("Falha de conexão ao salvar os dados do anúncio. Suas fotos foram enviadas, mas o cadastro não foi confirmado. Tente novamente.");}

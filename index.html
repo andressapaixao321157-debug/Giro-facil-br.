@@ -3515,6 +3515,83 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
       <p class="hint">O saldo Asaas representa a conta inteira. A receita do Giro Fácil é calculada separadamente a partir dos pedidos registrados e confirmados na plataforma; valores podem divergir por taxas, estornos, transferências e outras movimentações.</p>
     `;
     financeScreen.appendChild(finance);
+    const nav=document.createElement('div');nav.id='ownerFinanceNav';nav.className='form-grid';
+    nav.innerHTML=[
+      ['balance','💰 Saldo e movimentações','Consultar saldo e fazer transferências'],
+      ['receipts','📥 Entradas e recebimentos','Pagamentos que chegaram'],
+      ['boost','🚀 Turbinamentos','Receita dos destaques'],
+      ['plans','🏪 Planos de lojistas','Assinaturas e recebimentos'],
+      ['single','🧾 Anúncios avulsos','Pagamentos individuais'],
+      ['transfers','↗️ Transferências Pix','Enviar valores e acompanhar status'],
+      ['statement','📊 Extrato Asaas','Entradas, saídas e taxas'],
+      ['history','🕘 Histórico','Pedidos e movimentações anteriores']
+    ].map(x=>'<button type="button" data-finance-page="'+x[0]+'" class="admin-home-card"><strong>'+x[1]+'</strong><small>'+x[2]+'</small></button>').join('');
+    finance.appendChild(nav);
+    const detail=document.createElement('section');detail.id='ownerFinanceDetail';detail.hidden=true;detail.className='panel';
+    detail.innerHTML='<button id="ownerFinanceBack" type="button" class="secondary">← Voltar ao financeiro</button><h3 id="ownerFinanceDetailTitle" style="margin-top:16px"></h3><p id="ownerFinanceDetailHelp" class="hint"></p><div id="ownerFinanceDetailBody"></div>';
+    finance.appendChild(detail);
+    const detailBody=detail.querySelector('#ownerFinanceDetailBody');
+    const homeEls=['ownerFinanceBalance','ownerFinanceRevenue','ownerFinanceNav','ownerFinanceOrders','ownerFinanceStatement'].map(id=>document.getElementById(id)).filter(Boolean);
+    const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};
+    const transferStatus={PENDING:'Pendente',PROCESSING:'Processando',TRANSFER_PENDING:'Pendente',TRANSFER_DONE:'Concluída',TRANSFER_FAILED:'Falhou',TRANSFER_CANCELLED:'Cancelada',FAILED:'Falhou'};
+    const showFinancePage=(page)=>{
+      const titles={balance:'Saldo e movimentações',receipts:'Entradas e recebimentos',boost:'Turbinamentos',plans:'Planos de lojistas',single:'Anúncios avulsos',transfers:'Transferências Pix',statement:'Extrato Asaas',history:'Histórico e comprovantes'};
+      const help={balance:'Saldo da conta Asaas e atalhos para movimentar valores.',receipts:'Cobranças recebidas e pagamentos confirmados.',boost:'Receita gerada pelos destaques e turbinamentos.',plans:'Receita de planos comerciais de lojistas.',single:'Receita de anúncios avulsos.',transfers:'Envie saldo disponível da sua conta Asaas para uma chave Pix. A operação exige revisão e confirmação.',statement:'Movimentações, tarifas, entradas e saídas retornadas pelo Asaas.',history:'Pedidos recentes e transferências iniciadas pelo painel.'};
+      document.getElementById('ownerFinanceDetailTitle').textContent=titles[page]||'Financeiro';
+      document.getElementById('ownerFinanceDetailHelp').textContent=help[page]||'';
+      homeEls.forEach(el=>el.hidden=true);detail.hidden=false;detailBody.innerHTML='';
+      const rows=financeData?.recentOrders||[];
+      const renderOrders=(filtered)=>filtered.length?'<div style="overflow:auto"><table style="width:100%;min-width:600px"><tr><th>Tipo</th><th>Valor</th><th>Status</th><th>Forma</th><th>Data</th></tr>'+filtered.map(o=>'<tr><td>'+safe(kindLabel[o.kind]||o.kind)+'</td><td>'+money(o.amount)+'</td><td>'+safe(statusLabel[o.status]||o.status)+'</td><td>'+safe(o.billingType)+'</td><td>'+new Date(o.createdAt).toLocaleString('pt-BR')+'</td></tr>').join('')+'</table></div>':'<p class="hint">Nenhum registro encontrado nesta área.</p>';
+      if(page==='balance'){
+        const b=financeData?.balance||{};
+        detailBody.innerHTML='<div class="panel"><small>Saldo disponível no Asaas</small><h2>'+money(b.balance??b.available??b.availableBalance)+'</h2><p class="hint">Valor consultado diretamente na conta.</p></div><button type="button" data-finance-page="transfers">Fazer transferência Pix</button><button type="button" class="secondary" data-finance-page="statement">Consultar extrato</button>';
+      }else if(page==='transfers'){
+        detailBody.innerHTML='<div class="panel"><h4>Nova transferência Pix</h4><p class="hint">A transferência sai do saldo disponível da conta Asaas. Revise todos os dados antes de confirmar.</p><label for="ownerTransferValue">Valor em reais</label><input id="ownerTransferValue" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Ex.: 50,00"><label for="ownerTransferKeyType">Tipo de chave Pix</label><select id="ownerTransferKeyType"><option value="CPF">CPF</option><option value="CNPJ">CNPJ</option><option value="EMAIL">E-mail</option><option value="PHONE">Telefone</option><option value="EVP">Chave aleatória</option></select><label for="ownerTransferKey">Chave Pix de destino</label><input id="ownerTransferKey" autocomplete="off" placeholder="Digite a chave Pix"><label for="ownerTransferDescription">Descrição (opcional)</label><input id="ownerTransferDescription" maxlength="100" placeholder="Motivo da transferência"><button id="ownerTransferReview" type="button">Revisar transferência</button><div id="ownerTransferReviewBox" hidden class="panel" style="margin-top:12px;border:1px solid #c99a4a"><h4>Confirme os dados</h4><p id="ownerTransferReviewText"></p><p class="hint">Esta operação movimenta dinheiro real e pode ser imediata. Confira o destinatário e o valor.</p><label for="ownerTransferConfirm">Digite TRANSFERIR para autorizar</label><input id="ownerTransferConfirm" autocomplete="off" placeholder="TRANSFERIR"><button id="ownerTransferSubmit" type="button" disabled>Confirmar e enviar Pix</button><button id="ownerTransferCancel" type="button" class="secondary">Cancelar</button></div></div><div class="panel"><h4>Transferências recentes</h4><button id="ownerTransferReload" type="button" class="secondary">Atualizar histórico</button><div id="ownerTransferHistory"><p class="hint">Carregando histórico...</p></div></div>';
+        let pending=null;
+        const reviewBox=document.getElementById('ownerTransferReviewBox'),confirmInput=document.getElementById('ownerTransferConfirm'),submit=document.getElementById('ownerTransferSubmit');
+        document.getElementById('ownerTransferReview').onclick=()=>{
+          const value=Number(document.getElementById('ownerTransferValue').value),key=document.getElementById('ownerTransferKey').value.trim(),type=document.getElementById('ownerTransferKeyType').value,description=document.getElementById('ownerTransferDescription').value.trim();
+          if(!Number.isFinite(value)||value<1){showFinanceStatus('Informe um valor mínimo de R$ 1,00.',true);return;}
+          if(!key){showFinanceStatus('Informe a chave Pix de destino.',true);return;}
+          pending={value:Number(value.toFixed(2)),key,type,description};
+          document.getElementById('ownerTransferReviewText').textContent='Valor: '+money(value)+' · Chave: '+key+' · Tipo: '+type+' · Descrição: '+(description||'Transferência Giro Fácil BR');
+          reviewBox.hidden=false;confirmInput.value='';submit.disabled=true;reviewBox.scrollIntoView({behavior:'smooth',block:'center'});
+        };
+        confirmInput.oninput=()=>{submit.disabled=confirmInput.value.trim()!=='TRANSFERIR'||!pending;};
+        document.getElementById('ownerTransferCancel').onclick=()=>{pending=null;reviewBox.hidden=true;confirmInput.value='';};
+        submit.onclick=async()=>{
+          if(!pending||confirmInput.value.trim()!=='TRANSFERIR')return;
+          submit.disabled=true;submit.textContent='Enviando ao Asaas...';
+          try{
+            const result=await invokeFinance({action:'create_transfer',value:pending.value,pixAddressKey:pending.key,pixAddressKeyType:pending.type,description:pending.description,confirmation:'TRANSFERIR',idempotencyKey:crypto.randomUUID()});
+            showFinanceStatus(result.message||'Solicitação enviada ao Asaas. Confira o histórico.');
+            pending=null;reviewBox.hidden=true;await loadTransferHistory();await loadOwnerFinance();
+          }catch(error){showFinanceStatus(error.message||'Não foi possível enviar a transferência.',true);}
+          finally{submit.textContent='Confirmar e enviar Pix';submit.disabled=true;}
+        };
+        document.getElementById('ownerTransferReload').onclick=loadTransferHistory;loadTransferHistory();
+      }else if(page==='statement'){
+        const tx=financeData?.transactions||[];
+        detailBody.innerHTML=tx.length?'<div style="overflow:auto"><table style="width:100%;min-width:600px"><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr>'+tx.map(t=>'<tr><td>'+safe(t.date?new Date(t.date).toLocaleString('pt-BR'):'—')+'</td><td>'+safe(t.description||t.paymentId||t.id)+'</td><td>'+safe(t.type)+'</td><td>'+money(t.value)+'</td></tr>').join('')+'</table></div>':'<p class="hint">Extrato indisponível ou sem movimentações retornadas.</p>';
+      }else if(page==='receipts'||page==='history'){
+        detailBody.innerHTML=renderOrders(rows);
+        if(page==='history')detailBody.innerHTML+='<div class="panel"><h4>Transferências feitas pelo Giro Fácil</h4><div id="ownerTransferHistory"><p class="hint">Carregando...</p></div></div>';
+        if(page==='history')loadTransferHistory();
+      }else{
+        const allowed=page==='boost'?['boost']:page==='plans'?['store','monthly']:['single'];
+        detailBody.innerHTML=renderOrders(rows.filter(o=>allowed.includes(o.kind)));
+      }
+    };
+    finance.addEventListener('click',event=>{const button=event.target.closest('[data-finance-page]');if(button)showFinancePage(button.dataset.financePage);});
+    document.getElementById('ownerFinanceBack').onclick=()=>{detail.hidden=true;homeEls.forEach(el=>el.hidden=false);};
+    async function loadTransferHistory(){
+      const target=document.getElementById('ownerTransferHistory');if(!target)return;
+      target.innerHTML='<p class="hint">Consultando...</p>';
+      try{
+        const data=await invokeFinance({action:'list_transfers'}),items=data.giroTransfers||[];
+        target.innerHTML=items.length?'<div style="overflow:auto"><table style="width:100%;min-width:520px"><tr><th>Data</th><th>Valor</th><th>Destino</th><th>Status</th></tr>'+items.map(t=>'<tr><td>'+new Date(t.created_at).toLocaleString('pt-BR')+'</td><td>'+money(t.value)+'</td><td>'+safe(t.pix_key_masked)+'</td><td>'+safe(transferStatus[t.status]||t.status)+'</td></tr>').join('')+'</table></div>':'<p class="hint">Nenhuma transferência iniciada por este painel.</p>';
+      }catch(error){target.textContent=error.message||'Não foi possível consultar o histórico.';}
+    }
     const money=(value)=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const safe=(value)=>String(value??'—').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const kindLabel={boost:'Turbinamento',store:'Plano de lojista',single:'Anúncio avulso',monthly:'Plano mensal'};

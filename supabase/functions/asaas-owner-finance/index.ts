@@ -41,7 +41,88 @@ Deno.serve(async (req) => {
     if (profile?.papel !== "admin") return reply({ error: "A Central Financeira é exclusiva do proprietário." }, 403);
     if (!apiKey) return reply({ error: "A integração Asaas não está configurada no servidor." }, 503);
 
-    const headers = { access_token: apiKey, accept: "application/json", "User-Agent": "GiroFacilBR/1.0" };
+    const body = await req.json().catch(() => ({}));
+    const action = String(body?.action || "dashboard");
+    const headers = { access_token: apiKey, accept: "application/json", "Content-Type": "application/json", "User-Agent": "GiroFacilBR/1.0" };
+
+    if (action === "list_transfers") {
+      const [providerResponse, localResult] = await Promise.all([
+        fetch(apiUrl + "/transfers?limit=50&offset=0", { method: "GET", headers, signal: AbortSignal.timeout(15000) }),
+        admin.from("asaas_owner_transfers").select("id,asaas_transfer_id,value,pix_key_masked,pix_key_type,description,status,fail_reason,created_at,updated_at").order("created_at", { ascending: false }).limit(50),
+      ]);
+      const providerData = await providerResponse.json().catch(() => ({}));
+      if (!providerResponse.ok) return reply({ error: providerData?.errors?.[0]?.description || "Não foi possível consultar as transferências." }, 502);
+      if (localResult.error) throw localResult.error;
+      return reply({ success: true, environment: apiUrl.includes("sandbox") ? "sandbox" : "production", transfers: providerData.data || [], giroTransfers: localResult.data || [] });
+    }
+
+    if (action === "create_transfer") {
+      const value = Number(body?.value);
+      const pixAddressKey = String(body?.pixAddressKey || "").trim();
+      const pixAddressKeyType = String(body?.pixAddressKeyType || "").toUpperCase();
+      const description = String(body?.description || "Transferência realizada pelo Giro Fácil BR").trim().slice(0, 100);
+      const idempotencyKey = String(body?.idempotencyKey || "").trim();
+      const confirmation = String(body?.confirmation || "");
+      if (confirmation !== "TRANSFERIR") return reply({ error: "Confirmação de segurança inválida. Digite TRANSFERIR para confirmar." }, 400);
+      if (!Number.isFinite(value) || value < 1 || Math.round(value * 100) !== value * 100) return reply({ error: "Informe um valor válido, mínimo de R$ 1,00." }, 400);
+      if (!/^[A-Z0-9._-]{8,80}$/i.test(idempotencyKey)) return reply({ error: "Identificador de segurança inválido. Reabra a tela e tente novamente." }, 400);
+      if (!["CPF", "CNPJ", "EMAIL", "PHONE", "EVP"].includes(pixAddressKeyType)) return reply({ error: "Tipo de chave Pix inválido." }, 400);
+      const digits = pixAddressKey.replace(/\D/g, "");
+      if (!pixAddressKey || (pixAddressKeyType === "CPF" && digits.length !== 11) ||
+          (pixAddressKeyType === "CNPJ" && digits.length !== 14) ||
+          (pixAddressKeyType === "PHONE" && digits.length !== 11) ||
+          (pixAddressKeyType === "EMAIL" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pixAddressKey)) ||
+          (pixAddressKeyType === "EVP" && !/^[0-9a-f-]{36}$/i.test(pixAddressKey))) {
+        return reply({ error: "Confira a chave Pix e o tipo selecionado." }, 400);
+      }
+      const masked = pixAddressKeyType === "EMAIL"
+        ? pixAddressKey.replace(/^(.).+(@.*)$/, "$1•••$2")
+        : pixAddressKeyType === "EVP" ? "Chave aleatória •••" : "••••" + digits.slice(-4);
+      const { data: existing } = await admin.from("asaas_owner_transfers").select("*").eq("idempotency_key", idempotencyKey).maybeSingle();
+      if (existing) return reply({ success: existing.status !== "FAILED", duplicate: true, transfer: existing, message: "Esta solicitação já foi registrada. Consulte o histórico antes de tentar novamente." }, 200);
+      const { data: inserted, error: insertError } = await admin.from("asaas_owner_transfers").insert({
+        idempotency_key: idempotencyKey, value, pix_key_masked: masked, pix_key_type: pixAddressKeyType,
+        description, status: "PROCESSING", requested_by: auth.user.id
+      }).select("*").single();
+      if (insertError) {
+        if (insertError.code === "23505") return reply({ error: "Esta solicitação já foi enviada. Atualize o histórico antes de repetir." }, 409);
+        throw insertError;
+      }
+      let transferRequestStarted = false;
+      try {
+        const balanceResponse = await fetch(apiUrl + "/finance/balance", { method: "GET", headers, signal: AbortSignal.timeout(15000) });
+        const balanceData = await balanceResponse.json().catch(() => ({}));
+        if (!balanceResponse.ok) throw new Error(balanceData?.errors?.[0]?.description || "Não foi possível validar o saldo disponível.");
+        const available = Number(balanceData?.balance ?? balanceData?.available ?? balanceData?.availableBalance);
+        if (!Number.isFinite(available) || value > available) throw new Error("Saldo disponível insuficiente ou indisponível. Consulte o saldo no Asaas.");
+        transferRequestStarted = true;
+        const transferResponse = await fetch(apiUrl + "/transfers", {
+          method: "POST", headers,
+          body: JSON.stringify({ value, pixAddressKey, pixAddressKeyType, description, externalReference: inserted.id }),
+          signal: AbortSignal.timeout(20000)
+        });
+        const transferData = await transferResponse.json().catch(() => ({}));
+        if (!transferResponse.ok) throw new Error(transferData?.errors?.[0]?.description || "O Asaas recusou a transferência.");
+        const transferStatus = String(transferData?.status || "PENDING").toUpperCase();
+        const { data: saved, error: saveError } = await admin.from("asaas_owner_transfers").update({
+          asaas_transfer_id: transferData.id, status: transferStatus, updated_at: new Date().toISOString()
+        }).eq("id", inserted.id).select("*").single();
+        if (saveError) throw saveError;
+        return reply({ success: true, transfer: saved, provider: { id: transferData.id, status: transferStatus, value: transferData.value, dateCreated: transferData.dateCreated }, message: "Solicitação enviada ao Asaas. Acompanhe o status no histórico; o envio ainda pode estar em processamento." });
+      } catch (transferError) {
+        const reason = transferError instanceof Error ? transferError.message : "Falha ao solicitar transferência.";
+        const uncertain = transferRequestStarted;
+        await admin.from("asaas_owner_transfers").update({
+          status: uncertain ? "UNKNOWN" : "FAILED",
+          fail_reason: (uncertain ? "Resultado ainda não confirmado. Consulte o histórico Asaas antes de tentar novamente. " : "") + reason.slice(0, 180),
+          updated_at: new Date().toISOString()
+        }).eq("id", inserted.id);
+        return reply({ error: uncertain ? "Não foi possível confirmar a resposta do Asaas. Por segurança, não repita o Pix agora. Consulte o histórico de transferências no Asaas antes de tentar novamente." : reason, requestId: inserted.id, uncertain }, uncertain ? 202 : 400);
+      }
+    }
+
+    if (action !== "dashboard") return reply({ error: "Ação financeira não reconhecida." }, 400);
+
     const [balanceResponse, statementResponse, ordersResult] = await Promise.all([
       fetch(apiUrl + "/finance/balance", { method: "GET", headers, signal: AbortSignal.timeout(15000) }),
       fetch(apiUrl + "/financialTransactions?limit=40&offset=0", { method: "GET", headers, signal: AbortSignal.timeout(15000) }),

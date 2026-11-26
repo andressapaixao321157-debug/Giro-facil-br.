@@ -23,8 +23,11 @@ const BOOSTS: Record<string, { amount: number; days: number }> = {
 const STORES: Record<string, number> = { loja_fundador: 39, loja_basica: 39.90, loja_pro: 79.90, loja_premium: 129.90, loja_rede: 199.90 };
 
 // Mais investimento médio por dia dá maior prioridade na distribuição; não garante compradores.
-const reachMultiplierForDailyBudget = (daily: number) =>
-  daily >= 50 ? 10 : daily >= 35 ? 7 : daily >= 20 ? 5 : daily >= 15 ? 3 : 2;
+const reachMultiplierForDailyBudget = (daily: number, days: number) => {
+  const spendTier = daily >= 50 ? 10 : daily >= 35 ? 7 : daily >= 20 ? 5 : daily >= 15 ? 3 : 2;
+  const durationTier = days >= 30 ? 5 : days >= 15 ? 3 : days >= 7 ? 2 : days >= 3 ? 1 : 0;
+  return spendTier + durationTier;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -157,7 +160,7 @@ Deno.serve(async (req) => {
       const baseAmount = planCode === "boost_custom" ? (String(body.customMode || "total") === "daily" ? Number(body.customAmount) : Number(body.customAmount) / durationDays) : ((BOOSTS[planCode!]?.amount || 10) / Math.max(1, durationDays));
       const { error: freeBoostError } = await admin.from("ad_boosts").insert({
         order_id: freeOrder.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
-        duration_days: durationDays, amount: 0, reach_multiplier: reachMultiplierForDailyBudget(baseAmount),
+        duration_days: durationDays, amount: 0, reach_multiplier: reachMultiplierForDailyBudget(baseAmount, durationDays),
         status: "active", starts_at: now.toISOString(), ends_at: endsAt.toISOString(),
       });
       if (freeBoostError) throw new Error("O pedido foi registrado, mas não foi possível ativar o turbinamento gratuito.");
@@ -272,7 +275,7 @@ Deno.serve(async (req) => {
     if (kind === "boost") {
       const { error } = await admin.from("ad_boosts").insert({
         order_id: order.id, user_id: user.id, listing_id: listingId, plan_code: planCode,
-        duration_days: durationDays, amount, reach_multiplier: reachMultiplierForDailyBudget(dailyBudget || (amount / Math.max(1, durationDays))), status: "awaiting_payment",
+        duration_days: durationDays, amount, reach_multiplier: reachMultiplierForDailyBudget(dailyBudget || (amount / Math.max(1, durationDays)), durationDays), status: "awaiting_payment",
       });
       if (error) throw new Error("Checkout criado, mas não foi possível registrar o turbinamento.");
     }
@@ -287,7 +290,7 @@ Deno.serve(async (req) => {
     return json({
       orderId: order.id, checkoutId: checkout.id, checkoutUrl, paymentUrl: checkoutUrl,
       kind, billingType, amount, status: "AWAITING_PAYMENT",
-      recurring, checkoutWebhookReady, dailyBudget: kind === "boost" ? (dailyBudget || amount / Math.max(1, durationDays)) : null, reachMultiplier: kind === "boost" ? reachMultiplierForDailyBudget(dailyBudget || amount / Math.max(1, durationDays)) : null, message: recurring
+      recurring, checkoutWebhookReady, dailyBudget: kind === "boost" ? (dailyBudget || amount / Math.max(1, durationDays)) : null, reachMultiplier: kind === "boost" ? reachMultiplierForDailyBudget(dailyBudget || amount / Math.max(1, durationDays), durationDays) : null, message: recurring
         ? "Checkout seguro aberto. A assinatura mensal será criada pelo Asaas após a conclusão do pagamento."
         : "Checkout PIX criado. O pagamento será confirmado pelo webhook do Asaas.",
     });

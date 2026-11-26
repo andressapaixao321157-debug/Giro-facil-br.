@@ -2730,7 +2730,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
   };
   // O multiplicador comercial vira uma faixa de distribuição aproximada.
-  const radiusForReach=reach=>[0,25,50,100,150,250,400,600,800,1200,2000][Math.max(1,Math.min(10,Number(reach)||1))];
+  const radiusForReach=reach=>{const tiers=[0,25,50,100,150,250,400,600,800,1200,2000];const level=Math.max(1,Math.min(10,Math.ceil(Number(reach)||1)));return tiers[level];};
   $("nearMeButton").onclick=async()=>{
     const button=$("nearMeButton");
     if(buyerGeoPoint){buyerGeoPoint=null;button.textContent="Perto de mim";button.classList.add("secondary");status("listingStatus","Busca por proximidade desativada. Você voltou à busca por cidade e estado.","ok");loadListings();return;}

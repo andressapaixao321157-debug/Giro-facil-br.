@@ -318,7 +318,7 @@ check("Captação grava eventos e parâmetros de campanha/indicação", html.inc
 check("Tracking de anúncios usa INSERT mínimo, ignora duplicidade e pula o próprio anunciante",
   (() => {
     const start = html.indexOf("async function trackListingEvent(eventType,listingId,listingOwnerId){");
-    const end = html.indexOf("\\n  }", start);
+    const end = html.indexOf("\n  }", start);
     const tracker = start >= 0 && end > start ? html.slice(start, end + 4) : "";
     return tracker.includes('db.from("listing_events").insert(') &&
       tracker.includes('error.code!=="23505"') &&

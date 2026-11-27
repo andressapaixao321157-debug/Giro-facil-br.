@@ -601,6 +601,7 @@ check("Webhook Asaas aceita tokens distintos e identifica o ambiente de origem",
 check("Webhook só atualiza pedido cujo ambiente salvo corresponde ao token de origem",
   webhook.includes('checkoutOrder.asaas_environment !== webhookEnvironment') &&
   webhook.includes('subscriptionOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('storeOrder.asaas_environment !== webhookEnvironment') &&
   webhook.includes('order.asaas_environment !== webhookEnvironment'));
 check("Novo pedido Asaas grava o ambiente usado no checkout",
   payment.includes('asaas_environment: asaasEnvironment'));

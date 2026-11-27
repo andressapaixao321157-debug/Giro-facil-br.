@@ -2,7 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const expectedToken = (Deno.env.get("ASAAS_WEBHOOK_TOKEN") ?? "").trim();
+  const asaasEnvironment = (Deno.env.get("ASAAS_ENVIRONMENT") || "").trim().toLowerCase();
+  const expectedToken = asaasEnvironment === "sandbox"
+    ? (Deno.env.get("ASAAS_WEBHOOK_TOKEN_SANDBOX") ?? "").trim()
+    : asaasEnvironment === "production"
+      ? (Deno.env.get("ASAAS_WEBHOOK_TOKEN_PRODUCTION") ?? "").trim()
+      : "";
   const receivedToken = (req.headers.get("asaas-access-token") ?? "").trim();
   if (!expectedToken || !receivedToken || receivedToken !== expectedToken) {
     console.warn("Asaas webhook authentication mismatch", {

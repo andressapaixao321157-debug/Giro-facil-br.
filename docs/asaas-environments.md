@@ -1,40 +1,43 @@
 # Configuração dos ambientes Asaas
 
-O Giro Fácil mantém as duas credenciais armazenadas no Supabase, mas opera com **um ambiente ativo por vez**. Isso evita que o checkout e a Central Financeira usem ambientes diferentes.
+O Giro Fácil mantém as credenciais dos dois ambientes no Supabase. **Novos checkouts e a Central Financeira usam um único ambiente ativo por vez**, escolhido explicitamente em `ASAAS_ENVIRONMENT`. O webhook recebe eventos dos dois ambientes e confere o ambiente gravado em cada pedido antes de atualizar qualquer pagamento.
 
 ## Secrets obrigatórios no Supabase
 
 Em **Supabase Dashboard → Project → Edge Functions → Secrets**, configure:
 
-- `ASAAS_ENVIRONMENT`: exatamente `sandbox` ou `production`
+- `ASAAS_ENVIRONMENT`: exatamente `sandbox` ou `production` (ambiente ativo para novas operações e consulta financeira)
 - `ASAAS_API_KEY_SANDBOX`: chave privada do Asaas Sandbox
 - `ASAAS_API_KEY_PRODUCTION`: chave privada do Asaas Produção
-- `ASAAS_WEBHOOK_TOKEN_SANDBOX`: token secreto cadastrado no webhook do Asaas Sandbox
-- `ASAAS_WEBHOOK_TOKEN_PRODUCTION`: token secreto cadastrado no webhook do Asaas Produção
+- `ASAAS_WEBHOOK_TOKEN_SANDBOX`: token secreto do webhook cadastrado no Asaas Sandbox
+- `ASAAS_WEBHOOK_TOKEN_PRODUCTION`: token secreto do webhook cadastrado no Asaas Produção
 
 Não coloque valores dessas chaves no GitHub, no aplicativo, em prints ou em mensagens.
 
-## Webhook
+## Webhooks
 
-Cadastre no Asaas do ambiente ativo a URL:
+Cadastre a mesma URL nos dois ambientes Asaas:
 
 `https://seimeqvtifxlkagudqus.supabase.co/functions/v1/asaas-webhook`
 
-Configure o token de autenticação desse webhook para corresponder ao secret do ambiente ativo. O endpoint valida o token do ambiente selecionado.
+No webhook Sandbox, use `ASAAS_WEBHOOK_TOKEN_SANDBOX`. No webhook Produção, use `ASAAS_WEBHOOK_TOKEN_PRODUCTION`. O endpoint identifica qual token foi apresentado e só processa o pedido se o campo `payment_orders.asaas_environment` corresponder ao ambiente de origem.
 
-## Troca de ambiente
+## Troca do ambiente ativo
 
-1. Não troque o ambiente enquanto houver checkouts/pagamentos pendentes ou webhooks aguardados no ambiente atual.
-2. Confirme no painel do Asaas que os pagamentos pendentes foram concluídos, cancelados ou expiraram.
-3. Altere `ASAAS_ENVIRONMENT` para o outro ambiente.
-4. Confirme que o webhook correspondente está cadastrado e ativo.
-5. Faça um teste de checkout de baixo valor no Sandbox antes de ativar Produção.
+1. Defina `ASAAS_ENVIRONMENT=sandbox` durante os testes.
+2. Faça e confira testes no Sandbox.
+3. Antes de ir ao ar, confirme no painel Asaas qual conta/ambiente receberá cobranças reais.
+4. Defina `ASAAS_ENVIRONMENT=production` somente após a conferência do proprietário.
+5. Mantenha os dois tokens de webhook configurados para que pagamentos pendentes de ambos os ambientes possam ser processados com validação do ambiente do pedido.
 
-**Importante:** a configuração seleciona apenas um ambiente por vez. Não altere `ASAAS_ENVIRONMENT` com cobranças pendentes no ambiente anterior: o webhook só aceita o token do ambiente selecionado. A seleção de produção deve ocorrer somente após a conferência manual do proprietário.
+## Pedidos anteriores à migração
+
+A migração deixa `asaas_environment` como NULL nos pedidos já existentes, pois o ambiente histórico não pode ser inferido com segurança. Eventos desses pedidos não ativam anúncios, planos ou turbos automaticamente até que sejam conciliados e classificados com segurança. Não marque pedidos antigos como sandbox ou produção por suposição.
 
 ## Comportamento seguro
 
-- Se `ASAAS_ENVIRONMENT` estiver ausente ou inválido, as funções recusam a operação.
-- Se faltar a chave ou o token do ambiente selecionado, a operação é recusada.
+- Se `ASAAS_ENVIRONMENT` estiver ausente ou inválido, criação de checkout e Central Financeira recusam a operação.
+- Se faltar a chave do ambiente ativo, a operação é recusada.
 - A URL da API é derivada do ambiente; não existe fallback silencioso para produção.
+- O webhook valida ambos os tokens e confere o ambiente gravado no pedido antes de processá-lo.
 - O código não cria cobranças, pagamentos ou transferências durante o deploy.

@@ -57,9 +57,15 @@ Deno.serve(async (req) => {
       if (fallback) return fallback;
       throw new Error("Chave Supabase SUPABASE_SECRET_KEYS não disponível no ambiente.");
     })();
-    const apiKey = Deno.env.get("ASAAS_API_KEY");
-    const apiUrl = (Deno.env.get("ASAAS_API_URL") || "https://api.asaas.com/v3").replace(/\/$/, "");
-    if (!apiKey) return json({ error: "Integração Asaas ainda não configurada no servidor." }, 503);
+    const asaasEnvironment = (Deno.env.get("ASAAS_ENVIRONMENT") || "").trim().toLowerCase();
+    if (asaasEnvironment !== "sandbox" && asaasEnvironment !== "production") {
+      return json({ error: "Ambiente Asaas não definido. Configure ASAAS_ENVIRONMENT como sandbox ou production." }, 503);
+    }
+    const apiKey = Deno.env.get(asaasEnvironment === "sandbox" ? "ASAAS_API_KEY_SANDBOX" : "ASAAS_API_KEY_PRODUCTION");
+    const apiUrl = asaasEnvironment === "sandbox"
+      ? "https://api-sandbox.asaas.com/v3"
+      : "https://api.asaas.com/v3";
+    if (!apiKey) return json({ error: "Chave Asaas do ambiente " + asaasEnvironment + " não configurada no servidor." }, 503);
     const headers = { "Content-Type": "application/json", access_token: apiKey };
 
     const auth = req.headers.get("Authorization");

@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     const { data: order, error: orderError } = await admin.from("payment_orders").insert({
       user_id: user.id, listing_id: listingId, kind, billing_type: billingType,
       amount, status: "CREATING", asaas_customer_id: null, plan_code: planCode,
-      duration_days: durationDays || null,
+      duration_days: durationDays || null, asaas_environment: asaasEnvironment,
     }).select("id").single();
     if (orderError || !order) throw new Error("Não foi possível registrar o pedido de pagamento.");
 

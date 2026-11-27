@@ -150,8 +150,12 @@ check("Chat reabilita envio ao selecionar conversa",
   html.includes('$("chatMessageInput").disabled=false;$("chatSend").disabled=false;'));
 
 
-check("Webhook Asaas valida token secreto antes de processar eventos",
-  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('receivedToken !== expectedToken'));
+check("Webhook Asaas valida tokens separados de sandbox e produção antes de processar eventos",
+  webhook.includes("ASAAS_WEBHOOK_TOKEN_SANDBOX") &&
+  webhook.includes("ASAAS_WEBHOOK_TOKEN_PRODUCTION") &&
+  webhook.includes("receivedToken === sandboxWebhookToken") &&
+  webhook.includes("receivedToken === productionWebhookToken") &&
+  webhook.includes("if (!webhookEnvironment)"));
 check("Webhook Asaas é idempotente para eventos duplicados",
   fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('eventError.code !== "23505"'));
 check("Webhook ativa plano somente após confirmação de pagamento",

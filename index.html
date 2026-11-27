@@ -1279,6 +1279,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
   }
   if(configured() && window.supabase){
     db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    window.giroDb=db;
     applyPublicPlatformSettings();
     db.auth.getSession().then(({data})=>{currentUser=data.session?.user||null; applyPublicPlatformSettings(); updateAccount(); syncChatInboxRealtime(); if(ADMIN_ENTRY_REQUESTED){if(currentUser){$("authPanel").classList.add("hidden");}else{openAuth();}} loadListings();});
     db.auth.onAuthStateChange((event,session)=>{
@@ -3650,7 +3651,7 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
       emailTestStatus.className='status';
       emailTestStatus.textContent='Solicitando envio seguro para o e-mail da sua conta...';
       try{
-        const {data,error}=await db.functions.invoke('email-test',{body:{}});
+        const {data,error}=await window.giroDb.functions.invoke('email-test',{body:{}});
         if(error)throw error;
         if(!data?.success)throw new Error(data?.error||'O serviço não confirmou o envio.');
         emailTestStatus.className='status ok';

@@ -146,8 +146,12 @@ Deno.serve(async (req) => {
       await admin.from("perfis").update({ plano_status: "pendente" })
         .eq("plano_asaas_subscription_id", subscription.id);
       const { data: storeOrder, error: storeOrderError } = await admin.from("payment_orders")
-        .select("id").eq("asaas_subscription_id", subscription.id).eq("kind", "store").maybeSingle();
+        .select("id,asaas_environment").eq("asaas_subscription_id", subscription.id).eq("kind", "store").maybeSingle();
       if (storeOrderError) throw storeOrderError;
+      if (storeOrder && storeOrder.asaas_environment !== webhookEnvironment) {
+        console.warn("Asaas cancellation webhook environment mismatch", { orderId: storeOrder.id, webhookEnvironment });
+        return new Response("Webhook environment mismatch", { status: 409 });
+      }
       if (storeOrder) {
         const { error: storeDeactivateError } = await admin.from("store_plans").update({ status: "cancelled" })
           .eq("order_id", storeOrder.id).eq("status", "active");

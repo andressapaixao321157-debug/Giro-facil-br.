@@ -592,11 +592,22 @@ check("Central Financeira usa a mesma seleção explícita de ambiente sem fallb
   ownerFinance.includes('ASAAS_API_KEY_PRODUCTION') &&
   !ownerFinance.includes('Deno.env.get("ASAAS_API_URL")') &&
   !ownerFinance.includes('Deno.env.get("ASAAS_API_KEY")'));
-check("Webhook autentica com token específico do ambiente Asaas selecionado",
-  webhook.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+check("Webhook Asaas aceita tokens distintos e identifica o ambiente de origem",
   webhook.includes('ASAAS_WEBHOOK_TOKEN_SANDBOX') &&
   webhook.includes('ASAAS_WEBHOOK_TOKEN_PRODUCTION') &&
-  webhook.includes('receivedToken !== expectedToken'));
+  webhook.includes('webhookEnvironment') &&
+  webhook.includes('receivedToken === sandboxWebhookToken') &&
+  webhook.includes('receivedToken === productionWebhookToken'));
+check("Webhook só atualiza pedido cujo ambiente salvo corresponde ao token de origem",
+  webhook.includes('checkoutOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('subscriptionOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('order.asaas_environment !== webhookEnvironment'));
+check("Novo pedido Asaas grava o ambiente usado no checkout",
+  payment.includes('asaas_environment: asaasEnvironment'));
+check("Migração adiciona ambiente por pedido e mantém pedidos antigos sem classificação presumida",
+  fs.existsSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql","utf8").includes("ADD COLUMN IF NOT EXISTS asaas_environment text") &&
+  fs.readFileSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql","utf8").includes("asaas_environment IS NULL"));
 check("Transferência Pix classifica recusas definitivas como FAILED e falhas inconclusivas como UNKNOWN",
   ownerFinance.includes("transferResponseStatus") &&
   ownerFinance.includes("providerAccepted") &&

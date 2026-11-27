@@ -13,15 +13,14 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Método não permitido." }, 405);
   try {
     const url = Deno.env.get("SUPABASE_URL");
-    const apiKey = Deno.env.get("ASAAS_API_KEY");
-    const configuredApiUrl = Deno.env.get("ASAAS_API_URL")?.trim();
-    if (!configuredApiUrl) {
-      return reply({ error: "A URL do ambiente Asaas não está configurada. Defina ASAAS_API_URL explicitamente para sandbox ou produção." }, 503);
+    const asaasEnvironment = (Deno.env.get("ASAAS_ENVIRONMENT") || "").trim().toLowerCase();
+    if (asaasEnvironment !== "sandbox" && asaasEnvironment !== "production") {
+      return reply({ error: "Ambiente Asaas não definido. Configure ASAAS_ENVIRONMENT como sandbox ou production." }, 503);
     }
-    const apiUrl = configuredApiUrl.replace(/\/$/, "");
-    if (!/^https:\/\/api(?:-sandbox)?\.asaas\.com\/v3$/i.test(apiUrl)) {
-      return reply({ error: "ASAAS_API_URL deve apontar explicitamente para https://api.asaas.com/v3 ou https://api-sandbox.asaas.com/v3." }, 503);
-    }
+    const apiKey = Deno.env.get(asaasEnvironment === "sandbox" ? "ASAAS_API_KEY_SANDBOX" : "ASAAS_API_KEY_PRODUCTION");
+    const apiUrl = asaasEnvironment === "sandbox"
+      ? "https://api-sandbox.asaas.com/v3"
+      : "https://api.asaas.com/v3";
     const anon = (() => {
       const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
       if (raw) { const parsed = JSON.parse(raw); if (parsed.default) return parsed.default as string; }
@@ -60,7 +59,7 @@ Deno.serve(async (req) => {
       const providerData = await providerResponse.json().catch(() => ({}));
       if (!providerResponse.ok) return reply({ error: providerData?.errors?.[0]?.description || "Não foi possível consultar as transferências." }, 502);
       if (localResult.error) throw localResult.error;
-      return reply({ success: true, environment: apiUrl.includes("sandbox") ? "sandbox" : "production", transfers: providerData.data || [], giroTransfers: localResult.data || [] });
+      return reply({ success: true, environment: asaasEnvironment, transfers: providerData.data || [], giroTransfers: localResult.data || [] });
     }
 
     if (action === "create_transfer") {
@@ -197,7 +196,7 @@ Deno.serve(async (req) => {
     })) : [];
     return reply({
       success: true,
-      environment: apiUrl.includes("sandbox") ? "sandbox" : "production",
+      environment: asaasEnvironment,
       checkedAt: new Date().toISOString(),
       balance: balanceData,
       statementAvailable: statementResponse.ok,

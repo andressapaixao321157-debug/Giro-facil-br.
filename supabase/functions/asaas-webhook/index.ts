@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
       : null;
   if (!webhookEnvironment) {
     console.warn("Asaas webhook authentication mismatch", {
-      expectedConfigured: expectedToken.length > 0,
+      sandboxTokenConfigured: sandboxWebhookToken.length > 0,
+      productionTokenConfigured: productionWebhookToken.length > 0,
       receivedHeaderPresent: receivedToken.length > 0,
-      expectedLength: expectedToken.length,
       receivedLength: receivedToken.length,
     });
     return new Response("Unauthorized", { status: 401 });

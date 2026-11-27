@@ -578,10 +578,25 @@ check("Endpoint de transferência valida papel admin, saldo, chave Pix e evita r
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('confirmation !== "TRANSFERIR"') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('idempotency_key') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('value > available'));
-check("Central Financeira exige URL explícita do ambiente Asaas e não assume produção",
-  ownerFinance.includes('Deno.env.get("ASAAS_API_URL")?.trim()') &&
-  ownerFinance.includes("ASAAS_API_URL deve apontar explicitamente") &&
-  !ownerFinance.includes('|| "https://api.asaas.com/v3"'));
+check("Asaas exige ambiente explícito e seleciona credenciais separadas de sandbox e produção",
+  payment.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+  payment.includes('ASAAS_API_KEY_SANDBOX') &&
+  payment.includes('ASAAS_API_KEY_PRODUCTION') &&
+  payment.includes('https://api-sandbox.asaas.com/v3') &&
+  payment.includes('https://api.asaas.com/v3') &&
+  !payment.includes('Deno.env.get("ASAAS_API_KEY")') &&
+  !payment.includes('|| "https://api.asaas.com/v3"'));
+check("Central Financeira usa a mesma seleção explícita de ambiente sem fallback para produção",
+  ownerFinance.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+  ownerFinance.includes('ASAAS_API_KEY_SANDBOX') &&
+  ownerFinance.includes('ASAAS_API_KEY_PRODUCTION') &&
+  !ownerFinance.includes('Deno.env.get("ASAAS_API_URL")') &&
+  !ownerFinance.includes('Deno.env.get("ASAAS_API_KEY")'));
+check("Webhook autentica com token específico do ambiente Asaas selecionado",
+  webhook.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+  webhook.includes('ASAAS_WEBHOOK_TOKEN_SANDBOX') &&
+  webhook.includes('ASAAS_WEBHOOK_TOKEN_PRODUCTION') &&
+  webhook.includes('receivedToken !== expectedToken'));
 check("Transferência Pix classifica recusas definitivas como FAILED e falhas inconclusivas como UNKNOWN",
   ownerFinance.includes("transferResponseStatus") &&
   ownerFinance.includes("providerAccepted") &&

@@ -10,6 +10,8 @@ const assistant = fs.existsSync(assistantPath) ? fs.readFileSync(assistantPath, 
 const adminDashboard = fs.existsSync("supabase/functions/admin-dashboard/index.ts") ? fs.readFileSync("supabase/functions/admin-dashboard/index.ts", "utf8") : "";
 const admin = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, "utf8") : "";
 const payment = fs.existsSync(paymentPath) ? fs.readFileSync(paymentPath, "utf8") : "";
+const ownerFinancePath = "supabase/functions/asaas-owner-finance/index.ts";
+const ownerFinance = fs.existsSync(ownerFinancePath) ? fs.readFileSync(ownerFinancePath, "utf8") : "";
 const webhookPath = "supabase/functions/asaas-webhook/index.ts";
 const webhook = fs.existsSync(webhookPath) ? fs.readFileSync(webhookPath, "utf8") : "";
 const founderMigrationPath = "supabase/migrations/20261123193000_giro_founder_500_campaign.sql";
@@ -148,8 +150,12 @@ check("Chat reabilita envio ao selecionar conversa",
   html.includes('$("chatMessageInput").disabled=false;$("chatSend").disabled=false;'));
 
 
-check("Webhook Asaas valida token secreto antes de processar eventos",
-  fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('receivedToken !== expectedToken'));
+check("Webhook Asaas valida tokens separados de sandbox e produção antes de processar eventos",
+  webhook.includes("ASAAS_WEBHOOK_TOKEN_SANDBOX") &&
+  webhook.includes("ASAAS_WEBHOOK_TOKEN_PRODUCTION") &&
+  webhook.includes("receivedToken === sandboxWebhookToken") &&
+  webhook.includes("receivedToken === productionWebhookToken") &&
+  webhook.includes("if (!webhookEnvironment)"));
 check("Webhook Asaas é idempotente para eventos duplicados",
   fs.readFileSync("supabase/functions/asaas-webhook/index.ts", "utf8").includes('eventError.code !== "23505"'));
 check("Webhook ativa plano somente após confirmação de pagamento",
@@ -576,9 +582,43 @@ check("Endpoint de transferência valida papel admin, saldo, chave Pix e evita r
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('confirmation !== "TRANSFERIR"') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('idempotency_key') &&
   fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('value > available'));
-check("Transferência com resposta incerta não é marcada como falha nem encoraja reenvio automático",
-  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
-  fs.readFileSync("supabase/functions/asaas-owner-finance/index.ts","utf8").includes("não repita o Pix agora"));
+check("Asaas exige ambiente explícito e seleciona credenciais separadas de sandbox e produção",
+  payment.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+  payment.includes('ASAAS_API_KEY_SANDBOX') &&
+  payment.includes('ASAAS_API_KEY_PRODUCTION') &&
+  payment.includes('https://api-sandbox.asaas.com/v3') &&
+  payment.includes('https://api.asaas.com/v3') &&
+  !payment.includes('Deno.env.get("ASAAS_API_KEY")') &&
+  !payment.includes('|| "https://api.asaas.com/v3"'));
+check("Central Financeira usa a mesma seleção explícita de ambiente sem fallback para produção",
+  ownerFinance.includes('Deno.env.get("ASAAS_ENVIRONMENT")') &&
+  ownerFinance.includes('ASAAS_API_KEY_SANDBOX') &&
+  ownerFinance.includes('ASAAS_API_KEY_PRODUCTION') &&
+  !ownerFinance.includes('Deno.env.get("ASAAS_API_URL")') &&
+  !ownerFinance.includes('Deno.env.get("ASAAS_API_KEY")'));
+check("Webhook Asaas aceita tokens distintos e identifica o ambiente de origem",
+  webhook.includes('ASAAS_WEBHOOK_TOKEN_SANDBOX') &&
+  webhook.includes('ASAAS_WEBHOOK_TOKEN_PRODUCTION') &&
+  webhook.includes('webhookEnvironment') &&
+  webhook.includes('receivedToken === sandboxWebhookToken') &&
+  webhook.includes('receivedToken === productionWebhookToken'));
+check("Webhook só atualiza pedido cujo ambiente salvo corresponde ao token de origem",
+  webhook.includes('checkoutOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('subscriptionOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('storeOrder.asaas_environment !== webhookEnvironment') &&
+  webhook.includes('order.asaas_environment !== webhookEnvironment'));
+check("Novo pedido Asaas grava o ambiente usado no checkout",
+  payment.includes('asaas_environment: asaasEnvironment'));
+check("Migração adiciona ambiente por pedido e mantém pedidos antigos sem classificação presumida",
+  fs.existsSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql") &&
+  fs.readFileSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql","utf8").includes("ADD COLUMN IF NOT EXISTS asaas_environment text") &&
+  fs.readFileSync("supabase/migrations/20261127010000_add_asaas_environment_to_payment_orders.sql","utf8").includes("asaas_environment IS NULL"));
+check("Transferência Pix classifica recusas definitivas como FAILED e falhas inconclusivas como UNKNOWN",
+  ownerFinance.includes("transferResponseStatus") &&
+  ownerFinance.includes("providerAccepted") &&
+  ownerFinance.includes("[408, 409, 429].includes(transferResponse.status)") &&
+  ownerFinance.includes('status: uncertain ? "UNKNOWN" : "FAILED"') &&
+  ownerFinance.includes("não repita o Pix agora"));
 
 
 check("Captação de lojistas tem CTA visível no topo e direciona ao formulário sem exigir login",

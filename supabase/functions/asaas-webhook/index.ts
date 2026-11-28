@@ -2,13 +2,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const expectedToken = (Deno.env.get("ASAAS_WEBHOOK_TOKEN") ?? "").trim();
+  const sandboxWebhookToken = (Deno.env.get("ASAAS_WEBHOOK_TOKEN_SANDBOX") ?? "").trim();
+  const productionWebhookToken = (Deno.env.get("ASAAS_WEBHOOK_TOKEN_PRODUCTION") ?? "").trim();
   const receivedToken = (req.headers.get("asaas-access-token") ?? "").trim();
-  if (!expectedToken || !receivedToken || receivedToken !== expectedToken) {
+  const webhookEnvironment = receivedToken && sandboxWebhookToken && receivedToken === sandboxWebhookToken
+    ? "sandbox"
+    : receivedToken && productionWebhookToken && receivedToken === productionWebhookToken
+      ? "production"
+      : null;
+  if (!webhookEnvironment) {
     console.warn("Asaas webhook authentication mismatch", {
-      expectedConfigured: expectedToken.length > 0,
+      sandboxTokenConfigured: sandboxWebhookToken.length > 0,
+      productionTokenConfigured: productionWebhookToken.length > 0,
       receivedHeaderPresent: receivedToken.length > 0,
-      expectedLength: expectedToken.length,
       receivedLength: receivedToken.length,
     });
     return new Response("Unauthorized", { status: 401 });
@@ -55,6 +61,10 @@ Deno.serve(async (req) => {
         if (fallback.error) throw fallback.error;
       }
       if (checkoutOrder) {
+        if (checkoutOrder.asaas_environment !== webhookEnvironment) {
+          console.warn("Asaas checkout webhook environment mismatch", { orderId: checkoutOrder.id, webhookEnvironment });
+          return new Response("Webhook environment mismatch", { status: 409 });
+        }
         const checkoutStatus = payload.event === "CHECKOUT_PAID" ? "PAID"
           : payload.event === "CHECKOUT_CANCELED" ? "CANCELED"
           : payload.event === "CHECKOUT_EXPIRED" ? "EXPIRED"
@@ -114,9 +124,13 @@ Deno.serve(async (req) => {
     const subscription = payload.subscription;
     if (subscription?.id && payload.event === "SUBSCRIPTION_CREATED" && subscription.externalReference) {
       const { data: subscriptionOrder, error: subscriptionLookupError } = await admin.from("payment_orders")
-        .select("id,user_id,kind").eq("id", subscription.externalReference).maybeSingle();
+        .select("id,user_id,kind,asaas_environment").eq("id", subscription.externalReference).maybeSingle();
       if (subscriptionLookupError) throw subscriptionLookupError;
       if (subscriptionOrder) {
+        if (subscriptionOrder.asaas_environment !== webhookEnvironment) {
+          console.warn("Asaas subscription webhook environment mismatch", { orderId: subscriptionOrder.id, webhookEnvironment });
+          return new Response("Webhook environment mismatch", { status: 409 });
+        }
         const { error: subscriptionUpdateError } = await admin.from("payment_orders").update({
           asaas_subscription_id: subscription.id, asaas_customer_id: subscription.customer || null,
           updated_at: new Date().toISOString(),
@@ -132,8 +146,12 @@ Deno.serve(async (req) => {
       await admin.from("perfis").update({ plano_status: "pendente" })
         .eq("plano_asaas_subscription_id", subscription.id);
       const { data: storeOrder, error: storeOrderError } = await admin.from("payment_orders")
-        .select("id").eq("asaas_subscription_id", subscription.id).eq("kind", "store").maybeSingle();
+        .select("id,asaas_environment").eq("asaas_subscription_id", subscription.id).eq("kind", "store").maybeSingle();
       if (storeOrderError) throw storeOrderError;
+      if (storeOrder && storeOrder.asaas_environment !== webhookEnvironment) {
+        console.warn("Asaas cancellation webhook environment mismatch", { orderId: storeOrder.id, webhookEnvironment });
+        return new Response("Webhook environment mismatch", { status: 409 });
+      }
       if (storeOrder) {
         const { error: storeDeactivateError } = await admin.from("store_plans").update({ status: "cancelled" })
           .eq("order_id", storeOrder.id).eq("status", "active");
@@ -164,6 +182,10 @@ Deno.serve(async (req) => {
       }
 
       if (order) {
+        if (order.asaas_environment !== webhookEnvironment) {
+          console.warn("Asaas payment webhook environment mismatch", { orderId: order.id, webhookEnvironment });
+          return new Response("Webhook environment mismatch", { status: 409 });
+        }
         const paid = ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"].includes(payload.event);
         const refunded = ["PAYMENT_REFUNDED", "PAYMENT_PARTIALLY_REFUNDED"].includes(payload.event);
         const nextStatus = paid ? "PAID" : refunded ? "REFUNDED" :

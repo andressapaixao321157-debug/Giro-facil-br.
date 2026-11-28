@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
       admin.from("anuncios").select("id", { count: "exact", head: true }).eq("status", "pendente"),
       admin.from("payment_orders").select("amount").eq("status", "PAID"),
       admin.from("payment_orders").select("id,user_id,kind,amount,status,created_at").order("created_at", { ascending: false }).limit(30),
-      admin.from("anuncios").select("id,titulo,preco,status,usuario_id,criado_em").order("criado_em", { ascending: false }).limit(30),
+      admin.from("anuncios").select("id,titulo,preco,status,usuario_id,pagamento_status,criado_em").order("criado_em", { ascending: false }).limit(30),
       admin.from("ad_boosts").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("store_plans").select("id", { count: "exact", head: true }).eq("status", "active"),
       admin.from("acquisition_leads").select("id,contact_name,business_name,email,phone,lead_type,category,city,state,source,referral_code,status,created_at", { count: "exact" }).order("created_at", { ascending: false }).limit(100),
@@ -318,6 +318,19 @@ Deno.serve(async (req) => {
     ]);
     const queryError = [users, ads, pending, paid, orders, latestAds, boosts, stores, acquisitionLeads, acquisitionEvents, partnerApps, partnerAccounts].find(x => x.error);
     if (queryError?.error) throw new Error("Não foi possível carregar todos os dados administrativos: " + queryError.error.message);
+    const listingOwnerIds = [...new Set((latestAds.data || []).map((row: any) => row.usuario_id).filter(Boolean))];
+    const { data: listingOwners, error: listingOwnersError } = listingOwnerIds.length
+      ? await admin.from("perfis").select("id,plano_status").in("id", listingOwnerIds)
+      : { data: [], error: null };
+    if (listingOwnersError) throw listingOwnersError;
+    const ownerPlanStatus = new Map((listingOwners || []).map((row: any) => [row.id, row.plano_status]));
+    const adminListings = (latestAds.data || []).map((row: any) => {
+      const adminOwnListing = isAdmin && row.usuario_id === userId;
+      const paidIndividually = row.pagamento_status === "pago";
+      const coveredByPlan = row.pagamento_status === "plano" && ownerPlanStatus.get(row.usuario_id) === "ativo";
+      const canApprove = adminOwnListing || paidIndividually || coveredByPlan;
+      return { ...row, canApprove, moderationBlockReason: canApprove ? null : "Aguardando confirmação do pagamento ou de plano ativo." };
+    });
     const [founderTotal, founderPending, founderApproved, founderRejected] = await Promise.all([
       admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500"),
       admin.from("partner_applications").select("id", { count: "exact", head: true }).eq("founder_campaign_code", "fundadores-500").eq("status", "pendente"),
@@ -335,7 +348,7 @@ Deno.serve(async (req) => {
         paidRevenue: revenue, activeBoosts: boosts.count || 0, activeStores: stores.count || 0,
         activePartners: partnerAccounts.count || 0, pendingPartners: founderPending.count || 0,
       },
-      orders: orders.data || [], listings: latestAds.data || [], partnerApplications: partnerApps.data || [],
+      orders: orders.data || [], listings: adminListings, partnerApplications: partnerApps.data || [],
       founderCampaign: { total: founderCount, pending: founderPending.count || 0, approved: founderApproved.count || 0, rejected: founderRejected.count || 0, remainingTarget: Math.max(0, 500 - founderCount), progressPercent: Math.min(100, Math.round(founderCount / 500 * 100)) },
       acquisition: { total: acquisitionLeads.count || 0, byState, newLeads: (acquisitionLeads.data || []).filter(x => x.status === "novo").length, leads: acquisitionLeads.data || [], events: acquisitionEvents.data || [] },
     });

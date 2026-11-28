@@ -877,6 +877,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid #f6bd7d;outline-offset
     }
     @media(prefers-reduced-motion:reduce){.premium-cta,.categories .cat,#listings .card{transition:none!important}}
 
+
+    /* Painel administrativo: cartões responsivos e texto legível em telas pequenas */
+/* Painel administrativo: cartões responsivos e texto legível em telas pequenas */
+#adminPanel .admin-listing-cards{display:grid;gap:12px;width:100%;min-width:0}
+#adminPanel .admin-listing-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px;border:1px solid #35517d;border-radius:15px;background:#10294c;min-width:0}
+#adminPanel .admin-listing-main{display:grid;gap:6px;min-width:0}
+#adminPanel .admin-listing-main strong{color:#fff;font-size:15px;line-height:1.35;overflow-wrap:anywhere;word-break:normal}
+#adminPanel .admin-listing-price{color:#ffb15b;font-size:18px;font-weight:900}
+#adminPanel .admin-listing-main small{color:#bdcbe2;line-height:1.45}
+#adminPanel .admin-listing-status{display:inline-flex;width:max-content;max-width:100%;padding:5px 10px;border-radius:999px;background:#49331f;color:#ffd39d;font-size:12px;font-weight:800;overflow-wrap:anywhere}
+#adminPanel .admin-listing-status.ativo{background:#123e39;color:#b9f4df}
+#adminPanel .admin-listing-status.rejeitado{background:#4a2028;color:#ffd4d4}
+#adminPanel .admin-listing-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:260px}
+#adminPanel .admin-listing-actions button{min-height:42px;padding:10px 13px;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:620px){#adminPanel .admin-listing-card{grid-template-columns:minmax(0,1fr);gap:12px;padding:13px}#adminPanel .admin-listing-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}#adminPanel .admin-listing-actions button{width:100%;min-width:0;font-size:13px}#adminPanel .admin-listing-price{font-size:17px}}
   </style>
 </head>
 <body>
@@ -3729,17 +3744,3 @@ button:not(:disabled):active,.btn:active{transform:scale(.985)}
 
 </body>
 </html>
-
-/* Painel administrativo: cartões responsivos e texto legível em telas pequenas */
-#adminPanel .admin-listing-cards{display:grid;gap:12px;width:100%;min-width:0}
-#adminPanel .admin-listing-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px;border:1px solid #35517d;border-radius:15px;background:#10294c;min-width:0}
-#adminPanel .admin-listing-main{display:grid;gap:6px;min-width:0}
-#adminPanel .admin-listing-main strong{color:#fff;font-size:15px;line-height:1.35;overflow-wrap:anywhere;word-break:normal}
-#adminPanel .admin-listing-price{color:#ffb15b;font-size:18px;font-weight:900}
-#adminPanel .admin-listing-main small{color:#bdcbe2;line-height:1.45}
-#adminPanel .admin-listing-status{display:inline-flex;width:max-content;max-width:100%;padding:5px 10px;border-radius:999px;background:#49331f;color:#ffd39d;font-size:12px;font-weight:800;overflow-wrap:anywhere}
-#adminPanel .admin-listing-status.ativo{background:#123e39;color:#b9f4df}
-#adminPanel .admin-listing-status.rejeitado{background:#4a2028;color:#ffd4d4}
-#adminPanel .admin-listing-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:260px}
-#adminPanel .admin-listing-actions button{min-height:42px;padding:10px 13px;white-space:normal;overflow-wrap:anywhere}
-@media(max-width:620px){#adminPanel .admin-listing-card{grid-template-columns:minmax(0,1fr);gap:12px;padding:13px}#adminPanel .admin-listing-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}#adminPanel .admin-listing-actions button{width:100%;min-width:0;font-size:13px}#adminPanel .admin-listing-price{font-size:17px}}

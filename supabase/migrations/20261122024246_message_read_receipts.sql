@@ -1,6 +1,3 @@
--- Permite que o destinatário marque mensagens recebidas como lidas.
--- O GRANT limita a atualização à coluna lida_em; a política limita ao participante
--- que não enviou a mensagem.
 grant update (lida_em) on public.mensagens to authenticated;
 drop policy if exists mensagens_destinatario_mark_read on public.mensagens;
 create policy mensagens_destinatario_mark_read
